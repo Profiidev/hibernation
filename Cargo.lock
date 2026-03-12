@@ -489,7 +489,6 @@ dependencies = [
  "shared",
  "time",
  "tokio",
- "tokio-tungstenite",
  "tower",
  "tower-http",
  "tower_governor",
