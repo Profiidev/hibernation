@@ -78,14 +78,14 @@ async fn main() -> Result<()> {
 }
 
 async fn handle_command(
-  _cmd: &Commands,
+  cmd: &Commands,
   config: Option<Config>,
   url: Option<Url>,
   config_path: Option<PathBuf>,
 ) {
   let tty = std::io::stdin().is_terminal();
 
-  let _client = if let Some(config) = &config
+  let client = if let Some(config) = &config
     && let Some(token) = &config.token
   {
     ApiClient::new(token.clone(), url.unwrap_or(config.app_url.clone()))
@@ -169,6 +169,7 @@ async fn handle_command(
     if config.save(config_path).await.is_err() {
       eprintln!("Failed to save config");
     }
+    println!("Authenticated successfully.");
 
     ApiClient::new(token, config.app_url)
   } else {
@@ -180,10 +181,19 @@ async fn handle_command(
     return;
   };
 
-  println!("Authenticated successfully.");
+  match cmd {
+    Commands::Test => {
+      if let Err(e) = client.test().await {
+        eprintln!("Test request failed: {:?}", e);
+      } else {
+        println!("Test request succeeded.");
+      }
+    }
+    _ => unreachable!(),
+  }
 }
 
-async fn test() {
+async fn _test() {
   let store_dir = StoreDir::default();
   let path: StorePath = store_dir
     .parse("/nix/store/hlxw2q9qansq7bn52xvlb5badw3z1v8s-coreutils-9.10")

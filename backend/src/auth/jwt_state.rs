@@ -42,7 +42,7 @@ pub struct JwtState {
 }
 
 impl JwtState {
-  pub fn create_raw_token<'c>(&self, uuid: Uuid, cli: bool) -> Result<String> {
+  pub fn create_raw_token(&self, uuid: Uuid, cli: bool) -> Result<String> {
     let exp = Utc::now()
       .checked_add_signed(Duration::seconds(self.exp))
       .ok_or(Error::from(ErrorKind::ExpiredSignature))?

@@ -14,6 +14,7 @@ use tracing::info;
 use crate::{config::Config, rate_limit::RateLimiter};
 
 mod auth;
+mod cache;
 mod cli;
 mod config;
 mod db;
@@ -58,6 +59,7 @@ fn api_router(rate_limiter: &mut RateLimiter) -> Router {
     .nest("/mail", mail::router(rate_limiter))
     .nest("/group", group::router())
     .nest("/cli", cli::router(rate_limiter))
+    .nest("/cache", cache::router())
 }
 
 async fn state(router: Router, config: Config) -> Router {
