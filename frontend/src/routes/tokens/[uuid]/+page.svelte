@@ -24,6 +24,7 @@
   import { Label } from 'positron-components/components/ui/label';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import { CopyButton } from 'positron-components/components/ui-extra/copy-button';
+  import { onMount } from 'svelte';
 
   const { data } = $props();
 
@@ -31,6 +32,14 @@
   let regenerateOpen = $state(false);
   let isLoading = $state(false);
   let token = $state<string>();
+
+  onMount(() => {
+    let newToken = sessionStorage.getItem('newToken');
+    if (newToken) {
+      token = newToken;
+      sessionStorage.removeItem('newToken');
+    }
+  });
 
   const deleteItemConfirm = async () => {
     isLoading = true;

@@ -31,6 +31,7 @@
       }
     } else {
       toast.success('Token created successfully.');
+      sessionStorage.setItem('newToken', res.token);
       setTimeout(() => {
         goto(`/tokens/${res.uuid}`);
       });
