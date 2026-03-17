@@ -12,7 +12,7 @@ pub fn router() -> Router {
   Router::new().route("/", get(config))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 enum SSOType {
   Oidc,
   None,

@@ -1,3 +1,11 @@
 [workspace]
-members = ["backend", "backend/entity", "backend/migration", "shared"]
+members = ["backend", "backend/entity", "backend/migration", "cli", "shared"]
 resolver = "3"
+
+[patch.crates-io]
+harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
+harmonia-store-remote = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
+harmonia-nar = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
+harmonia-utils-io = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
+harmonia-protocol = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
+harmonia-protocol-derive = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }

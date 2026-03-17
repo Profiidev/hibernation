@@ -7,4 +7,5 @@ pub use super::invalid_jwt::Entity as InvalidJwt;
 pub use super::key::Entity as Key;
 pub use super::settings::Entity as Settings;
 pub use super::setup::Entity as Setup;
+pub use super::token::Entity as Token;
 pub use super::user::Entity as User;

@@ -9,7 +9,7 @@ use http::request::Parts;
 use uuid::Uuid;
 
 use crate::{
-  auth::jwt_state::{JWT_COOKIE_NAME, JwtState},
+  auth::jwt_state::{JWT_COOKIE_NAME, JwtClaims, JwtState},
   db::DBTrait,
   permissions::{NoPerm, Permission},
 };
@@ -27,30 +27,9 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for JwtAuth<P> {
   async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
     let token = jwt_from_request(parts, JWT_COOKIE_NAME).await?;
 
-    let state = parts.extract_state::<JwtState>().await;
     let db = parts.extract_state::<Connection>().await;
-
-    let Ok(valid) = db.invalid_jwt().is_token_valid(&token).await else {
-      bail!("failed to validate jwt");
-    };
-    if !valid {
-      bail!(UNAUTHORIZED, "token is invalidated");
-    }
-
-    let Ok(claims) = state.validate_token(&token) else {
-      tracing::error!("invalid token claims for token: {}", token);
-      bail!(UNAUTHORIZED, "invalid token");
-    };
-
-    // Empty permission means no permission required
-    if !P::name().is_empty()
-      && !db
-        .group()
-        .user_hash_permissions(claims.sub, P::name())
-        .await?
-    {
-      bail!(FORBIDDEN, "insufficient permissions");
-    }
+    let claims = check_jwt(&db, parts, token).await?;
+    check_user::<P>(&db, claims.sub).await?;
 
     Ok(JwtAuth {
       user_id: claims.sub,
@@ -60,7 +39,7 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for JwtAuth<P> {
   }
 }
 
-impl<S: Sync> OptionalFromRequestParts<S> for JwtAuth {
+impl<S: Sync, P: Permission> OptionalFromRequestParts<S> for JwtAuth<P> {
   type Rejection = ErrorReport;
 
   async fn from_request_parts(
@@ -72,4 +51,41 @@ impl<S: Sync> OptionalFromRequestParts<S> for JwtAuth {
       Err(_) => Ok(None),
     }
   }
+}
+
+pub async fn check_jwt(
+  db: &Connection,
+  parts: &mut Parts,
+  token: String,
+) -> Result<JwtClaims, ErrorReport> {
+  let state = parts.extract_state::<JwtState>().await;
+
+  let Ok(valid) = db.invalid_jwt().is_token_valid(&token).await else {
+    bail!("failed to validate jwt");
+  };
+  if !valid {
+    bail!(UNAUTHORIZED, "token is invalidated");
+  }
+
+  let Ok(claims) = state.validate_token(&token) else {
+    tracing::error!("invalid token claims for token: {}", token);
+    bail!(UNAUTHORIZED, "invalid token");
+  };
+
+  Ok(claims)
+}
+
+pub async fn check_user<P: Permission>(db: &Connection, user: Uuid) -> Result<(), ErrorReport> {
+  // Empty permission means no permission required
+  if !P::name().is_empty() {
+    // This check automatically checks if the user exists, because if the user doesn't exist, they won't have any permissions
+    if !db.group().user_hash_permissions(user, P::name()).await? {
+      bail!(FORBIDDEN, "insufficient permissions");
+    }
+  } else if db.user().get_user_by_id(user).await.is_err() {
+    // If no permission is required, just check if the user exists
+    bail!(FORBIDDEN, "user does not exist");
+  }
+
+  Ok(())
 }

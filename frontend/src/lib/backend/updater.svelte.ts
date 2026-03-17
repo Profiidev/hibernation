@@ -5,11 +5,16 @@ import { sleep } from 'positron-components/util/interval.svelte';
 export enum UpdateType {
   Settings = 'Settings',
   Users = 'Users',
-  Groups = 'Groups'
+  Groups = 'Groups',
+  Tokens = 'Tokens'
 }
 
 export type UpdateMessage = {
-  type: UpdateType.Settings | UpdateType.Users | UpdateType.Groups;
+  type:
+    | UpdateType.Settings
+    | UpdateType.Users
+    | UpdateType.Groups
+    | UpdateType.Tokens;
 };
 
 let updater: WebSocket | undefined | false = $state(browser && undefined);
@@ -70,6 +75,10 @@ const handleMessage = (msg: UpdateMessage) => {
     }
     case UpdateType.Groups: {
       invalidate((url) => url.pathname.startsWith('/api/group'));
+      break;
+    }
+    case UpdateType.Tokens: {
+      invalidate((url) => url.pathname.startsWith('/api/token'));
       break;
     }
   }

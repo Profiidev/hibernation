@@ -7,6 +7,7 @@ mod m20260126_155842_group;
 mod m20260126_160754_setup;
 mod m20260127_211643_settings;
 mod m20260129_154755_user_avatar;
+mod m20260317_135750_token;
 
 pub struct Migrator;
 
@@ -21,6 +22,7 @@ impl MigratorTrait for Migrator {
       Box::new(m20260126_160754_setup::Migration),
       Box::new(m20260127_211643_settings::Migration),
       Box::new(m20260129_154755_user_avatar::Migration),
+      Box::new(m20260317_135750_token::Migration),
     ]
   }
 }

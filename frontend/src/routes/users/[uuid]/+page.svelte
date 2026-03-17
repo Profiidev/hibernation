@@ -51,7 +51,13 @@
     isLoading = false;
 
     if (ret) {
-      return { error: 'Failed to delete user' };
+      if (ret === RequestError.Conflict) {
+        return { error: 'Cannot delete the last user from the admin group' };
+      } else if (ret === RequestError.Forbidden) {
+        return { error: 'You do not have permission to delete this user' };
+      } else {
+        return { error: 'Failed to delete user' };
+      }
     } else {
       toast.success(`User ${data.userInfo.name} deleted successfully`);
       setTimeout(() => {

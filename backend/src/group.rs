@@ -126,6 +126,12 @@ async fn edit_group(
   updater: Updater,
   data: EditGroupRequest,
 ) -> Result<()> {
+  if let Some(admin_group) = db.setup().get_admin_group_id().await?
+    && admin_group == data.uuid
+  {
+    bail!(BAD_REQUEST, "Cannot edit the admin group");
+  }
+
   if let Some(existing_group) = db.group().find_group_by_name(&data.name).await?
     && existing_group != data.uuid
   {

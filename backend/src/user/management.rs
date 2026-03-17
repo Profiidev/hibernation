@@ -153,11 +153,28 @@ struct DeleteUserRequest {
 }
 
 async fn delete_user(
-  _auth: JwtAuth<UserEdit>,
+  auth: JwtAuth<UserEdit>,
   db: Connection,
   updater: Updater,
   data: DeleteUserRequest,
 ) -> Result<()> {
+  let Some(admin_group) = db.setup().get_admin_group_id().await? else {
+    bail!(INTERNAL_SERVER_ERROR, "Admin group is not set up");
+  };
+
+  if db.group().is_last_admin(admin_group, data.uuid).await? {
+    bail!(CONFLICT, "Cannot delete the last user from the admin group");
+  }
+
+  if db.group().is_in_group(admin_group, data.uuid).await?
+    && !db.group().is_in_group(admin_group, auth.user_id).await?
+  {
+    bail!(
+      FORBIDDEN,
+      "User cannot delete another user with higher permissions"
+    );
+  }
+
   db.user().delete_user(data.uuid).await?;
   updater.broadcast(UpdateMessage::Users).await;
 
@@ -268,7 +285,7 @@ async fn reset_user_password(
   {
     bail!(
       FORBIDDEN,
-      "Cannot assign permissions that the editor does not have"
+      "Cannot reset password for a user with higher permissions"
     );
   }
 

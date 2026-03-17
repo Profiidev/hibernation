@@ -14,6 +14,8 @@ use tracing::info;
 use crate::{config::Config, rate_limit::RateLimiter};
 
 mod auth;
+mod cache;
+mod cli;
 mod config;
 mod db;
 mod gravatar;
@@ -23,6 +25,7 @@ mod permissions;
 mod rate_limit;
 mod settings;
 mod setup;
+mod token;
 mod user;
 mod ws;
 
@@ -56,6 +59,9 @@ fn api_router(rate_limiter: &mut RateLimiter) -> Router {
     .nest("/settings", settings::router())
     .nest("/mail", mail::router(rate_limiter))
     .nest("/group", group::router())
+    .nest("/cli", cli::router(rate_limiter))
+    .nest("/cache", cache::router())
+    .nest("/token", token::router())
 }
 
 async fn state(router: Router, config: Config) -> Router {
@@ -68,6 +74,7 @@ async fn state(router: Router, config: Config) -> Router {
   let (mut router, _) = ws::state(router).await;
   router = auth::state(router, &config, &db).await;
   router = mail::state(router, &db).await;
+  router = cli::state(router);
 
   router.layer(Extension(db)).layer(Extension(config))
 }

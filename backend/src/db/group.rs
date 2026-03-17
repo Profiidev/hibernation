@@ -274,6 +274,16 @@ impl<'db> GroupTable<'db> {
     }
   }
 
+  pub async fn is_in_group(&self, admin_group: Uuid, user_id: Uuid) -> Result<bool, DbErr> {
+    let admin_users = group_user::Entity::find()
+      .filter(group_user::Column::GroupId.eq(admin_group))
+      .filter(group_user::Column::UserId.eq(user_id))
+      .all(self.db)
+      .await?;
+
+    Ok(admin_users.iter().any(|au| au.user_id == user_id))
+  }
+
   pub async fn get_groups_permissions(&self, group_ids: Vec<Uuid>) -> Result<Vec<String>, DbErr> {
     let group_permissions = group_permission::Entity::find()
       .filter(group_permission::Column::GroupId.is_in(group_ids))

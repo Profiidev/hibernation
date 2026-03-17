@@ -19,6 +19,7 @@ use crate::{
   rate_limit::RateLimiter,
 };
 
+pub mod cli_auth;
 mod config;
 pub mod jwt_auth;
 pub mod jwt_state;

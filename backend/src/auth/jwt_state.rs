@@ -37,11 +37,11 @@ pub struct JwtState {
   decoding_key: DecodingKey,
   validation: Validation,
   pub iss: String,
-  exp: i64,
+  pub exp: i64,
 }
 
 impl JwtState {
-  pub fn create_token<'c>(&self, uuid: Uuid) -> Result<Cookie<'c>> {
+  pub fn create_raw_token(&self, uuid: Uuid) -> Result<String> {
     let exp = Utc::now()
       .checked_add_signed(Duration::seconds(self.exp))
       .ok_or(Error::from(ErrorKind::ExpiredSignature))?
@@ -53,8 +53,11 @@ impl JwtState {
       sub: uuid,
     };
 
-    let token = encode(&self.header, &claims, &self.encoding_key)?;
+    Ok(encode(&self.header, &claims, &self.encoding_key)?)
+  }
 
+  pub fn create_token<'c>(&self, uuid: Uuid) -> Result<Cookie<'c>> {
+    let token = self.create_raw_token(uuid)?;
     Ok(self.create_cookie(JWT_COOKIE_NAME, token))
   }
 

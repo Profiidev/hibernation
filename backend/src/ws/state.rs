@@ -29,6 +29,7 @@ pub enum UpdateMessage {
   Settings,
   Users,
   Groups,
+  Tokens,
 }
 
 impl UpdateState {

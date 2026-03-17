@@ -76,7 +76,7 @@ impl Default for GeneralSettings {
 }
 
 settings!(UserSettings, 2);
-#[derive(Serialize, Deserialize, FromRequest)]
+#[derive(Serialize, Deserialize, FromRequest, Debug)]
 #[from_request(via(Json))]
 pub struct UserSettings {
   pub oidc: Option<OidcSettings>,
@@ -94,7 +94,7 @@ impl Default for UserSettings {
   }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct OidcSettings {
   pub issuer: Url,
   pub client_id: String,

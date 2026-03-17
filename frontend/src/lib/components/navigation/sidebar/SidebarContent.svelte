@@ -35,7 +35,7 @@
 
 {#each filteredItems as group}
   <Sidebar.Group>
-    <Sidebar.GroupLabel>General</Sidebar.GroupLabel>
+    <Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
     <Sidebar.Menu>
       {#each group.items as item}
         <Sidebar.MenuItem>

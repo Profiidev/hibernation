@@ -1,2 +1,3 @@
-pub mod auth;
-pub mod msg;
+pub fn dummy() -> String {
+  "This is a dummy function".to_string()
+}
