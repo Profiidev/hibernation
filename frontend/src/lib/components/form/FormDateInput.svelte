@@ -45,7 +45,7 @@
             <Button
               {...props}
               variant="outline"
-              class="justify-between font-normal"
+              class="cursor-pointer justify-between font-normal"
             >
               {date
                 ? date

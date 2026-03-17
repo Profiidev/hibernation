@@ -14,12 +14,23 @@
   import FormInput from 'positron-components/components/form/form-input.svelte';
   import Save from '@lucide/svelte/icons/save';
   import { Spinner } from 'positron-components/components/ui/spinner';
-  import { deleteToken, editToken } from '$lib/backend/token.svelte.js';
+  import {
+    deleteToken,
+    editToken,
+    regenerateToken
+  } from '$lib/backend/token.svelte.js';
+  import FormDateInput from '$lib/components/form/FormDateInput.svelte';
+  import { Input } from 'positron-components/components/ui/input';
+  import { Label } from 'positron-components/components/ui/label';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+  import { CopyButton } from 'positron-components/components/ui-extra/copy-button';
 
   const { data } = $props();
 
   let deleteOpen = $state(false);
+  let regenerateOpen = $state(false);
   let isLoading = $state(false);
+  let token = $state<string>();
 
   const deleteItemConfirm = async () => {
     isLoading = true;
@@ -33,6 +44,19 @@
       setTimeout(() => {
         goto('/tokens');
       });
+    }
+  };
+
+  const regenerateConfirm = async () => {
+    isLoading = true;
+    let res = await regenerateToken(data.tokenInfo.uuid);
+    isLoading = false;
+
+    if (typeof res !== 'object') {
+      return { error: 'Failed to regenerate token' };
+    } else {
+      toast.success(`Token ${data.tokenInfo.name} regenerated successfully`);
+      token = res.token;
     }
   };
 
@@ -82,12 +106,53 @@
       >
         {#snippet children({ props })}
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto_1fr]">
-            <FormInput
-              {...props}
-              key="name"
-              label="Token Name"
-              placeholder="Enter name"
-            />
+            <div>
+              <FormInput
+                {...props}
+                key="name"
+                label="Token Name"
+                placeholder="Enter name"
+              />
+              <FormDateInput
+                {...props}
+                key="exp"
+                label="Expiration Date"
+                placeholder="Enter date"
+              />
+              <Label
+                >Token
+                {#if token}
+                  <span class="text-destructive">
+                    (Can not be viewed again!)
+                  </span>
+                {/if}
+              </Label>
+              <div class="mt-2 flex gap-2">
+                {#if token}
+                  <CopyButton
+                    text={token}
+                    variant="outline"
+                    class="grow justify-start"
+                  >
+                    <span class="truncate">{token}</span>
+                  </CopyButton>
+                {:else}
+                  <Input
+                    value="Can not be viewed."
+                    readonly
+                    class="text-destructive"
+                  />
+                {/if}
+                <Button
+                  variant="destructive"
+                  class="cursor-pointer"
+                  onclick={() => (regenerateOpen = true)}
+                >
+                  <RotateCcw />
+                  Regenerate
+                </Button>
+              </div>
+            </div>
           </div>
         {/snippet}
         {#snippet footer({ isLoading }: { isLoading: boolean })}
@@ -117,6 +182,16 @@
   confirmVariant="destructive"
   onsubmit={deleteItemConfirm}
   bind:open={deleteOpen}
+  bind:isLoading
+  schema={z.object({})}
+/>
+<FormDialog
+  title={`Regenerate Token`}
+  description={`Do you really want to regenerate the token ${data.tokenInfo.name}?`}
+  confirm="Regenerate"
+  confirmVariant="destructive"
+  onsubmit={regenerateConfirm}
+  bind:open={regenerateOpen}
   bind:isLoading
   schema={z.object({})}
 />

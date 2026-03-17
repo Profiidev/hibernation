@@ -76,3 +76,13 @@ export const editToken = async (data: TokenEditRequest) => {
     body: data
   });
 };
+
+export interface TokenRegenerationResponse {
+  token: string;
+}
+
+export const regenerateToken = async (uuid: string) => {
+  return await post<TokenRegenerationResponse>(`/api/token/${uuid}`, {
+    res_type: ResponseType.Json
+  });
+};

@@ -45,6 +45,20 @@ impl<'db> TokenTable<'db> {
     Ok(())
   }
 
+  pub async fn replace(&self, user: Uuid, id: Uuid, hash: String) -> Result<(), DbErr> {
+    let mut token = self.by_id(id).await?.into_active_model();
+    if token.user_id.as_ref() != &user {
+      return Err(DbErr::RecordNotFound(format!(
+        "Token with id {} not found for user {}",
+        id, user
+      )));
+    }
+
+    token.token = Set(hash);
+    token.update(self.db).await?;
+    Ok(())
+  }
+
   pub async fn get_by_token(&self, token: &str) -> Result<token::Model, DbErr> {
     Token::find()
       .filter(token::Column::Token.eq(token))

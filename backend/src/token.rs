@@ -22,6 +22,7 @@ pub fn router() -> Router {
     .route("/", delete(delete_token))
     .route("/", put(edit_token))
     .route("/{uuid}", get(token_info))
+    .route("/{uuid}", post(token_regenerate))
 }
 
 #[derive(Serialize)]
@@ -149,4 +150,23 @@ async fn edit_token(
     .await?;
   updater.broadcast(UpdateMessage::Tokens).await;
   Ok(())
+}
+
+#[derive(Serialize)]
+struct TokenRegenerateResponse {
+  token: String,
+}
+
+async fn token_regenerate(
+  auth: JwtAuth,
+  db: Connection,
+  pw: PasswordState,
+  path: TokenViewPath,
+) -> Result<Json<TokenRegenerateResponse>> {
+  let token = cli::gen_token();
+  let hash = pw.pw_hash_raw("", &token)?;
+
+  db.token().replace(auth.user_id, path.uuid, hash).await?;
+
+  Ok(Json(TokenRegenerateResponse { token }))
 }
