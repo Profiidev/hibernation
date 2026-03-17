@@ -6,7 +6,12 @@
   import { Button } from 'positron-components/components/ui/button';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 
-  type CliAuthStatus = 'Requesting' | 'Error' | 'Success' | 'Finished';
+  type CliAuthStatus =
+    | 'Requesting'
+    | 'Error'
+    | 'Success'
+    | 'Finished'
+    | 'SendError';
 
   let { data } = $props();
 
@@ -27,6 +32,8 @@
       if (!ret) {
         status = 'Finished';
         window.close();
+      } else {
+        status = 'SendError';
       }
     }
   };
@@ -48,6 +55,9 @@
         <p>Trying to authenticate CLI with code:</p>
         <Input value={code} readonly class="my-2 w-full" />
         <p>If it is not working try to paste the code into the CLI manually.</p>
+      {:else if status === 'SendError'}
+        <p>Failed to send code. Please enter it manually:</p>
+        <Input value={code} readonly class="my-2 w-full" />
       {:else if status === 'Finished'}
         <p>CLI authenticated successfully! You can now close this window.</p>
       {/if}
