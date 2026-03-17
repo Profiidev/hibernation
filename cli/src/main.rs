@@ -69,7 +69,8 @@ async fn main() -> Result<()> {
     Commands::AuthenticatedCommand(cmd) => handle_auth_command(cmd, config, url, cli.config).await,
   }
 
-  Ok(())
+  // Tokio does not exit when other tasks are still running
+  std::process::exit(0);
 }
 
 async fn handle_auth_command(

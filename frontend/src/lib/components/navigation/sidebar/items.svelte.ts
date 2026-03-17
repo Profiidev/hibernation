@@ -4,6 +4,7 @@ import { Permission } from '$lib/permissions.svelte';
 import type { Component } from 'svelte';
 import Users from '@lucide/svelte/icons/users';
 import User from '@lucide/svelte/icons/user';
+import KeyRound from '@lucide/svelte/icons/key-round';
 
 export interface NavGroup {
   label: string;
@@ -19,8 +20,15 @@ export interface NavItem {
 
 export const items: NavGroup[] = [
   {
-    label: 'General',
-    items: [{ label: 'Overview', href: '/', icon: House }]
+    label: 'Cache',
+    items: [
+      { label: 'Overview', href: '/', icon: House },
+      {
+        label: 'Access Tokens',
+        href: '/tokens',
+        icon: KeyRound
+      }
+    ]
   },
   {
     label: 'Administration',

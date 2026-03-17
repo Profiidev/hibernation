@@ -21,6 +21,7 @@ use crate::{
   auth::{cli_auth::CLI_TOKEN_LEN, jwt_auth::JwtAuth, jwt_state::JwtState},
   db::DBTrait,
   rate_limit::RateLimiter,
+  ws::state::{UpdateMessage, Updater},
 };
 
 pub fn router(rate_limiter: &mut RateLimiter) -> Router {
@@ -81,6 +82,7 @@ async fn get_token(
   db: Connection,
   jwt: JwtState,
   pw: PasswordState,
+  updater: Updater,
 ) -> Result<String> {
   let Some((instant, user)) = state.codes.get(&token_req.code).map(|entry| *entry.value()) else {
     bail!("Invalid code");
@@ -99,8 +101,14 @@ async fn get_token(
   let hash = pw.pw_hash_raw("", &token)?;
 
   db.token()
-    .insert(user, format!("Cli-{}", Utc::now()), hash, exp.naive_utc())
+    .insert(
+      user,
+      format!("Cli-{}", Utc::now().to_rfc3339()),
+      hash,
+      exp.naive_utc(),
+    )
     .await?;
+  updater.broadcast(UpdateMessage::Tokens).await;
 
   Ok(token)
 }

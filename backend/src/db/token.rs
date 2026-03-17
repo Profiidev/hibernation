@@ -66,6 +66,13 @@ impl<'db> TokenTable<'db> {
       )))
   }
 
+  pub async fn by_id_user(&self, id: Uuid, user: Uuid) -> Result<Option<token::Model>, DbErr> {
+    Token::find_by_id(id)
+      .filter(token::Column::UserId.eq(user))
+      .one(self.db)
+      .await
+  }
+
   pub async fn get_by_name(&self, user: Uuid, name: &str) -> Result<token::Model, DbErr> {
     Token::find()
       .filter(token::Column::UserId.eq(user))
