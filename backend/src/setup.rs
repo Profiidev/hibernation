@@ -103,7 +103,7 @@ async fn complete_setup(
   db.setup().mark_completed().await?;
   info!("Setup completed, created admin user with ID {}", admin);
 
-  let cookie = jwt.create_token(admin, false)?;
+  let cookie = jwt.create_token(admin)?;
   cookies = cookies.add(cookie);
   info!("Created post setup login token for admin user");
 

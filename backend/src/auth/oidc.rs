@@ -396,7 +396,7 @@ async fn check_code(
 
   if let Some(user) = db.user().try_get_user_by_email(&res.email).await? {
     debug!("OIDC user authenticated: {}", user.id);
-    cookies = cookies.add(jwt.create_token(user.id, false)?);
+    cookies = cookies.add(jwt.create_token(user.id)?);
 
     return Ok(("/", None, cookies));
   }
@@ -417,7 +417,7 @@ async fn check_code(
     .await?;
 
   debug!("OIDC user authenticated: {}", user);
-  cookies = cookies.add(jwt.create_token(user, false)?);
+  cookies = cookies.add(jwt.create_token(user)?);
 
   Ok(("/", None, cookies))
 }

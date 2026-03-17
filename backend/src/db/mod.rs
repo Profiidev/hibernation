@@ -7,6 +7,7 @@ use crate::db::invalid_jwt::InvalidJwtTable;
 use crate::db::key::KeyTable;
 use crate::db::settings::SettingsTable;
 use crate::db::setup::SetupTable;
+use crate::db::token::TokenTable;
 use crate::db::user::UserTable;
 
 pub mod group;
@@ -14,6 +15,7 @@ pub mod invalid_jwt;
 pub mod key;
 pub mod settings;
 pub mod setup;
+pub mod token;
 pub mod user;
 
 pub trait DBTrait {
@@ -23,6 +25,7 @@ pub trait DBTrait {
   fn group(&self) -> GroupTable<'_>;
   fn user(&self) -> UserTable<'_>;
   fn settings(&self) -> SettingsTable<'_>;
+  fn token(&self) -> TokenTable<'_>;
 }
 
 impl DBTrait for Connection {
@@ -48,6 +51,10 @@ impl DBTrait for Connection {
 
   fn settings(&self) -> SettingsTable<'_> {
     SettingsTable::new(self)
+  }
+
+  fn token(&self) -> TokenTable<'_> {
+    TokenTable::new(self)
   }
 }
 

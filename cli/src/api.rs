@@ -1,6 +1,6 @@
 use std::{io::IsTerminal, path::PathBuf};
 
-use centaurus::error::Result;
+use centaurus::{error::Result, eyre::Context};
 use reqwest::{Client, Method, RequestBuilder};
 use url::Url;
 
@@ -31,7 +31,7 @@ impl ApiClient {
     {
       let client = ApiClient::new(token.clone(), url.clone().unwrap_or(config.app_url.clone()));
 
-      if client.test_token().await.is_ok() {
+      if client.test_token().await.ok()? {
         return Some(client);
       } else {
         eprintln!("Token is invalid.");
@@ -75,13 +75,18 @@ impl ApiClient {
     Ok(())
   }
 
-  pub async fn test_token(&self) -> Result<()> {
-    self
+  pub async fn test_token(&self) -> Result<bool> {
+    let res: bool = self
       .req("/api/auth/test_token", Method::GET)?
       .send()
       .await?
-      .error_for_status()?;
-    Ok(())
+      .error_for_status()?
+      .text()
+      .await?
+      .parse()
+      .context("Failed to parse bool res")?;
+
+    Ok(res)
   }
 
   fn req(&self, path: &str, method: Method) -> Result<RequestBuilder> {
