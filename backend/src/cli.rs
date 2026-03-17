@@ -91,17 +91,11 @@ async fn get_token(
     bail!("Invalid user or code");
   }
 
-  let token: String = {
-    let mut rng = rand::rng();
-    (0..CLI_TOKEN_LEN)
-      .map(|_| rng.sample(Alphanumeric) as char)
-      .collect()
-  };
-
   let Some(exp) = Utc::now().checked_add_signed(chrono::Duration::seconds(jwt.exp)) else {
     bail!(INTERNAL_SERVER_ERROR, "Failed to create token");
   };
 
+  let token: String = gen_token();
   let hash = pw.pw_hash_raw("", &token)?;
 
   db.token()
@@ -109,4 +103,11 @@ async fn get_token(
     .await?;
 
   Ok(token)
+}
+
+pub fn gen_token() -> String {
+  let mut rng = rand::rng();
+  (0..CLI_TOKEN_LEN)
+    .map(|_| rng.sample(Alphanumeric) as char)
+    .collect()
 }

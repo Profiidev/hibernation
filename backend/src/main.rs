@@ -25,6 +25,7 @@ mod permissions;
 mod rate_limit;
 mod settings;
 mod setup;
+mod token;
 mod user;
 mod ws;
 
@@ -60,6 +61,7 @@ fn api_router(rate_limiter: &mut RateLimiter) -> Router {
     .nest("/group", group::router())
     .nest("/cli", cli::router(rate_limiter))
     .nest("/cache", cache::router())
+    .nest("/token", token::router())
 }
 
 async fn state(router: Router, config: Config) -> Router {

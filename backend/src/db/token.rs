@@ -36,8 +36,12 @@ impl<'db> TokenTable<'db> {
       .await
   }
 
-  pub async fn invalidate(&self, id: Uuid) -> Result<(), DbErr> {
-    Token::delete_by_id(id).exec(self.db).await?;
+  pub async fn invalidate(&self, user: Uuid, id: Uuid) -> Result<(), DbErr> {
+    Token::delete_by_id(id)
+      .filter(token::Column::UserId.eq(user))
+      .exec(self.db)
+      .await?;
+
     Ok(())
   }
 
@@ -62,9 +66,41 @@ impl<'db> TokenTable<'db> {
       )))
   }
 
+  pub async fn get_by_name(&self, user: Uuid, name: &str) -> Result<token::Model, DbErr> {
+    Token::find()
+      .filter(token::Column::UserId.eq(user))
+      .filter(token::Column::Name.eq(name))
+      .one(self.db)
+      .await?
+      .ok_or(DbErr::RecordNotFound(format!(
+        "Token with name {} not found for user {}",
+        name, user
+      )))
+  }
+
   pub async fn token_used(&self, id: Uuid) -> Result<(), DbErr> {
     let mut token = self.by_id(id).await?.into_active_model();
     token.last_used = Set(Some(Utc::now().naive_utc()));
+    token.update(self.db).await?;
+    Ok(())
+  }
+
+  pub async fn update(
+    &self,
+    user: Uuid,
+    id: Uuid,
+    name: String,
+    exp: DateTime,
+  ) -> Result<(), DbErr> {
+    let mut token = self.by_id(id).await?.into_active_model();
+    if token.user_id.as_ref() != &user {
+      return Err(DbErr::RecordNotFound(format!(
+        "Token with id {} not found for user {}",
+        id, user
+      )));
+    }
+    token.name = Set(name);
+    token.exp = Set(exp);
     token.update(self.db).await?;
     Ok(())
   }

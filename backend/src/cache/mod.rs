@@ -7,6 +7,6 @@ pub fn router() -> Router {
   Router::new().route("/test", get(test))
 }
 
-async fn test(_auth: CliAuth) -> Result<()> {
-  Ok(())
+async fn test(auth: CliAuth) -> Result<String> {
+  Ok(auth.user_id.to_string())
 }

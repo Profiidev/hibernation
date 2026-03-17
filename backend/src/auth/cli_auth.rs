@@ -75,5 +75,7 @@ async fn check_token(
     bail!("CLI token expired");
   }
 
+  db.token().token_used(record.id).await?;
+
   Ok(record.user_id)
 }
