@@ -9,6 +9,7 @@ repository = "https://github.com/Profiidev/hibernation"
 [dependencies]
 harmonia-store-remote = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
 harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
+shared = { path = "../shared" }
 tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread", "fs", "io-std"] }
 tracing = "0.1.44"
 async-compression = { version = "0.4.41", features = ["tokio", "zstd"] }

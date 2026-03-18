@@ -67,14 +67,14 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: hibernation-*.tar.gz
+          pattern: hibernation-*
       - name: Upload release assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          files: hibernation-*.tar.gz
+          files: hibernation-*
           tag_name: ${{ github.ref_name }}
           token: ${{ secrets.PERSONAL_TOKEN }}
-          name: Release ${{ github.ref_name }}
+          name: Hibernation ${{ github.ref_name }}
           body: |
-            Release version ${{ github.ref_name }} has been created.
+            Hibernation version ${{ github.ref_name }} has been released!
           generate_release_notes: true

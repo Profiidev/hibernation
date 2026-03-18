@@ -1,7 +1,9 @@
 use std::{io::IsTerminal, path::PathBuf};
 
 use centaurus::{error::Result, eyre::Context};
-use reqwest::{Client, Method, RequestBuilder};
+use reqwest::{Client, Method, RequestBuilder, Response};
+use shared::HIBERNATION_VERSION_HEADER;
+use tracing::{error, warn};
 use url::Url;
 
 use crate::config::Config;
@@ -25,27 +27,31 @@ impl ApiClient {
     config: Option<Config>,
     url: Option<Url>,
     config_path: Option<PathBuf>,
-  ) -> Option<Self> {
+  ) -> Self {
     if let Some(config) = &config
       && let Some(token) = &config.token
     {
       let client = ApiClient::new(token.clone(), url.clone().unwrap_or(config.app_url.clone()));
 
-      if client.test_token().await.ok()? {
-        return Some(client);
+      if let Ok(valid) = client.test_token().await {
+        if valid {
+          return client;
+        } else {
+          warn!("Token is invalid.");
+        }
       } else {
-        eprintln!("Token is invalid.");
+        warn!("Failed to validate token.");
       }
     }
 
     let tty = std::io::stdin().is_terminal();
     if !tty {
       if url.is_some() {
-        eprintln!("Token not set. Please use \"hibernation auth\" first");
+        error!("Token not set. Please use \"hibernation auth\" first");
       } else {
-        eprintln!("Cli not configured. Please login with \"hibernation auth --url <url>\" first");
+        error!("Cli not configured. Please login with \"hibernation auth --url <url>\" first");
       }
-      return None;
+      std::process::exit(1);
     }
 
     let mut config = if let Some(config) = config {
@@ -57,13 +63,17 @@ impl ApiClient {
       Config::new(url, None)
     };
 
-    let token = crate::auth::get_tty_token(&mut config, config_path).await?;
-    Some(ApiClient::new(token, config.app_url))
+    let token = crate::auth::get_tty_token(&mut config, config_path).await;
+    ApiClient::new(token, config.app_url)
   }
 
   pub async fn request_token(url: Url, code: &str) -> Result<String> {
     let url = url.join(&format!("/api/cli?code={}", code))?;
-    Ok(reqwest::get(url).await?.error_for_status()?.text().await?)
+    let res = reqwest::get(url).await?.error_for_status()?;
+
+    check_server_version(&res);
+
+    Ok(res.text().await?)
   }
 
   pub async fn test(&self) -> Result<()> {
@@ -76,21 +86,42 @@ impl ApiClient {
   }
 
   pub async fn test_token(&self) -> Result<bool> {
-    let res: bool = self
+    let res = self
       .req("/api/auth/test_token", Method::GET)?
       .send()
       .await?
-      .error_for_status()?
+      .error_for_status()?;
+
+    check_server_version(&res);
+
+    let valid = res
       .text()
       .await?
       .parse()
       .context("Failed to parse bool res")?;
 
-    Ok(res)
+    Ok(valid)
   }
 
   fn req(&self, path: &str, method: Method) -> Result<RequestBuilder> {
     let url = self.url.join(path)?;
     Ok(self.client.request(method, url).bearer_auth(&self.token))
+  }
+}
+
+fn check_server_version(res: &Response) {
+  if let Some(version) = res
+    .headers()
+    .get(HIBERNATION_VERSION_HEADER)
+    .and_then(|v| v.to_str().ok())
+  {
+    if version != env!("CARGO_PKG_VERSION") {
+      warn!(
+        "Warning: Server version ({version}) does not match client version ({}). Consider updating your CLI.",
+        env!("CARGO_PKG_VERSION")
+      );
+    }
+  } else {
+    warn!("Warning: Server did not provide version information. Consider updating your CLI.");
   }
 }

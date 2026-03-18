@@ -27,6 +27,7 @@ mod settings;
 mod setup;
 mod token;
 mod user;
+mod version;
 mod ws;
 
 #[tokio::main]
@@ -75,6 +76,7 @@ async fn state(router: Router, config: Config) -> Router {
   router = auth::state(router, &config, &db).await;
   router = mail::state(router, &db).await;
   router = cli::state(router);
+  router = version::middleware(router);
 
   router.layer(Extension(db)).layer(Extension(config))
 }

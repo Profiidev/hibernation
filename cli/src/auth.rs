@@ -10,6 +10,7 @@ use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
 use tokio::{select, spawn};
+use tracing::{info, warn};
 use url::Url;
 
 use crate::api::ApiClient;
@@ -17,17 +18,17 @@ use crate::config::Config;
 
 pub async fn get_tty_url() -> Url {
   loop {
-    println!("Please enter the URL of the hibernation server.");
+    info!("Please enter the URL of the hibernation server.");
     print!("URL: ");
     std::io::stdout().flush().unwrap();
     let mut lines = BufReader::new(io::stdin()).lines();
     let Some(url_input) = lines.next_line().await.ok().flatten() else {
-      eprintln!("Failed to read URL from input");
+      warn!("Failed to read URL from input");
       continue;
     };
     let url_input = url_input.trim();
     let Ok(url) = Url::parse(url_input) else {
-      eprintln!("Invalid URL format");
+      warn!("Invalid URL format");
       continue;
     };
 
@@ -35,28 +36,28 @@ pub async fn get_tty_url() -> Url {
   }
 }
 
-pub async fn get_tty_token(config: &mut Config, config_path: Option<PathBuf>) -> Option<String> {
-  println!(
+pub async fn get_tty_token(config: &mut Config, config_path: Option<PathBuf>) -> String {
+  info!(
     "Opening browser for authentication: {}auth/cli",
     config.app_url
   );
   if opener::open(format!("{}auth/cli", config.app_url)).is_err() {
-    eprintln!("Failed to open browser for authentication.");
+    warn!("Failed to open browser for authentication.");
   }
 
-  println!("Waiting for authentication...");
+  info!("Waiting for authentication...");
 
   let mut server = match CodeServer::new(config.app_url.clone()).await {
     Ok(server) => {
-      println!("If the authentication fails, please enter the code manually.");
+      info!("If the authentication fails, please enter the code manually.");
       server
     }
     Err(e) => {
-      eprintln!(
+      warn!(
         "Failed to start authentication server. Please enter the code manually. Error: {}",
         e
       );
-      return None;
+      CodeServer::dummy()
     }
   };
 
@@ -67,7 +68,7 @@ pub async fn get_tty_token(config: &mut Config, config_path: Option<PathBuf>) ->
 
     select! {
       Some(token) = server.wait_for_code() => {
-        println!("\nGot token from authentication server.");
+        info!("\nGot token from authentication server.");
         break token;
       }
       Ok(Some(code)) = lines.next_line() => {
@@ -75,11 +76,11 @@ pub async fn get_tty_token(config: &mut Config, config_path: Option<PathBuf>) ->
         if let Ok(token) = ApiClient::request_token(config.app_url.clone(), &code).await {
           break token;
         } else {
-          eprintln!("Invalid code. Please try again.");
+          warn!("Invalid code. Please try again.");
         }
       }
       else => {
-        eprintln!("Failed to read code from input");
+        warn!("Failed to read code from input");
       }
     }
   };
@@ -87,11 +88,11 @@ pub async fn get_tty_token(config: &mut Config, config_path: Option<PathBuf>) ->
   server.cleanup();
   config.token = Some(token.clone());
   if config.save(config_path).await.is_err() {
-    eprintln!("Failed to save config");
+    warn!("Failed to save config");
   }
-  println!("Authenticated successfully.");
+  info!("Authenticated successfully.");
 
-  Some(token)
+  token
 }
 
 pub struct CodeServer {
@@ -110,15 +111,26 @@ impl CodeServer {
           code_server(listener, app_url)
             .await
             .map_err(|err| {
-              eprintln!("Error in code server: {:?}", err);
+              warn!("Error in code server: {:?}", err);
               err
             })
             .ok(),
         )
-        .unwrap_or_else(|_| eprintln!("Failed to send code result"));
+        .unwrap_or_else(|_| warn!("Failed to send code result"));
     });
 
     Ok(Self { receiver, task })
+  }
+
+  pub fn dummy() -> Self {
+    let (sender, receiver) = oneshot::channel();
+    Self {
+      receiver,
+      task: spawn(async {
+        sleep(Duration::from_hours(100000)).await;
+        let _s = sender;
+      }),
+    }
   }
 
   pub fn cleanup(&self) {
