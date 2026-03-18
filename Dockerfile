@@ -1,4 +1,8 @@
-ARG TARGET=x86_64-unknown-linux-gnu
+ARG TARGETARCH
+# If TARGETARCH is amd64, result is x86_64. If arm64, result is aarch64.
+ARG RUST_ARCH=${TARGETARCH/amd64/x86_64}
+ARG RUST_ARCH=${RUST_ARCH/arm64/aarch64}
+ARG TARGET=${RUST_ARCH}-unknown-linux-gnu
 ARG RUSTFLAGS="-C target-feature=+crt-static --cfg reqwest_unstable"
 ARG FRONTEND_DIR=/app/frontend
 ARG FRONTEND_URL="http://localhost:3000"

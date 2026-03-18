@@ -3,6 +3,8 @@ name = "hibernation"
 version = "0.1.0"
 edition = "2024"
 description = "A CLI for the hibernation nix cache"
+license = "GPL-2.0-only"
+repository = "https://github.com/Profiidev/hibernation"
 
 [dependencies]
 harmonia-store-remote = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }

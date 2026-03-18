@@ -1,0 +1,78 @@
+name: 'Cli Build and Release'
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  pull_request:
+
+jobs:
+  build-artifacts:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        name:
+          - linux-x86-64-gnu
+          - linux-arm64-gnu
+          - macos-x86-64
+          - macos-arm64
+        include:
+          - name: linux-x86-64-gnu
+            target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - name: linux-arm64-gnu
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+          - name: macos-x86-64
+            target: x86_64-apple-darwin
+            os: macos-latest
+          - name: macos-arm64
+            target: aarch64-apple-darwin
+            os: macos-latest
+    name: Build Cli for ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Cache cargo and rust files
+        id: rust_cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          shared-key: 'cli_release_cache-${{ matrix.name }}'
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
+          toolchain: stable
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }} -p hibernation
+      - name: Compress artifact
+        run: tar -czvf hibernation-${{ matrix.name }}.tar.gz -C target/${{ matrix.target }}/release hibernation
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+        with:
+          name: hibernation-${{ matrix.name }}
+          path: hibernation-${{ matrix.name }}.tar.gz
+
+  release-artifacts:
+    needs: build-artifacts
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: hibernation-*
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: hibernation-*.tar.gz
+          tag_name: ${{ github.ref_name }}
+          token: ${{ secrets.PERSONAL_TOKEN }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            Release version ${{ github.ref_name }} has been created.
+          generate_release_notes: true
