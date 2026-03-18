@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*.*.*"
+    branches:
+      - main
   pull_request:
 
 jobs:
@@ -52,7 +54,7 @@ jobs:
         run: tar -czvf hibernation-${{ matrix.name }}.tar.gz -C target/${{ matrix.target }}/release hibernation
       - name: Upload artifact
         uses: actions/upload-artifact@v7
-        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+        if: ${{ github.event_name == 'push' }}
         with:
           name: hibernation-${{ matrix.name }}
           path: hibernation-${{ matrix.name }}.tar.gz
