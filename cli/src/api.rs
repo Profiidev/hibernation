@@ -1,7 +1,8 @@
 use std::{io::IsTerminal, path::PathBuf};
 
 use centaurus::{error::Result, eyre::Context};
-use reqwest::{Client, Method, RequestBuilder};
+use reqwest::{Client, Method, RequestBuilder, Response};
+use shared::HIBERNATION_VERSION_HEADER;
 use url::Url;
 
 use crate::config::Config;
@@ -63,7 +64,11 @@ impl ApiClient {
 
   pub async fn request_token(url: Url, code: &str) -> Result<String> {
     let url = url.join(&format!("/api/cli?code={}", code))?;
-    Ok(reqwest::get(url).await?.error_for_status()?.text().await?)
+    let res = reqwest::get(url).await?.error_for_status()?;
+
+    check_server_version(&res);
+
+    Ok(res.text().await?)
   }
 
   pub async fn test(&self) -> Result<()> {
@@ -76,21 +81,42 @@ impl ApiClient {
   }
 
   pub async fn test_token(&self) -> Result<bool> {
-    let res: bool = self
+    let res = self
       .req("/api/auth/test_token", Method::GET)?
       .send()
       .await?
-      .error_for_status()?
+      .error_for_status()?;
+
+    check_server_version(&res);
+
+    let valid = res
       .text()
       .await?
       .parse()
       .context("Failed to parse bool res")?;
 
-    Ok(res)
+    Ok(valid)
   }
 
   fn req(&self, path: &str, method: Method) -> Result<RequestBuilder> {
     let url = self.url.join(path)?;
     Ok(self.client.request(method, url).bearer_auth(&self.token))
+  }
+}
+
+fn check_server_version(res: &Response) {
+  if let Some(version) = res
+    .headers()
+    .get(HIBERNATION_VERSION_HEADER)
+    .and_then(|v| v.to_str().ok())
+  {
+    if version != env!("CARGO_PKG_VERSION") {
+      eprintln!(
+        "Warning: Server version ({version}) does not match client version ({}). Consider updating your CLI.",
+        env!("CARGO_PKG_VERSION")
+      );
+    }
+  } else {
+    eprintln!("Warning: Server did not provide version information. Consider updating your CLI.");
   }
 }
