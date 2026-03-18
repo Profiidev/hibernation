@@ -74,4 +74,4 @@ jobs:
         if: matrix.cross == 'true'
         run: cargo install cross --locked
       - name: Build
-        run: ${{ matrix.cross ? "cross" : "cargo" }} build --release --locked --target ${{ matrix.target }} -p hibernation
+        run: ${{ matrix.cross && "cross" || "cargo" }} build --release --locked --target ${{ matrix.target }} -p hibernation
