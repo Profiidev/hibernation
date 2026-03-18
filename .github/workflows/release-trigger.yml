@@ -26,8 +26,8 @@ jobs:
           echo "Bumping version to $NEW_VERSION"
           sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" backend/Cargo.toml
           sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" cli/Cargo.toml
-          npm version $NEW_VERSION --no-git-tag-version
-          cargo metadata --no-deps -q
+          cargo metadata -q
+          cd frontend && npm version $NEW_VERSION --no-git-tag-version
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v8
