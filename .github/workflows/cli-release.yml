@@ -59,16 +59,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
       - name: Cache cargo and rust files
         id: rust_cache
         uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
           shared-key: 'cli_release_cache-${{ matrix.name }}'
+      - uses: actions-rs/toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+          toolchain: stable
+          profile: minimal
+          override: true
       - uses: actions-rs/cargo@v1
         name: Build
         with:
