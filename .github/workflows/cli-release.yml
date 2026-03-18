@@ -67,7 +67,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
-          name: hibernation-*
+          pattern: hibernation-*.tar.gz
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
         with:
