@@ -15,7 +15,6 @@ jobs:
       matrix:
         name:
           - linux-x86-64-gnu
-          - linux-x86-64-musl
           - linux-arm64-gnu
           - macos-x86-64
           - macos-arm64
@@ -23,23 +22,15 @@ jobs:
           - name: linux-x86-64-gnu
             target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            cross: false
-          - name: linux-x86-64-musl
-            target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-            cross: true
           - name: linux-arm64-gnu
             target: aarch64-unknown-linux-gnu
             os: ubuntu-24.04-arm
-            cross: false
           - name: macos-x86-64
             target: x86_64-apple-darwin
             os: macos-latest
-            cross: false
           - name: macos-arm64
             target: aarch64-apple-darwin
             os: macos-latest
-            cross: false
     name: Build Cli for ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -55,11 +46,8 @@ jobs:
         with:
           target: ${{ matrix.target }}
           toolchain: stable
-      - name: Install cross
-        if: matrix.cross
-        run: cargo install cross --locked
       - name: Build
-        run: ${{ matrix.cross && 'cross' || 'cargo' }} build --release --locked --target ${{ matrix.target }} -p hibernation
+        run: cargo build --release --locked --target ${{ matrix.target }} -p hibernation
       - name: Compress artifact
         run: tar -czvf hibernation-${{ matrix.name }}.tar.gz -C target/${{ matrix.target }}/release hibernation
       - name: Upload artifact
