@@ -14,7 +14,7 @@ pub fn log_level() -> LevelFilter {
       return level;
     }
   }
-  LevelFilter::WARN
+  LevelFilter::INFO
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

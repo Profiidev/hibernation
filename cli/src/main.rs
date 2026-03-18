@@ -12,6 +12,7 @@ use tokio::{
   fs::File,
   io::{self},
 };
+use tracing::{error, info};
 use url::Url;
 
 use crate::{
@@ -50,10 +51,10 @@ async fn main() -> Result<()> {
     }
     Commands::Auth { token } => {
       let Some(url) = url else {
-        eprintln!(
+        error!(
           "No URL specified. Please provide a URL using --url or set it using the set-url command."
         );
-        return Ok(());
+        std::process::exit(1);
       };
 
       if let Some(token) = token {
@@ -63,7 +64,7 @@ async fn main() -> Result<()> {
           .save(cli.config)
           .await
           .context("Failed to save config")?;
-        println!("Token saved successfully.");
+        info!("Token saved successfully.");
       }
     }
     Commands::AuthenticatedCommand(cmd) => handle_auth_command(cmd, config, url, cli.config).await,
@@ -79,16 +80,15 @@ async fn handle_auth_command(
   url: Option<Url>,
   config_path: Option<PathBuf>,
 ) {
-  let Some(client) = ApiClient::build(config, url, config_path).await else {
-    return;
-  };
+  let client = ApiClient::build(config, url, config_path).await;
 
   match cmd {
     AuthenticatedCommand::Test => {
       if let Err(e) = client.test().await {
-        eprintln!("Test request failed: {:?}", e);
+        error!("Test request failed: {:?}", e);
+        std::process::exit(1);
       } else {
-        println!("Test request succeeded.");
+        info!("Test request succeeded.");
       }
     }
   }
