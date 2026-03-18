@@ -16,6 +16,7 @@ jobs:
         with:
           token: ${{ secrets.PERSONAL_TOKEN }}
         uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
 
       - name: Update version
         id: update_version
@@ -23,9 +24,10 @@ jobs:
           RAW_TAG=${{ github.event.inputs.version }}
           NEW_VERSION="${RAW_TAG#v}"
           echo "Bumping version to $NEW_VERSION"
-          sed -i "s/version = \".*\"/version = \"$NEW_VERSION\"/" backend/Cargo.toml
-          sed -i "s/version = \".*\"/version = \"$NEW_VERSION\"/" cli/Cargo.toml
+          sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" backend/Cargo.toml
+          sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" cli/Cargo.toml
           npm version $NEW_VERSION --no-git-tag-version
+          cargo metadata --no-deps -q
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v8
