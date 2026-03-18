@@ -23,8 +23,8 @@ jobs:
           RAW_TAG=${{ github.event.inputs.version }}
           NEW_VERSION="${RAW_TAG#v}"
           echo "Bumping version to $NEW_VERSION"
-          sed -i "s/version = \".*\"/version = \"$NEW_VERSION\"/" backend/Cargo.toml
-          sed -i "s/version = \".*\"/version = \"$NEW_VERSION\"/" cli/Cargo.toml
+          sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" backend/Cargo.toml
+          sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" cli/Cargo.toml
           npm version $NEW_VERSION --no-git-tag-version
 
       - name: Create PR
