@@ -1,39 +1,40 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { createGroup } from '$lib/backend/groups.svelte';
   import { RequestError } from 'positron-components/backend';
   import { toast } from 'positron-components/components/util/general';
   import type { Stage } from '$lib/components/form/types.svelte';
   import MultiStepForm from '$lib/components/form/MultiStepForm.svelte';
   import Information from './Information.svelte';
+  import { createCache } from '$lib/backend/cache.svelte';
 
   let stages: Stage[] = [
     {
-      title: 'Create Group',
+      title: 'Create Cache',
       content: Information,
       data: {}
     }
   ];
 
   const submit = async (rawData: object) => {
-    let res = await createGroup(rawData as any);
+    let anyData = rawData as any;
+    let res = await createCache(anyData);
 
     if (typeof res === 'string') {
       if (res === RequestError.Conflict) {
         return {
-          error: 'A group with this name already exists.',
+          error: 'A cache with this name already exists.',
           path: 'name'
         };
       } else {
-        return { error: 'Error creating group.' };
+        return { error: 'Error creating cache.' };
       }
     } else {
-      toast.success('Group created successfully.');
+      toast.success('Cache created successfully.');
       setTimeout(() => {
-        goto(`/groups/${res.uuid}`);
+        goto(`/caches/${res.uuid}`);
       });
     }
   };
 </script>
 
-<MultiStepForm {stages} onsubmit={submit} cancelHref="/groups" />
+<MultiStepForm {stages} onsubmit={submit} cancelHref="/caches" />

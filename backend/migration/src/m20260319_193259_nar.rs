@@ -13,6 +13,7 @@ impl MigrationTrait for Migration {
           .if_not_exists()
           .col(pk_uuid(Nar::Id))
           .col(string(Nar::Hash))
+          .col(big_integer(Nar::Size))
           .to_owned(),
       )
       .await
@@ -30,4 +31,5 @@ pub enum Nar {
   Table,
   Id,
   Hash,
+  Size,
 }

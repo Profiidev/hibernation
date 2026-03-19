@@ -9,7 +9,7 @@
 
   let stages: Stage[] = [
     {
-      title: 'Information',
+      title: 'Create Token',
       content: Information,
       data: {}
     }

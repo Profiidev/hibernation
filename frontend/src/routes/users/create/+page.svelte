@@ -13,7 +13,7 @@
     mailActive: boolean;
   }>[] = [
     {
-      title: 'Information',
+      title: 'Create User',
       content: Information,
       data: {}
     }

@@ -63,26 +63,28 @@
 <div class="flex h-full items-center justify-center p-4">
   <Card.Root class="w-120">
     <Card.Header class="flex flex-col gap-4">
-      <div class="flex gap-2">
-        {#each stages as _, index}
-          <Badge
-            class={'flex size-6 rounded-full' +
-              (stage > index ? ' cursor-pointer p-0' : '')}
-            variant={stage === index ? 'default' : 'outline'}
-            onclick={() => {
-              if (stage > index) {
-                gotoStep(index);
-              }
-            }}
-          >
-            {#if stage > index}
-              <CheckIcon />
-            {:else}
-              {index + 1}
-            {/if}
-          </Badge>
-        {/each}
-      </div>
+      {#if stages.length > 1}
+        <div class="flex gap-2">
+          {#each stages as _, index}
+            <Badge
+              class={'flex size-6 rounded-full' +
+                (stage > index ? ' cursor-pointer p-0' : '')}
+              variant={stage === index ? 'default' : 'outline'}
+              onclick={() => {
+                if (stage > index) {
+                  gotoStep(index);
+                }
+              }}
+            >
+              {#if stage > index}
+                <CheckIcon />
+              {:else}
+                {index + 1}
+              {/if}
+            </Badge>
+          {/each}
+        </div>
+      {/if}
       <Card.Title>{stages[stage].title}</Card.Title>
     </Card.Header>
     <Card.Content>
@@ -96,19 +98,21 @@
       >
         {#snippet footer({ isLoading })}
           <Card.Footer class="w-full gap-2 px-0">
-            <Button
-              class="cursor-pointer"
-              variant="outline"
-              disabled={stage === 0 || isLoading}
-              onclick={() => {
-                if (stage > 0) {
-                  gotoStep(stage - 1);
-                }
-              }}
-            >
-              <ArrowLeft />
-              Previous
-            </Button>
+            {#if stages.length > 1}
+              <Button
+                class="cursor-pointer"
+                variant="outline"
+                disabled={stage === 0 || isLoading}
+                onclick={() => {
+                  if (stage > 0) {
+                    gotoStep(stage - 1);
+                  }
+                }}
+              >
+                <ArrowLeft />
+                Previous
+              </Button>
+            {/if}
             <Button
               class="ml-auto cursor-pointer"
               variant="outline"

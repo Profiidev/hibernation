@@ -15,6 +15,7 @@ impl MigrationTrait for Migration {
           .col(string(Cache::Name))
           .col(integer(Cache::Priority))
           .col(boolean(Cache::Public))
+          .col(big_integer(Cache::Quota))
           .col(string(Cache::PublicSigningKey))
           .to_owned(),
       )
@@ -58,6 +59,7 @@ pub enum Cache {
   Name,
   Priority,
   Public,
+  Quota,
   PublicSigningKey,
 }
 
