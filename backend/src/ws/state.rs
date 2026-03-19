@@ -33,6 +33,7 @@ pub struct UpdateTrigger {
 pub enum UpdateMessage {
   Settings,
   User { uuid: Uuid },
+  UserPermissions,
   Group { uuid: Uuid },
   Token { uuid: Uuid },
 }

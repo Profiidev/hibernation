@@ -107,10 +107,17 @@ async fn delete_group(
     bail!(BAD_REQUEST, "Cannot delete the admin group");
   }
 
+  let users = db.group().get_group_users_ids(data.uuid).await?;
   db.group().delete_group(data.uuid).await?;
+
   updater
     .broadcast(UpdateMessage::Group { uuid: data.uuid })
     .await;
+  for user_id in users {
+    updater
+      .send_to(user_id, UpdateMessage::UserPermissions)
+      .await;
+  }
 
   Ok(())
 }
@@ -168,12 +175,46 @@ async fn edit_group(
     );
   }
 
+  let old_users = db.group().get_group_users_ids(data.uuid).await?;
+
   db.group()
-    .edit_group(data.uuid, data.name, data.permissions, data.users)
+    .edit_group(
+      data.uuid,
+      data.name,
+      data.permissions.clone(),
+      data.users.clone(),
+    )
     .await?;
+
   updater
     .broadcast(UpdateMessage::Group { uuid: data.uuid })
     .await;
+
+  let permissions_changed = group.permissions.len() != data.permissions.len()
+    || group
+      .permissions
+      .iter()
+      .any(|perm| !data.permissions.contains(perm));
+
+  let mut users_to_notify = old_users.clone();
+  users_to_notify.extend(data.users.clone());
+  users_to_notify.sort_unstable();
+  users_to_notify.dedup();
+
+  // Only notify users that where added or removed
+  if !permissions_changed {
+    users_to_notify.retain(|user_id| {
+      let in_old = old_users.contains(user_id);
+      let in_new = data.users.contains(user_id);
+      in_old != in_new
+    });
+  }
+
+  for user_id in users_to_notify {
+    updater
+      .send_to(user_id, UpdateMessage::UserPermissions)
+      .await;
+  }
 
   Ok(())
 }

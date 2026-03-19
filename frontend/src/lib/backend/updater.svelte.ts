@@ -5,6 +5,7 @@ import { sleep } from 'positron-components/util/interval.svelte';
 export enum UpdateType {
   Settings = 'Settings',
   User = 'User',
+  UserPermissions = 'UserPermissions',
   Group = 'Group',
   Token = 'Token'
 }
@@ -15,7 +16,7 @@ export type UpdateMessage =
       uuid: string;
     }
   | {
-      type: UpdateType.Settings;
+      type: UpdateType.Settings | UpdateType.UserPermissions;
     };
 
 let updater: WebSocket | undefined | false = $state(browser && undefined);
@@ -78,6 +79,10 @@ const handleMessage = (msg: UpdateMessage, user: string) => {
       if (msg.uuid === user) {
         invalidate('/api/user/info');
       }
+      break;
+    }
+    case UpdateType.UserPermissions: {
+      invalidate('/api/user/info');
       break;
     }
     case UpdateType.Group: {
