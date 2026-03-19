@@ -44,5 +44,5 @@ async fn logout(
   debug!("User logged out: {}", auth.user_id);
   cookies = cookies.remove(jwt.create_cookie(JWT_COOKIE_NAME, String::new()));
 
-  Ok((cookies, TokenRes))
+  Ok((cookies, TokenRes(())))
 }

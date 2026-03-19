@@ -89,6 +89,18 @@ impl<'db> GroupTable<'db> {
     Ok(users)
   }
 
+  pub async fn get_group_users_ids(&self, group_id: Uuid) -> Result<Vec<Uuid>, DbErr> {
+    let user_ids = group_user::Entity::find()
+      .filter(group_user::Column::GroupId.eq(group_id))
+      .all(self.db)
+      .await?
+      .into_iter()
+      .map(|gu| gu.user_id)
+      .collect();
+
+    Ok(user_ids)
+  }
+
   pub async fn add_user_to_groups(&self, user_id: Uuid, group_ids: Vec<Uuid>) -> Result<(), DbErr> {
     let mut models = Vec::new();
 
@@ -196,9 +208,15 @@ impl<'db> GroupTable<'db> {
     }))
   }
 
-  pub async fn delete_group(&self, group_id: Uuid) -> Result<(), DbErr> {
+  pub async fn delete_group(&self, group_id: Uuid) -> Result<group::Model, DbErr> {
+    let group = group::Entity::find_by_id(group_id)
+      .one(self.db)
+      .await?
+      .ok_or_else(|| DbErr::RecordNotFound("Group not found".to_string()))?;
+
     group::Entity::delete_by_id(group_id).exec(self.db).await?;
-    Ok(())
+
+    Ok(group)
   }
 
   pub async fn find_group_by_name(&self, name: &str) -> Result<Option<Uuid>, DbErr> {

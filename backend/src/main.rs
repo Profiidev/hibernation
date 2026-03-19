@@ -8,7 +8,7 @@ use centaurus::{
   },
 };
 #[cfg(debug_assertions)]
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use tracing::info;
 
 use crate::{config::Config, rate_limit::RateLimiter};

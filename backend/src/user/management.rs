@@ -141,7 +141,9 @@ async fn create_user(
       )
       .await?;
   }
-  updater.broadcast(UpdateMessage::Users).await;
+  updater
+    .broadcast(UpdateMessage::User { uuid: user_id })
+    .await;
 
   Ok(Json(CreateUserResponse { uuid: user_id }))
 }
@@ -176,7 +178,9 @@ async fn delete_user(
   }
 
   db.user().delete_user(data.uuid).await?;
-  updater.broadcast(UpdateMessage::Users).await;
+  updater
+    .broadcast(UpdateMessage::User { uuid: data.uuid })
+    .await;
 
   Ok(())
 }
@@ -232,7 +236,9 @@ async fn edit_user(
   }
 
   db.user().edit_user(req.uuid, req.name, req.groups).await?;
-  updater.broadcast(UpdateMessage::Users).await;
+  updater
+    .broadcast(UpdateMessage::User { uuid: req.uuid })
+    .await;
 
   Ok(())
 }
@@ -250,7 +256,9 @@ async fn reset_user_avatar(
   req: UserAvatarResetRequest,
 ) -> Result<()> {
   db.user().reset_avatar(req.uuid).await?;
-  updater.broadcast(UpdateMessage::Users).await;
+  updater
+    .broadcast(UpdateMessage::User { uuid: req.uuid })
+    .await;
 
   Ok(())
 }

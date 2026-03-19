@@ -16,6 +16,7 @@ use crate::{
   auth::{jwt_auth, jwt_state::JWT_COOKIE_NAME},
   db::DBTrait,
   permissions::{NoPerm, Permission},
+  ws::state::{UpdateMessage, Updater},
 };
 
 pub const CLI_TOKEN_LEN: usize = 32;
@@ -76,6 +77,10 @@ async fn check_token(
   }
 
   db.token().token_used(record.id).await?;
+  let updater = parts.extract_state::<Updater>().await;
+  updater
+    .send_to(record.user_id, UpdateMessage::Token { uuid: record.id })
+    .await;
 
   Ok(record.user_id)
 }

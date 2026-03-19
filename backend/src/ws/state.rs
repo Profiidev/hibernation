@@ -14,27 +14,34 @@ use uuid::Uuid;
 #[derive(Clone, FromRequestParts)]
 #[from_request(via(Extension))]
 pub struct UpdateState {
-  sessions: Arc<DashMap<Uuid, Sender<UpdateMessage>>>,
+  sessions: Arc<DashMap<Uuid, DashMap<Uuid, Sender<UpdateMessage>>>>,
   #[allow(dead_code)]
   update_proxy: Arc<JoinHandle<()>>,
 }
 
 #[derive(Clone, FromRequestParts)]
 #[from_request(via(Extension))]
-pub struct Updater(Sender<UpdateMessage>);
+pub struct Updater(Sender<UpdateTrigger>);
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UpdateTrigger {
+  target: Option<Uuid>,
+  message: UpdateMessage,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 #[serde(tag = "type")]
 pub enum UpdateMessage {
   Settings,
-  Users,
-  Groups,
-  Tokens,
+  User { uuid: Uuid },
+  UserPermissions,
+  Group { uuid: Uuid },
+  Token { uuid: Uuid },
 }
 
 impl UpdateState {
   pub async fn init() -> (Self, Updater) {
-    let sessions: Arc<DashMap<Uuid, Sender<UpdateMessage>>> = Arc::new(DashMap::default());
+    let sessions: Arc<DashMap<Uuid, DashMap<Uuid, Sender<UpdateMessage>>>> =
+      Arc::new(DashMap::default());
     let (sender, mut receiver) = mpsc::channel(100);
     let updater = Updater(sender);
 
@@ -42,9 +49,23 @@ impl UpdateState {
       let sessions = sessions.clone();
       async move {
         while let Some(message) = receiver.recv().await {
-          debug!("Broadcasting update message: {:?}", message);
-          for pair in sessions.iter() {
-            pair.value().send(message.clone()).await.ok();
+          if let Some(target) = message.target {
+            debug!(
+              "Sending update message to {}: {:?}",
+              target, message.message
+            );
+            if let Some(pair) = sessions.get(&target) {
+              for pair in pair.value().iter() {
+                pair.value().send(message.message).await.ok();
+              }
+            }
+          } else {
+            debug!("Broadcasting update message: {:?}", message.message);
+            for pair in sessions.iter() {
+              for pair in pair.value().iter() {
+                pair.value().send(message.message).await.ok();
+              }
+            }
           }
         }
       }
@@ -58,21 +79,40 @@ impl UpdateState {
     (state, updater)
   }
 
-  pub async fn create_session(&self) -> (Uuid, Receiver<UpdateMessage>) {
+  pub async fn create_session(&self, user: Uuid) -> (Uuid, Receiver<UpdateMessage>) {
     let (send, recv) = mpsc::channel(100);
+    let user_sessions = self.sessions.entry(user).or_default();
     let uuid = Uuid::new_v4();
-    self.sessions.insert(uuid, send);
+    user_sessions.insert(uuid, send);
 
     (uuid, recv)
   }
 
-  pub async fn remove_session(&self, uuid: &Uuid) {
-    self.sessions.remove(uuid);
+  pub async fn remove_session(&self, user: &Uuid, uuid: &Uuid) {
+    if let Some(pair) = self.sessions.get(user) {
+      pair.value().remove(uuid);
+    }
   }
 }
 
 impl Updater {
   pub async fn broadcast(&self, msg: UpdateMessage) {
-    let _ = self.0.send(msg).await;
+    let _ = self
+      .0
+      .send(UpdateTrigger {
+        target: None,
+        message: msg,
+      })
+      .await;
+  }
+
+  pub async fn send_to(&self, target: Uuid, msg: UpdateMessage) {
+    let _ = self
+      .0
+      .send(UpdateTrigger {
+        target: Some(target),
+        message: msg,
+      })
+      .await;
   }
 }

@@ -30,6 +30,10 @@ export const getSetupStatus = async (
   }
 };
 
+export interface SetupResponse {
+  user: string;
+}
+
 export const performSetup = async (payload: SetupPayload) => {
   let encrypt = getEncrypt();
   if (!encrypt) {
@@ -39,7 +43,8 @@ export const performSetup = async (payload: SetupPayload) => {
   let encrypted_password = encrypt.encrypt(payload.admin_password);
   payload.admin_password = encrypted_password || '';
 
-  let res = await post('/api/setup', {
+  let res = await post<SetupResponse>('/api/setup', {
+    res_type: ResponseType.Json,
     body: payload
   });
 

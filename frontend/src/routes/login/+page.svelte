@@ -56,11 +56,11 @@
       return { error: 'Invalid email or password.' };
     } else if (ret === RequestError.TooManyRequests) {
       return { error: 'Rate limit exceeded. Please try again later.' };
-    } else if (ret) {
+    } else if (typeof ret !== 'object') {
       return { error: 'Login failed. Please try again.' };
     } else {
       setTimeout(() => {
-        connectWebsocket();
+        connectWebsocket(ret.user);
         goto('/');
       });
     }

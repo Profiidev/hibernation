@@ -8,6 +8,7 @@ use centaurus::{auth::pw::PasswordState, bail, db::init::Connection, error::Resu
 use serde::{Deserialize, Serialize};
 use tower_governor::GovernorLayer;
 use tracing::debug;
+use uuid::Uuid;
 
 use crate::{
   auth::{jwt_state::JwtState, res::TokenRes},
@@ -38,13 +39,18 @@ struct LoginReq {
   password: String,
 }
 
+#[derive(Serialize, Debug)]
+struct LoginResponse {
+  user: Uuid,
+}
+
 async fn authenticate(
   state: PasswordState,
   jwt: JwtState,
   db: Connection,
   mut cookies: CookieJar,
   req: LoginReq,
-) -> Result<(CookieJar, TokenRes)> {
+) -> Result<(CookieJar, TokenRes<LoginResponse>)> {
   let user = db.user().get_user_by_email(&req.email).await?;
   let hash = state.pw_hash(&user.salt, &req.password)?;
 
@@ -56,5 +62,5 @@ async fn authenticate(
   cookies = cookies.add(cookie);
   debug!("User logged in: {}", user.id);
 
-  Ok((cookies, TokenRes))
+  Ok((cookies, TokenRes(LoginResponse { user: user.id })))
 }

@@ -68,10 +68,12 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           pattern: hibernation-*
+          merge-multiple: true
+          path: ./release-assets
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          files: hibernation-*
+          files: ./release-assets/*
           tag_name: ${{ github.ref_name }}
           token: ${{ secrets.PERSONAL_TOKEN }}
           name: Hibernation ${{ github.ref_name }}

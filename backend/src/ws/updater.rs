@@ -20,14 +20,15 @@ pub fn router() -> Router {
   Router::new().route("/updater", any(update))
 }
 
-async fn update(_auth: JwtAuth, ws: WebSocketUpgrade, state: UpdateState) -> impl IntoResponse {
-  let (uuid, recv) = state.create_session().await;
+async fn update(auth: JwtAuth, ws: WebSocketUpgrade, state: UpdateState) -> impl IntoResponse {
+  let (uuid, recv) = state.create_session(auth.user_id).await;
 
-  ws.on_upgrade(move |socket| handle_socket(socket, uuid, recv, state))
+  ws.on_upgrade(move |socket| handle_socket(socket, auth.user_id, uuid, recv, state))
 }
 
 async fn handle_socket(
   mut socket: WebSocket,
+  user: Uuid,
   uuid: Uuid,
   mut recv: Receiver<UpdateMessage>,
   state: UpdateState,
@@ -43,7 +44,7 @@ async fn handle_socket(
             let _ = socket.send(message).await;
           }
           None => {
-            state.remove_session(&uuid).await;
+            state.remove_session(&user, &uuid).await;
             break;
           }
         }
@@ -51,7 +52,7 @@ async fn handle_socket(
 
       ws_msg = socket.next() => {
         if let Some(Ok(Message::Close(_)) | Err(_)) | None = ws_msg {
-          state.remove_session(&uuid).await;
+          state.remove_session(&user, &uuid).await;
           break;
         }
       }

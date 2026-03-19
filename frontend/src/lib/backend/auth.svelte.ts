@@ -33,13 +33,18 @@ export const fetchKey = async () => {
 };
 fetchKey();
 
+export interface LoginResponse {
+  user: string;
+}
+
 export const passwordLogin = async (email: string, password: string) => {
   if (!encrypt) {
     return RequestError.Other;
   }
 
   let encrypted_password = encrypt.encrypt(password);
-  let res = await post('/api/auth/password', {
+  let res = await post<LoginResponse>('/api/auth/password', {
+    res_type: ResponseType.Json,
     body: {
       email,
       password: encrypted_password

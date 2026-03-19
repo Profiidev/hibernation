@@ -22,7 +22,7 @@
           goto('/login');
         }
       } else {
-        connectWebsocket();
+        connectWebsocket(data.user?.uuid ?? '');
       }
     });
   });

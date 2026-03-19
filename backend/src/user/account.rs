@@ -37,7 +37,9 @@ async fn update_account(
   db.user()
     .update_user_name(auth.user_id, data.username)
     .await?;
-  updater.broadcast(UpdateMessage::Users).await;
+  updater
+    .broadcast(UpdateMessage::User { uuid: auth.user_id })
+    .await;
   Ok(())
 }
 
@@ -66,7 +68,9 @@ async fn update_avatar(
   let avatar = BASE64_STANDARD.encode(buf.into_inner());
 
   db.user().update_user_avatar(auth.user_id, avatar).await?;
-  updater.broadcast(UpdateMessage::Users).await;
+  updater
+    .broadcast(UpdateMessage::User { uuid: auth.user_id })
+    .await;
   Ok(())
 }
 

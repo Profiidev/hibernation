@@ -103,7 +103,7 @@ async fn create_toke(
     .insert(auth.user_id, req.name, hash, req.exp.naive_utc())
     .await?
     .id;
-  updater.broadcast(UpdateMessage::Tokens).await;
+  updater.broadcast(UpdateMessage::Token { uuid }).await;
 
   Ok(Json(CreateTokenResponse { token, uuid }))
 }
@@ -121,7 +121,9 @@ async fn delete_token(
   req: DeleteTokenRequest,
 ) -> Result<()> {
   db.token().invalidate(auth.user_id, req.uuid).await?;
-  updater.broadcast(UpdateMessage::Tokens).await;
+  updater
+    .broadcast(UpdateMessage::Token { uuid: req.uuid })
+    .await;
   Ok(())
 }
 
@@ -148,7 +150,9 @@ async fn edit_token(
   db.token()
     .update(auth.user_id, req.uuid, req.name, req.exp.naive_utc())
     .await?;
-  updater.broadcast(UpdateMessage::Tokens).await;
+  updater
+    .broadcast(UpdateMessage::Token { uuid: req.uuid })
+    .await;
   Ok(())
 }
 

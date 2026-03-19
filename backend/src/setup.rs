@@ -10,6 +10,7 @@ use rsa::rand_core::OsRng;
 use sea_orm::ConnectionTrait;
 use serde::{Deserialize, Serialize};
 use tracing::info;
+use uuid::Uuid;
 
 use crate::{auth::jwt_state::JwtState, db::DBTrait};
 
@@ -71,13 +72,18 @@ struct SetupPayload {
   admin_email: String,
 }
 
+#[derive(Serialize)]
+struct SetupResponse {
+  user: Uuid,
+}
+
 async fn complete_setup(
   db: Connection,
   jwt: JwtState,
   state: PasswordState,
   mut cookies: CookieJar,
   payload: SetupPayload,
-) -> Result<CookieJar> {
+) -> Result<(CookieJar, Json<SetupResponse>)> {
   if db.setup().is_setup().await? {
     bail!(CONFLICT, "Setup has already been completed");
   }
@@ -107,7 +113,7 @@ async fn complete_setup(
   cookies = cookies.add(cookie);
   info!("Created post setup login token for admin user");
 
-  Ok(cookies)
+  Ok((cookies, Json(SetupResponse { user: admin })))
 }
 
 #[derive(Serialize)]

@@ -69,7 +69,10 @@ impl ApiClient {
 
   pub async fn request_token(url: Url, code: &str) -> Result<String> {
     let url = url.join(&format!("/api/cli?code={}", code))?;
-    let res = reqwest::get(url).await?.error_for_status()?;
+
+    let client = Client::new();
+    let req = client.put(url).build()?;
+    let res = client.execute(req).await?.error_for_status()?;
 
     check_server_version(&res);
 

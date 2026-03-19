@@ -40,7 +40,7 @@
       admin_username: data.username
     });
 
-    if (ret) {
+    if (typeof ret !== 'object') {
       if (ret === RequestError.Conflict) {
         return { error: 'The setup was already completed.' };
       } else if (ret === RequestError.InternalServerError) {
@@ -50,7 +50,7 @@
       }
     } else {
       setTimeout(() => {
-        connectWebsocket();
+        connectWebsocket(ret.user);
         goto('/');
       });
     }

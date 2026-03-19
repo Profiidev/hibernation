@@ -4,41 +4,43 @@ import { sleep } from 'positron-components/util/interval.svelte';
 
 export enum UpdateType {
   Settings = 'Settings',
-  Users = 'Users',
-  Groups = 'Groups',
-  Tokens = 'Tokens'
+  User = 'User',
+  UserPermissions = 'UserPermissions',
+  Group = 'Group',
+  Token = 'Token'
 }
 
-export type UpdateMessage = {
-  type:
-    | UpdateType.Settings
-    | UpdateType.Users
-    | UpdateType.Groups
-    | UpdateType.Tokens;
-};
+export type UpdateMessage =
+  | {
+      type: UpdateType.User | UpdateType.Group | UpdateType.Token;
+      uuid: string;
+    }
+  | {
+      type: UpdateType.Settings | UpdateType.UserPermissions;
+    };
 
 let updater: WebSocket | undefined | false = $state(browser && undefined);
 let interval: number;
 let disconnect = false;
 
-export const connectWebsocket = () => {
+export const connectWebsocket = (user: string) => {
   if (updater === false || updater) return;
-  createWebsocket();
+  createWebsocket(user);
 };
 
-const createWebsocket = () => {
+const createWebsocket = (user: string) => {
   updater = new WebSocket('/api/ws/updater');
 
   updater.onmessage = (event) => {
     const msg: UpdateMessage = JSON.parse(event.data);
-    handleMessage(msg);
+    handleMessage(msg, user);
   };
 
   updater.onclose = async () => {
     clearInterval(interval);
     if (disconnect) return;
     await sleep(1000);
-    createWebsocket();
+    createWebsocket(user);
   };
 
   interval = setInterval(() => {
@@ -63,22 +65,35 @@ export const disconnectWebsocket = () => {
   }
 };
 
-const handleMessage = (msg: UpdateMessage) => {
+const handleMessage = (msg: UpdateMessage, user: string) => {
   switch (msg.type) {
     case UpdateType.Settings: {
       invalidate((url) => url.pathname.startsWith('/api/settings'));
       break;
     }
-    case UpdateType.Users: {
-      invalidate((url) => url.pathname.startsWith('/api/user'));
+    case UpdateType.User: {
+      invalidate('/api/user/management');
+      invalidate(`/api/user/management/${msg.uuid}`);
+      invalidate('/api/group/users');
+      // Same as current user
+      if (msg.uuid === user) {
+        invalidate('/api/user/info');
+      }
       break;
     }
-    case UpdateType.Groups: {
-      invalidate((url) => url.pathname.startsWith('/api/group'));
+    case UpdateType.UserPermissions: {
+      invalidate('/api/user/info');
       break;
     }
-    case UpdateType.Tokens: {
-      invalidate((url) => url.pathname.startsWith('/api/token'));
+    case UpdateType.Group: {
+      invalidate('/api/group');
+      invalidate(`/api/group/${msg.uuid}`);
+      invalidate('/api/user/management/groups');
+      break;
+    }
+    case UpdateType.Token: {
+      invalidate('/api/token');
+      invalidate(`/api/token/${msg.uuid}`);
       break;
     }
   }

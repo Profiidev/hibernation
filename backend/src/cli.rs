@@ -6,7 +6,7 @@ use std::{
 use axum::{
   Extension, Json, Router,
   extract::{FromRequestParts, Query},
-  routing::{get, post},
+  routing::{post, put},
 };
 use centaurus::{auth::pw::PasswordState, bail, db::init::Connection, error::Result};
 use chrono::Utc;
@@ -26,7 +26,7 @@ use crate::{
 
 pub fn router(rate_limiter: &mut RateLimiter) -> Router {
   Router::new()
-    .route("/", get(get_token))
+    .route("/", put(get_token))
     .layer(GovernorLayer::new(rate_limiter.create_limiter()))
     .route("/", post(new_code))
 }
@@ -100,7 +100,8 @@ async fn get_token(
   let token: String = gen_token();
   let hash = pw.pw_hash_raw("", &token)?;
 
-  db.token()
+  let token_model = db
+    .token()
     .insert(
       user,
       format!("Cli-{}", Utc::now().to_rfc3339()),
@@ -108,7 +109,14 @@ async fn get_token(
       exp.naive_utc(),
     )
     .await?;
-  updater.broadcast(UpdateMessage::Tokens).await;
+  updater
+    .send_to(
+      user,
+      UpdateMessage::Token {
+        uuid: token_model.id,
+      },
+    )
+    .await;
 
   Ok(token)
 }
