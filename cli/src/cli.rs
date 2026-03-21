@@ -38,4 +38,17 @@ pub enum Commands {
 pub enum AuthenticatedCommand {
   /// A test command to check if the authentication works.
   Test,
+  /// Push the given paths and all their dependencies to the given cache on the Hibernation server.
+  Push {
+    /// The cache to push to.
+    cache: String,
+    /// The paths to push.
+    paths: Vec<String>,
+    /// Only upload the given paths and not its dependencies.
+    #[arg(long)]
+    no_deps: bool,
+    /// Push paths even if they already exist in a downstream cache. The cache needs to be configured to allow this.
+    #[arg(long)]
+    force: bool,
+  },
 }

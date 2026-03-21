@@ -12,6 +12,7 @@ pub struct Model {
   pub public: bool,
   pub quota: i64,
   pub public_signing_key: String,
+  pub allow_force_push: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

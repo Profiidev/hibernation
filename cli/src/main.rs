@@ -25,6 +25,7 @@ mod api;
 mod auth;
 mod cli;
 mod config;
+mod push;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -90,6 +91,14 @@ async fn handle_auth_command(
       } else {
         info!("Test request succeeded.");
       }
+    }
+    AuthenticatedCommand::Push {
+      cache,
+      paths,
+      no_deps,
+      force,
+    } => {
+      push::push_paths(client, cache, &paths, no_deps, force).await;
     }
   }
 }

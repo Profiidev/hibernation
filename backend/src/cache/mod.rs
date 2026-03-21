@@ -4,10 +4,13 @@ use centaurus::error::Result;
 use crate::auth::cli_auth::CliAuth;
 
 mod management;
+mod pool;
+mod push;
 
 pub fn router() -> Router {
   Router::new()
     .nest("/management", management::router())
+    .nest("/push", push::router())
     .route("/test", get(test))
 }
 

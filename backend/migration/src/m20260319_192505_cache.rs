@@ -17,6 +17,7 @@ impl MigrationTrait for Migration {
           .col(boolean(Cache::Public))
           .col(big_integer(Cache::Quota))
           .col(string(Cache::PublicSigningKey))
+          .col(boolean(Cache::AllowForcePush))
           .to_owned(),
       )
       .await?;
@@ -60,6 +61,7 @@ pub enum Cache {
   Public,
   Quota,
   PublicSigningKey,
+  AllowForcePush,
 }
 
 #[derive(DeriveIden)]

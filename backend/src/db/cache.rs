@@ -1,5 +1,8 @@
 use centaurus::bail;
-use entity::{cache, cache_access, group_user, nar_info, sea_orm_active_enums::AccessType};
+use entity::{
+  cache, cache_access, downstream_cache, group_user, nar_info, sea_orm_active_enums::AccessType,
+};
+use harmonia_store_core::store_path::StorePath;
 use sea_orm::{
   ActiveValue::Set, Condition, FromQueryResult, Iterable, JoinType, QuerySelect, prelude::*,
 };
@@ -123,6 +126,21 @@ impl<'db> CacheTable<'db> {
     query.one(self.db).await
   }
 
+  pub async fn by_name_filtered(
+    &self,
+    name: String,
+    user: Uuid,
+    access_type: AccessType,
+  ) -> Result<Option<cache::Model>, DbErr> {
+    let mut query = cache::Entity::find()
+      .filter(cache::Column::Name.eq(name))
+      .join(JoinType::LeftJoin, cache::Relation::CacheAccess.def());
+
+    query = apply_user_filter(query, self.db, user, access_type).await?;
+
+    query.one(self.db).await
+  }
+
   pub async fn create_cache(
     &self,
     name: String,
@@ -138,6 +156,7 @@ impl<'db> CacheTable<'db> {
       quota: Set(quota),
       public_signing_key: Set(sig_key),
       priority: Set(50),
+      allow_force_push: Set(false),
     };
     let res = cache.insert(self.db).await?;
 
@@ -149,6 +168,13 @@ impl<'db> CacheTable<'db> {
       ..Default::default()
     };
     cache_access.insert(self.db).await?;
+
+    let downstream_cache = downstream_cache::ActiveModel {
+      id: Set(Uuid::new_v4()),
+      cache_id: Set(res.id),
+      url: Set("https://cache.nixos.org".to_string()),
+    };
+    downstream_cache.insert(self.db).await?;
 
     Ok(res.id)
   }
@@ -165,6 +191,48 @@ impl<'db> CacheTable<'db> {
     cache::Entity::delete_by_id(uuid).exec(self.db).await?;
 
     Ok(())
+  }
+
+  pub async fn downstream_caches(&self, uuid: Uuid) -> Result<Vec<downstream_cache::Model>, DbErr> {
+    downstream_cache::Entity::find()
+      .filter(downstream_cache::Column::CacheId.eq(uuid))
+      .all(self.db)
+      .await
+  }
+
+  pub async fn missing_paths(
+    &self,
+    cache: Uuid,
+    paths: Vec<StorePath>,
+  ) -> Result<Vec<StorePath>, DbErr> {
+    if paths.is_empty() {
+      return Ok(vec![]);
+    }
+
+    let paths = paths.into_iter().map(|p| p.to_string()).collect::<Vec<_>>();
+
+    let mut query = sea_orm::sea_query::Query::select();
+    query
+      .column(("inputs_paths", "column1"))
+      .from_values(paths, "inputs_paths")
+      .left_join(
+        nar_info::Entity,
+        Expr::col(("inputs_paths", "column1"))
+          .equals((nar_info::Entity, nar_info::Column::StorePath))
+          .and(Expr::col((nar_info::Entity, nar_info::Column::CacheId)).eq(cache)),
+      )
+      .and_where(Expr::col((nar_info::Entity, nar_info::Column::StorePath)).is_null());
+
+    let builder = self.db.get_database_backend();
+    let missing = self
+      .db
+      .query_all(builder.build(&query))
+      .await?
+      .into_iter()
+      .map(|row| StorePath::from_base_path(&row.try_get_by_index::<String>(0).unwrap()).unwrap())
+      .collect();
+
+    Ok(missing)
   }
 }
 

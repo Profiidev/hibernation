@@ -1,6 +1,7 @@
 use std::{io::IsTerminal, path::PathBuf};
 
 use centaurus::{error::Result, eyre::Context};
+use harmonia_protocol::store_path::StorePath;
 use reqwest::{Client, Method, RequestBuilder, Response};
 use shared::HIBERNATION_VERSION_HEADER;
 use tracing::{error, warn};
@@ -12,6 +13,14 @@ pub struct ApiClient {
   client: Client,
   token: String,
   url: Url,
+}
+
+#[derive(Debug)]
+pub enum PushInfoResult {
+  CacheNotFound,
+  ForcePushNotAllowed,
+  AllPathsExist,
+  Paths(Vec<StorePath>),
 }
 
 impl ApiClient {
@@ -104,6 +113,39 @@ impl ApiClient {
       .context("Failed to parse bool res")?;
 
     Ok(valid)
+  }
+
+  pub async fn push_info(
+    &self,
+    cache: String,
+    paths: Vec<String>,
+    force: bool,
+  ) -> Result<PushInfoResult> {
+    let body = serde_json::json!({
+      "paths": paths,
+      "force": force,
+      "cache": cache,
+    });
+
+    let res = self
+      .req("/api/cache/push/info", Method::POST)?
+      .json(&body)
+      .send()
+      .await?
+      .error_for_status()?;
+
+    match res.status() {
+      reqwest::StatusCode::NOT_FOUND => Ok(PushInfoResult::CacheNotFound),
+      reqwest::StatusCode::NOT_ACCEPTABLE => Ok(PushInfoResult::ForcePushNotAllowed),
+      reqwest::StatusCode::NO_CONTENT => Ok(PushInfoResult::AllPathsExist),
+      _ => {
+        let paths: Vec<StorePath> = res
+          .json()
+          .await
+          .context("Failed to parse push info response")?;
+        Ok(PushInfoResult::Paths(paths))
+      }
+    }
   }
 
   fn req(&self, path: &str, method: Method) -> Result<RequestBuilder> {
