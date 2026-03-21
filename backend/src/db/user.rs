@@ -310,6 +310,10 @@ impl<'db> UserTable<'db> {
       models.push(model);
     }
 
+    if models.is_empty() {
+      return Ok(());
+    }
+
     cache_access::Entity::insert_many(models)
       .exec(self.db)
       .await?;

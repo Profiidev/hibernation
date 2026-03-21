@@ -15,21 +15,25 @@ pub struct UploadInfoResponse {
   pub cache: Uuid,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct UploadPathRequest {
   pub cache: Uuid,
   pub force: bool,
   pub store_path: StorePath,
-  pub file_hash: String,
-  pub file_size: u64,
   pub nar_hash: String,
   pub nar_size: u64,
   pub deriver: Option<StorePath>,
   pub references: Vec<StorePath>,
-  pub signature: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct UploadPathResponse {
   pub uuid: Uuid,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UploadFinishRequest {
+  pub file_hash: String,
+  pub file_size: u64,
+  pub signature: String,
 }

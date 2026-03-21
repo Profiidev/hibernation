@@ -1,20 +1,35 @@
-use std::collections::HashSet;
+use std::{
+  collections::HashSet,
+  sync::{
+    Arc, Mutex,
+    atomic::{AtomicBool, Ordering},
+  },
+};
 
+use async_compression::tokio::bufread::ZstdEncoder;
+use centaurus::{error::Result, eyre::Context};
 use harmonia_protocol::NarHash;
 use harmonia_store_core::store_path::{StoreDir, StorePath};
 use harmonia_store_remote::{DaemonClient, DaemonStore};
+use sha2::{Digest, Sha256};
+use shared::{
+  api::push::{UploadFinishRequest, UploadPathRequest},
+  hash::to_nix_base32,
+};
+use tokio::net::unix::{OwnedReadHalf, OwnedWriteHalf};
+use tokio_util::io::{InspectReader, ReaderStream};
 use tracing::{error, info, warn};
+use uuid::Uuid;
 
 use crate::api::{ApiClient, PushInfoResult};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct PathInfo {
   store_path: StorePath,
   nar_hash: NarHash,
   nar_size: u64,
   deriver: Option<StorePath>,
   references: Vec<StorePath>,
-  signatures: Vec<String>,
 }
 
 pub async fn push_paths(
@@ -48,7 +63,6 @@ pub async fn push_paths(
         nar_hash: info.nar_hash,
         nar_size: info.nar_size,
         references: info.references.clone().into_iter().collect(),
-        signatures: info.signatures.into_iter().map(|s| s.to_string()).collect(),
       });
 
       if !no_deps {
@@ -86,5 +100,117 @@ pub async fn push_paths(
     .filter(|info| res.paths.contains(&info.store_path))
     .collect::<Vec<_>>();
 
-  info!("Pushing {} paths to the server", path_infos.len());
+  let todo = path_infos.len();
+  info!("Pushing {} paths to the server", todo);
+  let jobs = Arc::new(tokio::sync::Mutex::new(path_infos));
+  let error = Arc::new(AtomicBool::new(false));
+  let mut handles = Vec::new();
+
+  for _ in 0..10.min(todo) {
+    let jobs = jobs.clone();
+    let error = error.clone();
+    let api = api.clone();
+    let cache = res.cache;
+
+    let handle = tokio::spawn(async move {
+      upload_worker(jobs, error, api, cache, force).await;
+    });
+    handles.push(handle);
+  }
+
+  for handle in handles {
+    handle.await.unwrap();
+  }
+
+  if error.load(Ordering::SeqCst) {
+    error!("Failed to upload some paths.");
+    std::process::exit(1);
+  } else {
+    info!("Successfully uploaded all paths.");
+  }
+}
+
+async fn upload_worker(
+  jobs: Arc<tokio::sync::Mutex<Vec<PathInfo>>>,
+  error: Arc<AtomicBool>,
+  api: ApiClient,
+  cache: Uuid,
+  force: bool,
+) {
+  let mut conn = DaemonClient::builder().connect_daemon().await.unwrap();
+
+  loop {
+    let mut lock = jobs.lock().await;
+    let Some(info) = lock.pop() else {
+      return;
+    };
+    drop(lock);
+
+    if let Err(result) = upload_path(&mut conn, &api, &info, cache, force).await {
+      error!("Failed to upload {}: {:?}", info.store_path, result);
+      error.store(true, Ordering::SeqCst);
+    } else {
+      info!("Successfully uploaded {}", info.store_path);
+    }
+  }
+}
+
+async fn upload_path(
+  daemon: &mut DaemonClient<OwnedReadHalf, OwnedWriteHalf>,
+  api: &ApiClient,
+  info: &PathInfo,
+  cache: Uuid,
+  force: bool,
+) -> Result<()> {
+  let upload_id = api
+    .upload_path(&UploadPathRequest {
+      cache,
+      force,
+      store_path: info.store_path.clone(),
+      deriver: info.deriver.clone(),
+      nar_size: info.nar_size,
+      nar_hash: to_nix_base32(info.nar_hash.as_ref()),
+      references: info.references.clone(),
+    })
+    .await?
+    .uuid;
+
+  let nar = daemon
+    .nar_from_path(&info.store_path)
+    .await
+    .context("Failed to get nar")?;
+  let encoder = ZstdEncoder::new(nar);
+
+  let state = Arc::new(Mutex::new((Sha256::new(), 0)));
+  let state_clone = state.clone();
+  let encoder = InspectReader::new(encoder, move |bytes| {
+    // This constant blocking seems bad and in debug mode it is. But in release mode the performance difference
+    // is about 13% and the non blocking version lost some of the data and was not really stable.
+    let mut state = state.lock().unwrap();
+    state.0.update(bytes);
+    state.1 += bytes.len() as u64;
+  });
+
+  api
+    .upload_nar(upload_id, ReaderStream::new(encoder))
+    .await
+    .context("Failed to upload nar")?;
+
+  let (file_hash, file_size) = {
+    let state = state_clone.lock().unwrap();
+    (to_nix_base32(&state.0.clone().finalize()), state.1)
+  };
+
+  api
+    .upload_finish(
+      upload_id,
+      UploadFinishRequest {
+        signature: String::new(),
+        file_hash,
+        file_size,
+      },
+    )
+    .await?;
+
+  Ok(())
 }

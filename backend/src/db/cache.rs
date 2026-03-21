@@ -1,11 +1,13 @@
-use centaurus::bail;
+use centaurus::{bail, error::ErrorReportStatusExt};
 use entity::{
   cache, cache_access, downstream_cache, group_user, nar, nar_info, nar_info_reference,
   sea_orm_active_enums::AccessType,
 };
 use harmonia_store_core::store_path::StorePath;
+use http::StatusCode;
 use sea_orm::{
-  ActiveValue::Set, Condition, FromQueryResult, Iterable, JoinType, QuerySelect, prelude::*,
+  ActiveValue::Set, Condition, FromQueryResult, Iterable, JoinType, QuerySelect, TransactionTrait,
+  prelude::*,
 };
 use serde::Serialize;
 
@@ -149,35 +151,43 @@ impl<'db> CacheTable<'db> {
     quota: i64,
     sig_key: String,
     user: Uuid,
-  ) -> Result<Uuid, DbErr> {
-    let cache = cache::ActiveModel {
-      id: Set(Uuid::new_v4()),
-      name: Set(name),
-      public: Set(public),
-      quota: Set(quota),
-      public_signing_key: Set(sig_key),
-      priority: Set(50),
-      allow_force_push: Set(false),
-    };
-    let res = cache.insert(self.db).await?;
+  ) -> centaurus::error::Result<Uuid> {
+    self
+      .db
+      .transaction::<_, Uuid, DbErr>(|db| {
+        Box::pin(async move {
+          let cache = cache::ActiveModel {
+            id: Set(Uuid::new_v4()),
+            name: Set(name),
+            public: Set(public),
+            quota: Set(quota),
+            public_signing_key: Set(sig_key),
+            priority: Set(50),
+            allow_force_push: Set(false),
+          };
+          let res = cache.insert(db).await?;
 
-    let cache_access = cache_access::ActiveModel {
-      cache_id: Set(res.id),
-      user_id: Set(Some(user)),
-      group_id: Set(None),
-      access_type: Set(AccessType::Edit),
-      ..Default::default()
-    };
-    cache_access.insert(self.db).await?;
+          let cache_access = cache_access::ActiveModel {
+            cache_id: Set(res.id),
+            user_id: Set(Some(user)),
+            group_id: Set(None),
+            access_type: Set(AccessType::Edit),
+            ..Default::default()
+          };
+          cache_access.insert(db).await?;
 
-    let downstream_cache = downstream_cache::ActiveModel {
-      id: Set(Uuid::new_v4()),
-      cache_id: Set(res.id),
-      url: Set("https://cache.nixos.org".to_string()),
-    };
-    downstream_cache.insert(self.db).await?;
+          let downstream_cache = downstream_cache::ActiveModel {
+            id: Set(Uuid::new_v4()),
+            cache_id: Set(res.id),
+            url: Set("https://cache.nixos.org".to_string()),
+          };
+          downstream_cache.insert(db).await?;
 
-    Ok(res.id)
+          Ok(res.id)
+        })
+      })
+      .await
+      .status_context(StatusCode::INTERNAL_SERVER_ERROR, "DB Error")
   }
 
   pub async fn delete_cache(&self, uuid: Uuid, user: Uuid) -> centaurus::error::Result<()> {
@@ -248,54 +258,65 @@ impl<'db> CacheTable<'db> {
     deriver: Option<String>,
     signature: String,
     references: Vec<String>,
-  ) -> Result<(), DbErr> {
-    // Check if a nar with the same hash and size exists
-    let existing_nar = nar::Entity::find()
-      .filter(nar::Column::Hash.eq(file_hash.clone()))
-      .filter(nar::Column::Size.eq(file_size as i64))
-      .one(self.db)
-      .await?;
+  ) -> centaurus::error::Result<()> {
+    self
+      .db
+      .transaction::<_, (), DbErr>(|db| {
+        Box::pin(async move {
+          // Check if a nar with the same hash and size exists
+          let existing_nar = nar::Entity::find()
+            .filter(nar::Column::Hash.eq(file_hash.clone()))
+            .filter(nar::Column::Size.eq(file_size as i64))
+            .one(db)
+            .await?;
 
-    let nar = if let Some(existing_nar) = existing_nar {
-      existing_nar
-    } else {
-      let nar = nar::ActiveModel {
-        id: Set(Uuid::new_v4()),
-        hash: Set(file_hash.clone()),
-        size: Set(file_size as i64),
-      };
-      nar.insert(self.db).await?
-    };
+          let nar = if let Some(existing_nar) = existing_nar {
+            existing_nar
+          } else {
+            let nar = nar::ActiveModel {
+              id: Set(Uuid::new_v4()),
+              hash: Set(file_hash.clone()),
+              size: Set(file_size as i64),
+            };
+            nar.insert(db).await?
+          };
 
-    let nar_info = nar_info::ActiveModel {
-      id: Set(Uuid::new_v4()),
-      nar_id: Set(nar.id),
-      cache_id: Set(cache),
-      compression: Set("zst".to_string()),
-      store_path: Set(store_path),
-      nar_hash: Set(nar_hash),
-      nar_size: Set(nar_size as i64),
-      file_hash: Set(file_hash),
-      file_size: Set(file_size as i64),
-      deriver: Set(deriver),
-      signature: Set(signature),
-    };
-    let nar_info = nar_info.insert(self.db).await?;
+          let nar_info = nar_info::ActiveModel {
+            id: Set(Uuid::new_v4()),
+            nar_id: Set(nar.id),
+            cache_id: Set(cache),
+            compression: Set("zst".to_string()),
+            store_path: Set(store_path),
+            nar_hash: Set(nar_hash),
+            nar_size: Set(nar_size as i64),
+            file_hash: Set(file_hash),
+            file_size: Set(file_size as i64),
+            deriver: Set(deriver),
+            signature: Set(signature),
+          };
+          let nar_info = nar_info.insert(db).await?;
 
-    let mut nar_refernces = Vec::new();
-    for reference in references {
-      let reference = nar_info_reference::ActiveModel {
-        id: Set(Uuid::new_v4()),
-        nar_info_id: Set(nar_info.id),
-        store_path: Set(reference),
-      };
-      nar_refernces.push(reference);
-    }
-    nar_info_reference::Entity::insert_many(nar_refernces)
-      .exec(self.db)
-      .await?;
+          let mut nar_refernces = Vec::new();
+          for reference in references {
+            let reference = nar_info_reference::ActiveModel {
+              id: Set(Uuid::new_v4()),
+              nar_info_id: Set(nar_info.id),
+              store_path: Set(reference),
+            };
+            nar_refernces.push(reference);
+          }
 
-    Ok(())
+          if !nar_refernces.is_empty() {
+            nar_info_reference::Entity::insert_many(nar_refernces)
+              .exec(db)
+              .await?;
+          }
+
+          Ok(())
+        })
+      })
+      .await
+      .status_context(StatusCode::INTERNAL_SERVER_ERROR, "DB Error")
   }
 
   pub async fn is_store_path_in_cache(&self, cache: Uuid, store_path: &str) -> Result<bool, DbErr> {

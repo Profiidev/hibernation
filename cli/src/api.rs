@@ -1,13 +1,19 @@
 use std::{io::IsTerminal, path::PathBuf};
 
+use bytes::Bytes;
 use centaurus::{error::Result, eyre::Context};
-use reqwest::{Client, Method, RequestBuilder, Response};
-use shared::{HIBERNATION_VERSION_HEADER, api::push::UploadInfoResponse};
+use reqwest::{Body, Client, Method, RequestBuilder, Response};
+use shared::{
+  HIBERNATION_VERSION_HEADER,
+  api::push::{UploadFinishRequest, UploadInfoResponse, UploadPathRequest, UploadPathResponse},
+};
 use tracing::{error, warn};
 use url::Url;
+use uuid::Uuid;
 
 use crate::config::Config;
 
+#[derive(Clone)]
 pub struct ApiClient {
   client: Client,
   token: String,
@@ -129,8 +135,7 @@ impl ApiClient {
       .req("/api/cache/push/info", Method::POST)?
       .json(&body)
       .send()
-      .await?
-      .error_for_status()?;
+      .await?;
 
     match res.status() {
       reqwest::StatusCode::NOT_FOUND => Ok(PushInfoResult::CacheNotFound),
@@ -138,12 +143,55 @@ impl ApiClient {
       reqwest::StatusCode::NO_CONTENT => Ok(PushInfoResult::AllPathsExist),
       _ => {
         let res: UploadInfoResponse = res
+          .error_for_status()?
           .json()
           .await
           .context("Failed to parse push info response")?;
         Ok(PushInfoResult::Success(res))
       }
     }
+  }
+
+  pub async fn upload_path(&self, info: &UploadPathRequest) -> Result<UploadPathResponse> {
+    let res = self
+      .req("/api/cache/push", Method::POST)?
+      .json(info)
+      .send()
+      .await?
+      .error_for_status()?;
+
+    let res: UploadPathResponse = res
+      .json()
+      .await
+      .context("Failed to parse upload path response")?;
+    Ok(res)
+  }
+
+  pub async fn upload_nar<S>(&self, upload_id: Uuid, stream: S) -> Result<()>
+  where
+    S: futures_core::stream::TryStream + Send + 'static,
+    S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    Bytes: From<S::Ok>,
+  {
+    self
+      .req(&format!("/api/cache/push/{}", upload_id), Method::POST)?
+      .body(Body::wrap_stream(stream))
+      .send()
+      .await?
+      .error_for_status()?;
+
+    Ok(())
+  }
+
+  pub async fn upload_finish(&self, upload_id: Uuid, body: UploadFinishRequest) -> Result<()> {
+    self
+      .req(&format!("/api/cache/push/{}", upload_id), Method::PUT)?
+      .json(&body)
+      .send()
+      .await?
+      .error_for_status()?;
+
+    Ok(())
   }
 
   fn req(&self, path: &str, method: Method) -> Result<RequestBuilder> {

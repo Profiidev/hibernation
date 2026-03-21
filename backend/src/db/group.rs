@@ -70,6 +70,10 @@ impl<'db> GroupTable<'db> {
       models.push(model);
     }
 
+    if models.is_empty() {
+      return Ok(());
+    }
+
     group_permission::Entity::insert_many(models)
       .exec(self.db)
       .await?;
@@ -127,6 +131,10 @@ impl<'db> GroupTable<'db> {
       models.push(model);
     }
 
+    if models.is_empty() {
+      return Ok(());
+    }
+
     group_user::Entity::insert_many(models)
       .exec(self.db)
       .await?;
@@ -140,6 +148,10 @@ impl<'db> GroupTable<'db> {
     for user_id in user_ids {
       let model = group_user::Model { user_id, group_id }.into_active_model();
       models.push(model);
+    }
+
+    if models.is_empty() {
+      return Ok(());
     }
 
     group_user::Entity::insert_many(models)
@@ -374,6 +386,10 @@ impl<'db> GroupTable<'db> {
       }
       .into_active_model();
       models.push(model);
+    }
+
+    if models.is_empty() {
+      return Ok(());
     }
 
     cache_access::Entity::insert_many(models)

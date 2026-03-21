@@ -3,7 +3,6 @@ use centaurus::error::Result;
 
 use crate::auth::cli_auth::CliAuth;
 
-mod hash;
 mod management;
 mod push;
 

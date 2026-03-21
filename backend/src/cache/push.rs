@@ -3,11 +3,11 @@ use std::{
   time::{Duration, Instant},
 };
 
-use async_compression::tokio::write::ZstdDecoder;
+use async_compression::tokio::bufread::ZstdDecoder;
 use axum::{
   Extension, Json, Router,
   extract::{DefaultBodyLimit, FromRequestParts, Path, Request},
-  routing::post,
+  routing::{post, put},
 };
 use centaurus::{bail, db::init::Connection, error::Result, eyre::Context};
 use dashmap::DashMap;
@@ -17,18 +17,22 @@ use reqwest::Client;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use shared::{
-  api::push::{UploadInfoRequest, UploadInfoResponse, UploadPathRequest, UploadPathResponse},
+  api::push::{
+    UploadFinishRequest, UploadInfoRequest, UploadInfoResponse, UploadPathRequest,
+    UploadPathResponse,
+  },
+  hash::to_nix_base32,
   pool::FuturePool,
 };
 use tokio::{
-  io::{self, AsyncReadExt, AsyncWriteExt},
+  io::{self, AsyncReadExt, AsyncWriteExt, BufReader},
   time::sleep,
 };
 use tracing::warn;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{auth::cli_auth::CliAuth, cache::hash::to_nix_base32, db::DBTrait};
+use crate::{auth::cli_auth::CliAuth, db::DBTrait};
 
 pub fn router() -> Router {
   Router::new()
@@ -38,35 +42,56 @@ pub fn router() -> Router {
       "/{uuid}",
       post(upload_nar).layer(DefaultBodyLimit::disable()),
     )
+    .route("/{uuid}", put(upload_finish))
 }
 
 pub fn state(router: Router) -> Router {
   router.layer(Extension(PushState::new()))
 }
 
+struct UploadFinishData {
+  cache: Uuid,
+  store_path: String,
+  nar_hash: String,
+  nar_size: u64,
+  file_hash: String,
+  file_size: u64,
+  deriver: Option<String>,
+  references: Vec<String>,
+  signature: String,
+}
+
 #[derive(FromRequestParts, Clone)]
 #[from_request(via(Extension))]
 struct PushState {
   pending_uploads: Arc<DashMap<Uuid, (UploadPathRequest, Instant)>>,
+  pending_finish: Arc<DashMap<Uuid, (UploadFinishData, Instant)>>,
 }
 
 impl PushState {
   fn new() -> Self {
     let pending_uploads = Arc::new(DashMap::new());
+    let pending_finish = Arc::new(DashMap::new());
 
     tokio::spawn({
       let pending_uploads = pending_uploads.clone();
+      let pending_finish = pending_finish.clone();
       async move {
         loop {
           sleep(Duration::from_secs(60)).await;
           let now = Instant::now();
           pending_uploads
             .retain(|_, (_, uploaded)| now.duration_since(*uploaded) < Duration::from_secs(300));
+          pending_finish
+            .retain(|_, (_, uploaded)| now.duration_since(*uploaded) < Duration::from_secs(300));
         }
       }
     });
 
-    Self { pending_uploads }
+    Self {
+      pending_uploads,
+      pending_finish,
+    }
   }
 }
 
@@ -90,6 +115,13 @@ async fn upload_info(
   let mut missing_paths = db.cache().missing_paths(cache.id, req.paths).await?;
   if missing_paths.is_empty() {
     bail!(NO_CONTENT, "All paths are already present in the cache");
+  }
+
+  if req.force {
+    return Ok(Json(UploadInfoResponse {
+      paths: missing_paths,
+      cache: cache.id,
+    }));
   }
 
   let mut downstream_caches = db.cache().downstream_caches(cache.id).await?;
@@ -158,6 +190,15 @@ async fn upload_path(
     bail!("Force push is not allowed for this cache");
   }
 
+  if !req.force
+    && db
+      .cache()
+      .is_store_path_in_cache(cache.id, &req.store_path.to_string())
+      .await?
+  {
+    bail!("Store path is already in the cache");
+  }
+
   let upload_id = Uuid::new_v4();
   state
     .pending_uploads
@@ -173,8 +214,7 @@ struct UploadNarPath {
 }
 
 async fn upload_nar(
-  auth: CliAuth,
-  db: Connection,
+  _auth: CliAuth,
   state: PushState,
   path: UploadNarPath,
   body: Request,
@@ -183,27 +223,10 @@ async fn upload_nar(
     bail!("Invalid upload session");
   };
 
-  let Some(cache) = db
-    .cache()
-    .by_id_filtered(info.cache, auth.user_id, AccessType::Edit)
-    .await?
-  else {
-    bail!("Cache not found or access denied");
-  };
-
-  if !info.force
-    && db
-      .cache()
-      .is_store_path_in_cache(cache.id, &info.store_path.to_string())
-      .await?
-  {
-    bail!("Store path is already in the cache");
-  }
-
   let (mut pipe_writer, pipe_reader) = io::duplex(64 * 1024);
   let hashing_task = tokio::spawn(async move {
     let mut decompressed_hasher = Sha256::new();
-    let mut decoder = ZstdDecoder::new(pipe_reader);
+    let mut decoder = ZstdDecoder::new(BufReader::new(pipe_reader));
     let mut buffer = [0u8; 8192];
     let mut size = 0;
 
@@ -235,29 +258,66 @@ async fn upload_nar(
     raw_hasher.update(&chunk);
     pipe_writer.write_all(&chunk).await?;
   }
+  pipe_writer.shutdown().await?; // Ensure all data is flushed to the decoder
   drop(pipe_writer); // Close the writer to signal EOF to the decoder
 
   let file_hash = to_nix_base32(&raw_hasher.finalize());
   let (nar_hash, nar_size) = hashing_task.await.context("Hashing task failed")?;
 
-  if file_hash != info.file_hash || file_size != info.file_size {
-    bail!("File hash or size mismatch");
-  }
   if nar_hash != info.nar_hash || nar_size != info.nar_size {
     bail!("NAR hash or size mismatch");
   }
 
+  state.pending_finish.insert(
+    path.uuid,
+    (
+      UploadFinishData {
+        cache: info.cache,
+        store_path: info.store_path.to_string(),
+        nar_hash,
+        nar_size,
+        file_hash,
+        file_size,
+        signature: String::new(), // TODO: calculate real signature
+        deriver: info.deriver.map(|d| d.to_string()),
+        references: info.references.into_iter().map(|r| r.to_string()).collect(),
+      },
+      Instant::now(),
+    ),
+  );
+
+  Ok(())
+}
+
+async fn upload_finish(
+  _auth: CliAuth,
+  db: Connection,
+  state: PushState,
+  Path(uuid): Path<Uuid>,
+  Json(req): Json<UploadFinishRequest>,
+) -> Result<()> {
+  let Some((_, (data, _))) = state.pending_finish.remove(&uuid) else {
+    bail!("Invalid upload session");
+  };
+
+  if data.file_hash != req.file_hash || data.file_size != req.file_size {
+    bail!("File hash or size mismatch");
+  }
+  if data.signature != req.signature {
+    bail!("Signature mismatch");
+  }
+
   db.cache()
     .create_path(
-      cache.id,
-      info.store_path.to_string(),
-      nar_hash,
-      nar_size,
-      file_hash,
-      file_size,
-      info.deriver.map(|d| d.to_string()),
-      info.signature,
-      info.references.into_iter().map(|r| r.to_string()).collect(),
+      data.cache,
+      data.store_path,
+      data.nar_hash,
+      data.nar_size,
+      data.file_hash,
+      data.file_size,
+      data.deriver,
+      data.signature,
+      data.references,
     )
     .await?;
 
