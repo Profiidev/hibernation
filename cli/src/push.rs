@@ -8,7 +8,7 @@ use std::{
   },
 };
 
-use async_compression::tokio::bufread::ZstdEncoder;
+use async_compression::{Level, tokio::bufread::ZstdEncoder};
 use centaurus::{error::Result, eyre::Context};
 use harmonia_protocol::NarHash;
 use harmonia_store_core::store_path::{StoreDir, StorePath};
@@ -217,7 +217,7 @@ async fn upload_path(
     .nar_from_path(&info.store_path)
     .await
     .context("Failed to get nar")?;
-  let encoder = ZstdEncoder::new(nar);
+  let encoder = ZstdEncoder::with_quality(nar, Level::Default);
 
   let state = Arc::new(Mutex::new((Sha256::new(), 0)));
   let state_clone = state.clone();
@@ -238,8 +238,6 @@ async fn upload_path(
     let state = state_clone.lock().unwrap();
     (to_nix_base32(&state.0.clone().finalize()), state.1)
   };
-  
-  info!("Finished uploading nar, finalizing upload with hash {} and size {}", file_hash, file_size);
 
   api
     .upload_finish(

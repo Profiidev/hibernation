@@ -266,8 +266,8 @@ impl<'db> CacheTable<'db> {
         Box::pin(async move {
           // Check if a nar with the same hash and size exists
           let existing_nar = nar::Entity::find()
-            .filter(nar::Column::Hash.eq(file_hash.clone()))
-            .filter(nar::Column::Size.eq(file_size as i64))
+            .filter(nar::Column::Hash.eq(nar_hash.clone()))
+            .filter(nar::Column::Size.eq(nar_size as i64))
             .one(db)
             .await?;
 
@@ -280,8 +280,8 @@ impl<'db> CacheTable<'db> {
               .ok_or(DbErr::RecordNotFound("Nar not found".to_string()))?
               .into_active_model();
 
-            nar.hash = Set(file_hash.clone());
-            nar.size = Set(file_size as i64);
+            nar.hash = Set(nar_hash.clone());
+            nar.size = Set(nar_size as i64);
             nar.update(db).await?
           };
 
@@ -338,9 +338,26 @@ impl<'db> CacheTable<'db> {
       id: Set(nar_id),
       hash: Set("".to_string()),
       size: Set(0),
+      created_at: Set(chrono::Utc::now().naive_utc()),
     };
     nar.insert(self.db).await?;
 
+    Ok(())
+  }
+
+  pub async fn orphan_nars(&self) -> Result<Vec<nar::Model>, DbErr> {
+    let cut_off = chrono::Utc::now() - chrono::Duration::seconds(600);
+
+    nar::Entity::find()
+      .left_join(nar_info::Entity)
+      .filter(nar_info::Column::Id.is_null())
+      .filter(nar::Column::CreatedAt.lt(cut_off))
+      .all(self.db)
+      .await
+  }
+
+  pub async fn delete_nar(&self, nar_id: Uuid) -> Result<(), DbErr> {
+    nar::Entity::delete_by_id(nar_id).exec(self.db).await?;
     Ok(())
   }
 }

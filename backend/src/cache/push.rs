@@ -87,7 +87,7 @@ impl PushState {
           pending_uploads
             .retain(|_, (_, uploaded)| now.duration_since(*uploaded) < Duration::from_secs(300));
           pending_finish
-            .retain(|_, (_, uploaded)| now.duration_since(*uploaded) < Duration::from_secs(300));
+            .retain(|_, (_, uploaded)| now.duration_since(*uploaded) < Duration::from_secs(120));
         }
       }
     });

@@ -14,6 +14,7 @@ impl MigrationTrait for Migration {
           .col(pk_uuid(Nar::Id))
           .col(string(Nar::Hash))
           .col(big_integer(Nar::Size))
+          .col(date_time(Nar::CreatedAt))
           .to_owned(),
       )
       .await
@@ -32,4 +33,5 @@ pub enum Nar {
   Id,
   Hash,
   Size,
+  CreatedAt,
 }

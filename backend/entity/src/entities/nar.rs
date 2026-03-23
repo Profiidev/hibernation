@@ -9,6 +9,7 @@ pub struct Model {
   pub id: Uuid,
   pub hash: String,
   pub size: i64,
+  pub created_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
