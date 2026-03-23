@@ -238,6 +238,8 @@ async fn upload_path(
     let state = state_clone.lock().unwrap();
     (to_nix_base32(&state.0.clone().finalize()), state.1)
   };
+  
+  info!("Finished uploading nar, finalizing upload with hash {} and size {}", file_hash, file_size);
 
   api
     .upload_finish(

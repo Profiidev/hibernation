@@ -70,6 +70,12 @@ governor = "0.10.4"
 dashmap = "6.1.0"
 async-compression = { version = "0.4.41", features = ["tokio", "zstd"] }
 sha2 = "0.10.9"
+rust-s3 = { version = "0.37.1", default-features = false, features = [
+  "fail-on-err",
+  "tags",
+  "tokio-rustls-tls",
+] }
+tokio-util = { version = "0.7.18", features = ["io"] }
 
 [[bin]]
 name = "backend"

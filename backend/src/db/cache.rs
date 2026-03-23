@@ -6,8 +6,8 @@ use entity::{
 use harmonia_store_core::store_path::StorePath;
 use http::StatusCode;
 use sea_orm::{
-  ActiveValue::Set, Condition, FromQueryResult, Iterable, JoinType, QuerySelect, TransactionTrait,
-  prelude::*,
+  ActiveValue::Set, Condition, FromQueryResult, IntoActiveModel, Iterable, JoinType, QuerySelect,
+  TransactionTrait, prelude::*,
 };
 use serde::Serialize;
 
@@ -249,6 +249,7 @@ impl<'db> CacheTable<'db> {
   #[allow(clippy::too_many_arguments)]
   pub async fn create_path(
     &self,
+    nar_id: Uuid,
     cache: Uuid,
     store_path: String,
     nar_hash: String,
@@ -273,12 +274,15 @@ impl<'db> CacheTable<'db> {
           let nar = if let Some(existing_nar) = existing_nar {
             existing_nar
           } else {
-            let nar = nar::ActiveModel {
-              id: Set(Uuid::new_v4()),
-              hash: Set(file_hash.clone()),
-              size: Set(file_size as i64),
-            };
-            nar.insert(db).await?
+            let mut nar = nar::Entity::find_by_id(nar_id)
+              .one(db)
+              .await?
+              .ok_or(DbErr::RecordNotFound("Nar not found".to_string()))?
+              .into_active_model();
+
+            nar.hash = Set(file_hash.clone());
+            nar.size = Set(file_size as i64);
+            nar.update(db).await?
           };
 
           let nar_info = nar_info::ActiveModel {
@@ -327,6 +331,17 @@ impl<'db> CacheTable<'db> {
       .await?;
 
     Ok(count > 0)
+  }
+
+  pub async fn create_nar(&self, nar_id: Uuid) -> Result<(), DbErr> {
+    let nar = nar::ActiveModel {
+      id: Set(nar_id),
+      hash: Set("".to_string()),
+      size: Set(0),
+    };
+    nar.insert(self.db).await?;
+
+    Ok(())
   }
 }
 

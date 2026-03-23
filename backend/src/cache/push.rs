@@ -39,7 +39,7 @@ use tracing::warn;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{auth::cli_auth::CliAuth, db::DBTrait};
+use crate::{auth::cli_auth::CliAuth, cache::storage::FileStorage, db::DBTrait};
 
 pub fn router() -> Router {
   Router::new()
@@ -52,10 +52,6 @@ pub fn router() -> Router {
     .route("/{uuid}", put(upload_finish))
 }
 
-pub fn state(router: Router) -> Router {
-  router.layer(Extension(PushState::new()))
-}
-
 struct UploadFinishData {
   cache: Uuid,
   store_path: String,
@@ -66,19 +62,20 @@ struct UploadFinishData {
   deriver: Option<String>,
   references: Vec<String>,
   signature: String,
+  nar_id: Uuid,
 }
 
 #[derive(FromRequestParts, Clone)]
 #[from_request(via(Extension))]
-struct PushState {
+pub struct PushState {
   pending_uploads: Arc<DashMap<Uuid, (UploadPathRequest, Instant)>>,
   pending_finish: Arc<DashMap<Uuid, (UploadFinishData, Instant)>>,
 }
 
 impl PushState {
-  fn new() -> Self {
+  pub fn new() -> Self {
     let pending_uploads = Arc::new(DashMap::new());
-    let pending_finish = Arc::new(DashMap::new());
+    let pending_finish: Arc<DashMap<Uuid, (UploadFinishData, Instant)>> = Arc::new(DashMap::new());
 
     tokio::spawn({
       let pending_uploads = pending_uploads.clone();
@@ -242,7 +239,7 @@ async fn upload_path(
   Ok(Json(UploadPathResponse { uuid: upload_id }))
 }
 
-#[derive(Deserialize, FromRequestParts)]
+#[derive(Deserialize, FromRequestParts, Clone, Copy)]
 #[from_request(via(Path))]
 struct UploadNarPath {
   uuid: Uuid,
@@ -252,11 +249,16 @@ async fn upload_nar(
   _auth: CliAuth,
   state: PushState,
   path: UploadNarPath,
+  storage: FileStorage,
+  db: Connection,
   body: Request,
 ) -> Result<()> {
   let Some((_, (info, _))) = state.pending_uploads.remove(&path.uuid) else {
     bail!("Invalid upload session");
   };
+
+  let nar_id = Uuid::new_v4();
+  db.cache().create_nar(nar_id).await?;
 
   let (mut pipe_writer, pipe_reader) = io::duplex(64 * 1024);
   let hashing_task = tokio::spawn(async move {
@@ -282,6 +284,10 @@ async fn upload_nar(
     (to_nix_base32(&decompressed_hasher.finalize()), size)
   });
 
+  let (mut storage_writer, mut storage_reader) = io::duplex(64 * 1024);
+  let storage_task =
+    tokio::spawn(async move { storage.save_file(&mut storage_reader, nar_id).await });
+
   let mut raw_hasher = Sha256::new();
   let mut file_size = 0;
   let mut stream = body.into_body().into_data_stream();
@@ -292,9 +298,14 @@ async fn upload_nar(
     file_size += chunk.len() as u64;
     raw_hasher.update(&chunk);
     pipe_writer.write_all(&chunk).await?;
+    storage_writer.write_all(&chunk).await?;
   }
   pipe_writer.shutdown().await?; // Ensure all data is flushed to the decoder
+  storage_writer.shutdown().await?; // Ensure all data is flushed to storage
   drop(pipe_writer); // Close the writer to signal EOF to the decoder
+  drop(storage_writer); // Close the writer to signal EOF to storage
+
+  storage_task.await.context("Storage task failed")??;
 
   let file_hash = to_nix_base32(&raw_hasher.finalize());
   let (nar_hash, nar_size) = hashing_task.await.context("Hashing task failed")?;
@@ -316,6 +327,7 @@ async fn upload_nar(
         signature: info.signature,
         deriver: info.deriver.map(|d| d.to_string()),
         references: info.references.into_iter().map(|r| r.to_string()).collect(),
+        nar_id,
       },
       Instant::now(),
     ),
@@ -341,6 +353,7 @@ async fn upload_finish(
 
   db.cache()
     .create_path(
+      data.nar_id,
       data.cache,
       data.store_path,
       data.nar_hash,
