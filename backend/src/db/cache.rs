@@ -37,6 +37,7 @@ pub struct CacheDetails {
   #[serde(rename = "sig_key")]
   public_signing_key: String,
   priority: i32,
+  nar_count: i64,
 }
 
 #[derive(Serialize, FromQueryResult)]
@@ -106,6 +107,7 @@ impl<'db> CacheTable<'db> {
       .select_only()
       .columns(cache::Column::iter())
       .column_as(nar::Column::Size.sum().cast_as("BIGINT"), "size")
+      .column_as(nar_info::Column::Id.count().cast_as("BIGINT"), "nar_count")
       .into_model::<CacheDetails>()
       .one(self.db)
       .await

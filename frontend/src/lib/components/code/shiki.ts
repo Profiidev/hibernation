@@ -4,7 +4,7 @@ import { createHighlighterCore } from 'shiki/core';
 
 const bundledLanguages = {
   bash: () => import('@shikijs/langs/bash'),
-  yaml: () => import('@shikijs/langs/yaml')
+  nix: () => import('@shikijs/langs/nix')
 };
 
 /** The languages configured for the highlighter */

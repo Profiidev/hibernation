@@ -22,6 +22,7 @@ export const listCaches = async (fetch: typeof window.fetch = window.fetch) => {
 export type CacheDetails = CacheInfo & {
   sig_key: string;
   priority: number;
+  nar_count: number;
 };
 
 export const getCacheDetails = async (
