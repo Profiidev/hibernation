@@ -7,10 +7,10 @@ use harmonia_store_core::store_path::StorePath;
 use http::StatusCode;
 use migration::ExprTrait;
 use sea_orm::{
-  ActiveValue::Set, Condition, FromQueryResult, IntoActiveModel, Iterable, JoinType, QuerySelect,
-  QueryTrait, TransactionTrait, prelude::*,
+  ActiveValue::Set, Condition, FromQueryResult, IntoActiveModel, Iterable, JoinType, QueryOrder,
+  QuerySelect, QueryTrait, TransactionTrait, prelude::*,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{db::group::GroupTable, permissions::Permission};
 
@@ -50,6 +50,30 @@ pub struct SimpleCacheInfo {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
 enum QueryAs {
   GroupId,
+}
+
+#[derive(Deserialize, Serialize)]
+pub enum SearchOrder {
+  Asc,
+  Desc,
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Eq)]
+pub enum SearchSort {
+  StorePath,
+  Created,
+  Accessed,
+  Size,
+  AccessCount,
+}
+
+#[derive(FromQueryResult)]
+pub struct SearchResult {
+  pub store_path: String,
+  pub created_at: chrono::NaiveDateTime,
+  pub last_accessed_at: Option<chrono::NaiveDateTime>,
+  pub size: i64,
+  pub accessed: i64,
 }
 
 pub struct CacheTable<'db> {
@@ -300,6 +324,9 @@ impl<'db> CacheTable<'db> {
             store_path: Set(store_path),
             deriver: Set(deriver),
             signature: Set(signature),
+            created_at: Set(chrono::Utc::now().naive_utc()),
+            last_accessed_at: Set(None),
+            accessed: Set(0),
           };
           let nar_info = nar_info.insert(db).await?;
 
@@ -402,6 +429,61 @@ impl<'db> CacheTable<'db> {
       .await?;
 
     Ok(())
+  }
+
+  pub async fn search_store_paths(
+    &self,
+    cache: Uuid,
+    user: Uuid,
+    query: String,
+    order: SearchOrder,
+    sort: SearchSort,
+  ) -> centaurus::error::Result<Vec<SearchResult>> {
+    if self
+      .by_id_filtered(cache, user, AccessType::Edit)
+      .await?
+      .is_none()
+    {
+      bail!(NOT_FOUND, "Cache not found or insufficient permissions");
+    }
+
+    let mut query = nar_info::Entity::find()
+      .filter(nar_info::Column::CacheId.eq(cache))
+      .filter(nar_info::Column::StorePath.contains(query.trim().to_lowercase()))
+      .join(JoinType::LeftJoin, nar_info::Relation::Nar.def());
+
+    let order = match order {
+      SearchOrder::Asc => sea_orm::Order::Asc,
+      SearchOrder::Desc => sea_orm::Order::Desc,
+    };
+
+    if sort == SearchSort::Size {
+      query = query.order_by(nar::Column::NarSize, order);
+    } else {
+      let column = match sort {
+        SearchSort::StorePath => nar_info::Column::StorePath,
+        SearchSort::Created => nar_info::Column::CreatedAt,
+        SearchSort::Accessed => nar_info::Column::LastAccessedAt,
+        SearchSort::AccessCount => nar_info::Column::Accessed,
+        SearchSort::Size => unreachable!(),
+      };
+
+      query = query.order_by(column, order);
+    }
+
+    Ok(
+      query
+        .select_only()
+        .column(nar_info::Column::StorePath)
+        .column(nar_info::Column::CreatedAt)
+        .column(nar_info::Column::LastAccessedAt)
+        .column(nar_info::Column::Accessed)
+        .column(nar::Column::Size)
+        .limit(100)
+        .into_model::<SearchResult>()
+        .all(self.db)
+        .await?,
+    )
   }
 }
 

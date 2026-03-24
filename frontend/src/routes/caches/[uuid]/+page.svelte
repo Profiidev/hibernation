@@ -3,6 +3,7 @@
   import { Progress } from 'positron-components/components/ui/progress';
   import * as Code from '$lib/components/code';
   import { ScrollArea } from 'positron-components/components/ui/scroll-area';
+  import { browser } from '$app/environment';
 
   let { data } = $props();
 
@@ -11,7 +12,7 @@
   let usage_percent = $derived((size_gib / quota_gib) * 100);
 
   const url = $derived(
-    `${window.location.origin}/api/nix/${data.cacheInfo.uuid}`
+    `${browser && window.location.origin}/api/nix/${data.cacheInfo.uuid}`
   );
   const nixConfig = $derived(`{
   nixConfig = {

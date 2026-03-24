@@ -38,8 +38,6 @@
     </aside>
     <Separator orientation="horizontal" class="lg:hidden" />
     <Separator orientation="vertical" class="hidden lg:block" />
-    <div class="flex-1">
-      {@render children()}
-    </div>
+    {@render children()}
   </div>
 </div>

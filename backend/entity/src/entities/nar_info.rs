@@ -13,6 +13,9 @@ pub struct Model {
   pub compression: String,
   pub deriver: Option<String>,
   pub signature: String,
+  pub last_accessed_at: Option<DateTime>,
+  pub created_at: DateTime,
+  pub accessed: i64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

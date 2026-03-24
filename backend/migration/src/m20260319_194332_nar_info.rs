@@ -20,6 +20,9 @@ impl MigrationTrait for Migration {
           .col(string(NarInfo::Compression))
           .col(string_null(NarInfo::Deriver))
           .col(string(NarInfo::Signature))
+          .col(date_time_null(NarInfo::LastAccessedAt))
+          .col(date_time(NarInfo::CreatedAt))
+          .col(big_integer(NarInfo::Accessed))
           .foreign_key(
             ForeignKey::create()
               .from(NarInfo::Table, NarInfo::CacheId)
@@ -78,6 +81,9 @@ enum NarInfo {
   Compression,
   Deriver,
   Signature,
+  LastAccessedAt,
+  CreatedAt,
+  Accessed,
 }
 
 #[derive(DeriveIden)]

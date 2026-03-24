@@ -70,3 +70,47 @@ export const deleteCache = async (data: DeleteCacheRequest) => {
     body: data
   });
 };
+
+export enum SearchSort {
+  StorePath = 'StorePath',
+  Size = 'Size',
+  Created = 'Created',
+  Accessed = 'Accessed',
+  AccessCount = 'AccessCount'
+}
+
+export enum SearchOrder {
+  Ascending = 'Asc',
+  Descending = 'Desc'
+}
+
+export interface SearchResult {
+  store_path: string;
+  size: number;
+  created_at: string;
+  last_accessed_at: string;
+  accessed: number;
+}
+
+export const searchCache = async (
+  cache: string,
+  query: string,
+  sort: SearchSort,
+  order: SearchOrder
+) => {
+  if (!cache || !query) {
+    return [];
+  }
+
+  let ret = await post<SearchResult[]>(
+    `/api/cache/management/${cache}/search`,
+    {
+      body: { query, sort, order },
+      res_type: ResponseType.Json
+    }
+  );
+
+  if (ret && Array.isArray(ret)) {
+    return ret;
+  }
+};

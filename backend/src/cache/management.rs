@@ -4,6 +4,7 @@ use axum::{
   routing::{delete, get, post},
 };
 use centaurus::{bail, db::init::Connection, error::Result};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use shared::sig::PublicKey;
 use uuid::Uuid;
@@ -12,7 +13,7 @@ use crate::{
   auth::jwt_auth::JwtAuth,
   db::{
     DBTrait,
-    cache::{CacheDetails, CacheInfo},
+    cache::{CacheDetails, CacheInfo, SearchOrder, SearchSort},
   },
   permissions::CacheCreate,
 };
@@ -23,6 +24,7 @@ pub fn router() -> Router {
     .route("/", post(create_cache))
     .route("/", delete(delete_cache))
     .route("/{uuid}", get(cache_details))
+    .route("/{uuid}/search", post(search_store_paths))
 }
 
 async fn list_caches(auth: JwtAuth, db: Connection) -> Result<Json<Vec<CacheInfo>>> {
@@ -92,4 +94,50 @@ struct DeleteCacheRequest {
 async fn delete_cache(auth: JwtAuth, db: Connection, req: DeleteCacheRequest) -> Result<()> {
   db.cache().delete_cache(req.uuid, auth.user_id).await?;
   Ok(())
+}
+
+#[derive(Deserialize, FromRequest)]
+#[from_request(via(Json))]
+struct SearchStorePathsRequest {
+  query: String,
+  sort: SearchSort,
+  order: SearchOrder,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SearchResult {
+  store_path: String,
+  created_at: DateTime<Utc>,
+  last_accessed_at: Option<DateTime<Utc>>,
+  size: i64,
+  accessed: i64,
+}
+
+async fn search_store_paths(
+  auth: JwtAuth,
+  path: CachePath,
+  db: Connection,
+  req: SearchStorePathsRequest,
+) -> Result<Json<Vec<SearchResult>>> {
+  if req.query.trim().is_empty() {
+    bail!(BAD_REQUEST, "Query cannot be empty");
+  }
+
+  let paths = db
+    .cache()
+    .search_store_paths(path.uuid, auth.user_id, req.query, req.order, req.sort)
+    .await?
+    .into_iter()
+    .map(|entry| SearchResult {
+      store_path: entry.store_path,
+      created_at: DateTime::from_naive_utc_and_offset(entry.created_at, Utc),
+      last_accessed_at: entry
+        .last_accessed_at
+        .map(|val| DateTime::from_naive_utc_and_offset(val, Utc)),
+      size: entry.size,
+      accessed: entry.accessed,
+    })
+    .collect();
+
+  Ok(Json(paths))
 }

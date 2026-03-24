@@ -102,12 +102,13 @@ impl FileStorage {
         Ok(file_path.exists())
       }
       Self::S3(bucket) => {
-        let res = bucket
-          .head_object(&name)
-          .await
-          .context("Failed to check nar in S3 Bucket")?;
+        let res = bucket.head_object(&name).await;
 
-        Ok(res.1 == 200)
+        match res {
+          Ok(_) => Ok(true),
+          Err(s3::error::S3Error::HttpFailWithBody(404, _)) => Ok(false),
+          Err(e) => Err(e).context("Failed to check nar existence in S3 Bucket")?,
+        }
       }
     }
   }
