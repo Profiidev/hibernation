@@ -17,6 +17,7 @@ use crate::{
     cache::{CacheDetails, CacheInfo, SearchOrder, SearchSort},
   },
   permissions::CacheCreate,
+  ws::state::{UpdateMessage, Updater},
 };
 
 pub fn router() -> Router {
@@ -69,6 +70,7 @@ struct CreateCacheResponse {
 async fn create_cache(
   auth: JwtAuth<CacheCreate>,
   db: Connection,
+  updater: Updater,
   req: CreateCacheRequest,
 ) -> Result<Json<CreateCacheResponse>> {
   if req.name.trim().is_empty() {
@@ -88,6 +90,7 @@ async fn create_cache(
     .cache()
     .create_cache(req.name, req.public, quota, req.sig_key, auth.user_id)
     .await?;
+  updater.broadcast(UpdateMessage::Cache { uuid }).await;
 
   Ok(Json(CreateCacheResponse { uuid }))
 }
@@ -98,12 +101,20 @@ struct DeleteCacheRequest {
   uuid: Uuid,
 }
 
-async fn delete_cache(auth: JwtAuth, db: Connection, req: DeleteCacheRequest) -> Result<()> {
+async fn delete_cache(
+  auth: JwtAuth,
+  db: Connection,
+  updater: Updater,
+  req: DeleteCacheRequest,
+) -> Result<()> {
   if db.cache().cache_user_access(auth.user_id, req.uuid).await? != Some(AccessType::Edit) {
     bail!(FORBIDDEN, "Insufficient permissions");
   }
 
   db.cache().delete_cache(req.uuid).await?;
+  updater
+    .broadcast(UpdateMessage::Cache { uuid: req.uuid })
+    .await;
   Ok(())
 }
 
@@ -177,6 +188,7 @@ async fn edit_cache(
   auth: JwtAuth,
   path: CachePath,
   db: Connection,
+  updater: Updater,
   req: EditCacheRequest,
 ) -> Result<()> {
   if req.priority < 0 {
@@ -220,6 +232,9 @@ async fn edit_cache(
       path.uuid,
     )
     .await?;
+  updater
+    .broadcast(UpdateMessage::Cache { uuid: path.uuid })
+    .await;
 
   Ok(())
 }
