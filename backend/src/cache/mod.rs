@@ -3,7 +3,7 @@ use centaurus::{db::init::Connection, error::Result};
 
 use crate::{
   auth::cli_auth::CliAuth,
-  cache::{push::PushState, storage::FileStorage},
+  cache::{push::PushState, state::CacheEvictionState, storage::FileStorage},
   config::Config,
 };
 
@@ -11,6 +11,7 @@ mod cleanup;
 mod dedupe;
 mod management;
 mod push;
+mod state;
 mod storage;
 
 pub fn router() -> Router {
@@ -32,6 +33,7 @@ pub async fn state(router: Router, db: Connection, config: &Config) -> Router {
   router
     .layer(axum::Extension(storage))
     .layer(axum::Extension(push_state))
+    .layer(axum::Extension(CacheEvictionState::new()))
 }
 
 async fn test(auth: CliAuth) -> Result<String> {

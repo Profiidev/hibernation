@@ -5,7 +5,7 @@ use entity::{
 };
 use harmonia_store_core::store_path::StorePath;
 use http::StatusCode;
-use migration::ExprTrait;
+use migration::{ExprTrait, Func, NullOrdering, Query, WindowStatement};
 use sea_orm::{
   ActiveValue::Set, Condition, FromQueryResult, IntoActiveModel, Iterable, JoinType, QueryOrder,
   QuerySelect, QueryTrait, TransactionTrait, prelude::*,
@@ -168,6 +168,10 @@ impl<'db> CacheTable<'db> {
     query = apply_user_filter(query, self.db, user, access_type).await?;
 
     query.one(self.db).await
+  }
+
+  pub async fn by_id(&self, uuid: Uuid) -> Result<Option<cache::Model>, DbErr> {
+    cache::Entity::find_by_id(uuid).one(self.db).await
   }
 
   pub async fn by_name_filtered(
@@ -557,6 +561,99 @@ impl<'db> CacheTable<'db> {
       .filter(nar_info::Column::CacheId.eq(cache_id))
       .exec(self.db)
       .await?;
+
+    Ok(())
+  }
+
+  pub async fn cache_size(&self, cache_id: Uuid) -> Result<Option<i64>, DbErr> {
+    Ok(
+      nar::Entity::find()
+        .join(JoinType::InnerJoin, nar::Relation::NarInfo.def())
+        .filter(nar_info::Column::CacheId.eq(cache_id))
+        .select_only()
+        .column_as(nar::Column::Size.sum().cast_as("BIGINT"), "total_size")
+        .into_tuple::<Option<i64>>()
+        .one(self.db)
+        .await?
+        .map(|size| size.unwrap_or(0)),
+    )
+  }
+
+  pub async fn evict(
+    &self,
+    cache: Uuid,
+    to_evict: i64,
+    eviction_policy: EvictionPolicy,
+  ) -> Result<(), DbErr> {
+    let cumulative_size = "cumulative_size";
+    let mut window = WindowStatement::new();
+
+    match eviction_policy {
+      EvictionPolicy::LeastRecentlyUsed => {
+        window
+          .order_by_with_nulls(
+            (nar_info::Entity, nar_info::Column::LastAccessedAt),
+            sea_orm::Order::Asc,
+            NullOrdering::First,
+          )
+          .order_by(
+            (nar_info::Entity, nar_info::Column::CreatedAt),
+            sea_orm::Order::Asc,
+          );
+      }
+      EvictionPolicy::LeastFrequentlyUsed => {
+        window
+          .order_by(
+            (nar_info::Entity, nar_info::Column::Accessed),
+            sea_orm::Order::Asc,
+          )
+          .order_by(
+            (nar_info::Entity, nar_info::Column::CreatedAt),
+            sea_orm::Order::Asc,
+          );
+      }
+      EvictionPolicy::OldestFirst => {
+        window.order_by(
+          (nar_info::Entity, nar_info::Column::CreatedAt),
+          sea_orm::Order::Asc,
+        );
+      }
+    }
+
+    let inner = Query::select()
+      .expr_as(Expr::col((nar_info::Entity, nar_info::Column::Id)), "id")
+      .expr_as(Expr::col((nar::Entity, nar::Column::Size)), "size")
+      .from(nar_info::Entity)
+      .and_where(nar_info::Column::CacheId.eq(cache))
+      .left_join(
+        nar::Entity,
+        Expr::col((nar_info::Entity, nar_info::Column::NarId))
+          .equals((nar::Entity, nar::Column::Id)),
+      )
+      .expr_window_as(
+        Func::sum(Expr::col(nar::Column::Size)),
+        window,
+        cumulative_size,
+      )
+      .to_owned();
+
+    let outer = Query::select()
+      .column(nar_info::Column::Id)
+      .from_subquery(inner, "ordered_nars")
+      .and_where(
+        Expr::col(cumulative_size)
+          .sub(Expr::col(nar::Column::Size))
+          .lt(to_evict),
+      )
+      .to_owned();
+
+    let delete_query = Query::delete()
+      .from_table(nar_info::Entity)
+      .and_where(nar_info::Column::Id.in_subquery(outer))
+      .to_owned();
+
+    let builder = self.db.get_database_backend();
+    self.db.query_all(builder.build(&delete_query)).await?;
 
     Ok(())
   }

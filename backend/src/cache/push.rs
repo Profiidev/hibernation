@@ -39,7 +39,11 @@ use tracing::warn;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{auth::cli_auth::CliAuth, cache::storage::FileStorage, db::DBTrait};
+use crate::{
+  auth::cli_auth::CliAuth,
+  cache::{state::CacheEvictionState, storage::FileStorage},
+  db::DBTrait,
+};
 
 pub fn router() -> Router {
   Router::new()
@@ -340,6 +344,7 @@ async fn upload_finish(
   _auth: CliAuth,
   db: Connection,
   state: PushState,
+  lock: CacheEvictionState,
   Path(uuid): Path<Uuid>,
   Json(req): Json<UploadFinishRequest>,
 ) -> Result<()> {
@@ -349,6 +354,26 @@ async fn upload_finish(
 
   if data.file_hash != req.file_hash || data.file_size != req.file_size {
     bail!("File hash or size mismatch");
+  }
+
+  let lock = lock.lock_cache(data.cache).await;
+  let Some(info) = db.cache().by_id(data.cache).await? else {
+    bail!("Cache not found");
+  };
+
+  let Some(size) = db.cache().cache_size(data.cache).await? else {
+    bail!("Cache not found");
+  };
+
+  if info.quota < data.file_size as i64 {
+    bail!("File size exceeds cache quota");
+  }
+
+  let diff = (size + data.file_size as i64) - info.quota;
+  if diff > 0 {
+    db.cache()
+      .evict(data.cache, diff, info.eviction_policy)
+      .await?;
   }
 
   db.cache()
@@ -365,6 +390,8 @@ async fn upload_finish(
       data.references,
     )
     .await?;
+
+  drop(lock); // Release the cache lock as soon as possible
 
   Ok(())
 }
