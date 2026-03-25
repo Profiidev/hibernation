@@ -1,3 +1,4 @@
+import { EvictionPolicy } from '$lib/backend/cache.svelte';
 import { z } from 'zod';
 
 export const cacheSchema = z.object({
@@ -6,7 +7,10 @@ export const cacheSchema = z.object({
     .number()
     .int()
     .min(0, { message: 'Priority must be a non-negative integer' }),
-  allow_force_push: z.boolean().default(false)
+  allow_force_push: z.boolean().default(false),
+  eviction_policy: z
+    .array(z.enum(EvictionPolicy))
+    .default([EvictionPolicy.LeastRecentlyUsed])
 });
 
 export const quotaSchema = z.object({

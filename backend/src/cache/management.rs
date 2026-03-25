@@ -5,7 +5,7 @@ use axum::{
 };
 use centaurus::{bail, db::init::Connection, error::Result};
 use chrono::{DateTime, Utc};
-use entity::sea_orm_active_enums::AccessType;
+use entity::sea_orm_active_enums::{AccessType, EvictionPolicy};
 use serde::{Deserialize, Serialize};
 use shared::sig::PublicKey;
 use uuid::Uuid;
@@ -182,6 +182,7 @@ struct EditCacheRequest {
   quota: i64,
   sig_key: String,
   allow_force_push: bool,
+  eviction_policy: EvictionPolicy,
 }
 
 async fn edit_cache(
@@ -229,6 +230,7 @@ async fn edit_cache(
       req.sig_key,
       req.priority,
       req.allow_force_push,
+      req.eviction_policy,
       path.uuid,
     )
     .await?;

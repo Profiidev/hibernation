@@ -3,7 +3,8 @@
   import {
     clearCache,
     deleteCache,
-    editCache
+    editCache,
+    EvictionPolicy
   } from '$lib/backend/cache.svelte.js';
   import BaseForm from 'positron-components/components/form/base-form.svelte';
   import { cacheSchema, keySchema, quotaSchema } from './schema.svelte.js';
@@ -23,6 +24,7 @@
   import Lock from '@lucide/svelte/icons/lock';
   import LockOpen from '@lucide/svelte/icons/lock-open';
   import { goto } from '$app/navigation';
+  import FormSelect from 'positron-components/components/form/form-select.svelte';
 
   const { data } = $props();
 
@@ -36,7 +38,8 @@
   const onsubmit = async (form: FormValue<typeof cacheSchema>) => {
     let res = await editCache(data.cacheInfo.uuid, {
       ...data.cacheInfo,
-      ...form
+      ...form,
+      eviction_policy: form.eviction_policy[0]
     });
 
     if (res) {
@@ -129,7 +132,10 @@
   <BaseForm
     schema={cacheSchema}
     {onsubmit}
-    initialValue={data.cacheInfo}
+    initialValue={{
+      ...data.cacheInfo,
+      eviction_policy: [data.cacheInfo.eviction_policy]
+    }}
     class="flex flex-1 flex-col"
   >
     {#snippet children({ props })}
@@ -149,6 +155,24 @@
             placeholder="Enter priority"
             type="number"
             {readonly}
+          />
+          <FormSelect
+            {...props}
+            {readonly}
+            key="eviction_policy"
+            label="Eviction Policy"
+            single
+            data={[
+              { value: EvictionPolicy.OldestFirst, label: 'Oldest First' },
+              {
+                value: EvictionPolicy.LeastRecentlyUsed,
+                label: 'Least Recently Used'
+              },
+              {
+                value: EvictionPolicy.LeastFrequentlyUsed,
+                label: 'Least Frequently Used'
+              }
+            ]}
           />
           <FormSwitch
             disabled={readonly || props.disabled}

@@ -11,3 +11,13 @@ pub enum AccessType {
   #[sea_orm(string_value = "view")]
   View,
 }
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "eviction_policy")]
+pub enum EvictionPolicy {
+  #[sea_orm(string_value = "oldest_first")]
+  OldestFirst,
+  #[sea_orm(string_value = "least_recently_used")]
+  LeastRecentlyUsed,
+  #[sea_orm(string_value = "least_frequently_used")]
+  LeastFrequentlyUsed,
+}

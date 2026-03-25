@@ -1,4 +1,8 @@
-use sea_orm_migration::{prelude::*, schema::*};
+use sea_orm_migration::{
+  prelude::{extension::postgres::Type, *},
+  schema::*,
+  sea_orm::DatabaseBackend,
+};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -6,6 +10,28 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
   async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    let backend = match manager.get_connection() {
+      sea_orm_migration::SchemaManagerConnection::Connection(conn) => conn.get_database_backend(),
+      sea_orm_migration::SchemaManagerConnection::Transaction(trans) => {
+        trans.get_database_backend()
+      }
+    };
+
+    if backend == DatabaseBackend::Postgres {
+      manager
+        .create_type(
+          Type::create()
+            .as_enum(EvictionPolicy::Enum)
+            .values([
+              EvictionPolicy::OldestFirst,
+              EvictionPolicy::LeastRecentlyUsed,
+              EvictionPolicy::LeastFrequentlyUsed,
+            ])
+            .to_owned(),
+        )
+        .await?;
+    }
+
     manager
       .create_table(
         Table::create()
@@ -18,6 +44,7 @@ impl MigrationTrait for Migration {
           .col(big_integer(Cache::Quota))
           .col(string(Cache::PublicSigningKey))
           .col(boolean(Cache::AllowForcePush))
+          .col(custom(Cache::EvictionPolicy, EvictionPolicy::Enum))
           .to_owned(),
       )
       .await?;
@@ -48,7 +75,22 @@ impl MigrationTrait for Migration {
       .await?;
     manager
       .drop_table(Table::drop().table(Cache::Table).to_owned())
-      .await
+      .await?;
+
+    let backend = match manager.get_connection() {
+      sea_orm_migration::SchemaManagerConnection::Connection(conn) => conn.get_database_backend(),
+      sea_orm_migration::SchemaManagerConnection::Transaction(trans) => {
+        trans.get_database_backend()
+      }
+    };
+
+    if backend == DatabaseBackend::Postgres {
+      manager
+        .drop_type(Type::drop().name(EvictionPolicy::Enum).to_owned())
+        .await?;
+    }
+
+    Ok(())
   }
 }
 
@@ -62,6 +104,7 @@ pub enum Cache {
   Quota,
   PublicSigningKey,
   AllowForcePush,
+  EvictionPolicy,
 }
 
 #[derive(DeriveIden)]
@@ -70,4 +113,13 @@ enum DownstreamCache {
   Id,
   CacheId,
   Url,
+}
+
+#[derive(DeriveIden)]
+enum EvictionPolicy {
+  #[sea_orm(iden = "eviction_policy")]
+  Enum,
+  OldestFirst,
+  LeastRecentlyUsed,
+  LeastFrequentlyUsed,
 }

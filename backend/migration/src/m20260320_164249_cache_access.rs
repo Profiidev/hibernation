@@ -81,9 +81,21 @@ impl MigrationTrait for Migration {
     manager
       .drop_table(Table::drop().table(CacheAccess::Table).to_owned())
       .await?;
-    manager
-      .drop_type(Type::drop().name(AccessType::Enum).to_owned())
-      .await
+
+    let backend = match manager.get_connection() {
+      sea_orm_migration::SchemaManagerConnection::Connection(conn) => conn.get_database_backend(),
+      sea_orm_migration::SchemaManagerConnection::Transaction(trans) => {
+        trans.get_database_backend()
+      }
+    };
+
+    if backend == DatabaseBackend::Postgres {
+      manager
+        .drop_type(Type::drop().name(AccessType::Enum).to_owned())
+        .await?;
+    }
+
+    Ok(())
   }
 }
 

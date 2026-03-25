@@ -19,11 +19,18 @@ export const listCaches = async (fetch: typeof window.fetch = window.fetch) => {
   }
 };
 
+export enum EvictionPolicy {
+  OldestFirst = 'OldestFirst',
+  LeastRecentlyUsed = 'LeastRecentlyUsed',
+  LeastFrequentlyUsed = 'LeastFrequentlyUsed'
+}
+
 export type CacheDetails = CacheInfo & {
   sig_key: string;
   priority: number;
   nar_count: number;
   allow_force_push: boolean;
+  eviction_policy: EvictionPolicy;
   has_write_access: boolean;
 };
 
@@ -124,6 +131,7 @@ export interface CacheEdit {
   sig_key: string;
   priority: number;
   allow_force_push: boolean;
+  eviction_policy: EvictionPolicy;
 }
 
 export const editCache = async (uuid: string, data: CacheEdit) => {

@@ -1,7 +1,7 @@
 use centaurus::error::ErrorReportStatusExt;
 use entity::{
   cache, cache_access, downstream_cache, group_user, nar, nar_info, nar_info_reference,
-  sea_orm_active_enums::AccessType,
+  sea_orm_active_enums::{AccessType, EvictionPolicy},
 };
 use harmonia_store_core::store_path::StorePath;
 use http::StatusCode;
@@ -42,6 +42,7 @@ pub struct CacheDetails {
   priority: i32,
   nar_count: i64,
   allow_force_push: bool,
+  eviction_policy: EvictionPolicy,
   has_write_access: bool,
 }
 
@@ -204,6 +205,7 @@ impl<'db> CacheTable<'db> {
             public_signing_key: Set(sig_key),
             priority: Set(50),
             allow_force_push: Set(false),
+            eviction_policy: Set(EvictionPolicy::LeastRecentlyUsed),
           };
           let res = cache.insert(db).await?;
 
@@ -528,6 +530,7 @@ impl<'db> CacheTable<'db> {
     sig_key: String,
     priority: i32,
     allow_force_push: bool,
+    eviction_policy: EvictionPolicy,
     cache_id: Uuid,
   ) -> Result<(), DbErr> {
     let mut cache = cache::Entity::find_by_id(cache_id)
@@ -542,6 +545,7 @@ impl<'db> CacheTable<'db> {
     cache.public_signing_key = Set(sig_key);
     cache.priority = Set(priority);
     cache.allow_force_push = Set(allow_force_push);
+    cache.eviction_policy = Set(eviction_policy);
 
     cache.update(self.db).await?;
 
