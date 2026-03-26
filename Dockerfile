@@ -80,7 +80,8 @@ FROM node:24-alpine
 ARG FRONTEND_DIR
 
 ENV DB_URL="sqlite:/data/hibernation.db?mode=rwc"
-RUN mkdir /data
+ENV STORAGE_PATH="/data/storage"
+RUN mkdir -p /data/storage
 
 COPY --from=backend-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 

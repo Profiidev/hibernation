@@ -35,7 +35,7 @@
     if (ret) {
       if (ret === RequestError.NotAcceptable) {
         return {
-          path: 'oidc_issuer',
+          field: 'oidc_issuer',
           error:
             'Invalid OIDC configuration URL. Check the server logs for more information.'
         };

@@ -7,12 +7,17 @@ export enum UpdateType {
   User = 'User',
   UserPermissions = 'UserPermissions',
   Group = 'Group',
-  Token = 'Token'
+  Token = 'Token',
+  Cache = 'Cache'
 }
 
 export type UpdateMessage =
   | {
-      type: UpdateType.User | UpdateType.Group | UpdateType.Token;
+      type:
+        | UpdateType.User
+        | UpdateType.Group
+        | UpdateType.Token
+        | UpdateType.Cache;
       uuid: string;
     }
   | {
@@ -94,6 +99,12 @@ const handleMessage = (msg: UpdateMessage, user: string) => {
     case UpdateType.Token: {
       invalidate('/api/token');
       invalidate(`/api/token/${msg.uuid}`);
+      break;
+    }
+    case UpdateType.Cache: {
+      invalidate('/api/cache/management');
+      invalidate(`/api/cache/management/${msg.uuid}`);
+      invalidate('/api/group/caches');
       break;
     }
   }

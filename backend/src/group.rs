@@ -11,9 +11,10 @@ use crate::{
   auth::jwt_auth::JwtAuth,
   db::{
     DBTrait,
-    group::{GroupInfo, SimpleUserInfo},
+    cache::SimpleCacheInfo,
+    group::{CacheMapping, GroupDetails, GroupInfo, SimpleUserInfo},
   },
-  permissions::{GroupEdit, GroupView},
+  permissions::{CacheEdit, GroupEdit, GroupView, Permission},
   ws::state::{UpdateMessage, Updater},
 };
 
@@ -25,6 +26,7 @@ pub fn router() -> Router {
     .route("/", put(edit_group))
     .route("/{uuid}", get(group_info))
     .route("/users", get(list_users_simple))
+    .route("/caches", get(list_caches_simple))
 }
 
 #[derive(Serialize)]
@@ -52,7 +54,7 @@ async fn group_info(
   _auth: JwtAuth<GroupView>,
   db: Connection,
   path: GroupViewPath,
-) -> Result<Json<GroupInfo>> {
+) -> Result<Json<GroupDetails>> {
   let info = db.group().group_info(path.uuid).await?;
   let Some(info) = info else {
     bail!(NOT_FOUND, "Group not found");
@@ -77,6 +79,10 @@ async fn create_group(
   updater: Updater,
   data: CreateGroupRequest,
 ) -> Result<Json<GroupCreateResponse>> {
+  if data.name.trim().is_empty() {
+    bail!(BAD_REQUEST, "Group name cannot be empty");
+  }
+
   if db.group().find_group_by_name(&data.name).await?.is_some() {
     bail!(CONFLICT, "A group with this name already exists");
   }
@@ -129,6 +135,7 @@ struct EditGroupRequest {
   name: String,
   permissions: Vec<String>,
   users: Vec<Uuid>,
+  caches: Vec<CacheMapping>,
 }
 
 async fn edit_group(
@@ -137,6 +144,10 @@ async fn edit_group(
   updater: Updater,
   data: EditGroupRequest,
 ) -> Result<()> {
+  if data.name.trim().is_empty() {
+    bail!(BAD_REQUEST, "Group name cannot be empty");
+  }
+
   if let Some(admin_group) = db.setup().get_admin_group_id().await?
     && admin_group == data.uuid
   {
@@ -175,6 +186,14 @@ async fn edit_group(
     );
   }
 
+  // only allow changing cache mappings if the user has the general cache edit permission
+  if group.caches != data.caches && !user_permissions.contains(&CacheEdit::name().to_string()) {
+    bail!(
+      FORBIDDEN,
+      "Cannot edit cache mappings via the group edit endpoint"
+    );
+  }
+
   let old_users = db.group().get_group_users_ids(data.uuid).await?;
 
   db.group()
@@ -184,6 +203,9 @@ async fn edit_group(
       data.permissions.clone(),
       data.users.clone(),
     )
+    .await?;
+  db.group()
+    .update_cache_mappings(data.uuid, group.caches, data.caches)
     .await?;
 
   updater
@@ -224,5 +246,13 @@ async fn list_users_simple(
   db: Connection,
 ) -> Result<Json<Vec<SimpleUserInfo>>> {
   let users = db.user().list_users_simple().await?;
+  Ok(Json(users))
+}
+
+async fn list_caches_simple(
+  auth: JwtAuth<GroupView>,
+  db: Connection,
+) -> Result<Json<Vec<SimpleCacheInfo>>> {
+  let users = db.cache().list_caches_simple(auth.user_id).await?;
   Ok(Json(users))
 }

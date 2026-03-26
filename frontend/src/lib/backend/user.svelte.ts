@@ -8,6 +8,7 @@ import {
   ResponseType
 } from 'positron-components/backend';
 import { fetchKey, getEncrypt } from './auth.svelte';
+import type { CacheMapping, SimpleCacheInfo } from './groups.svelte';
 
 export interface UserInfo {
   uuid: string;
@@ -15,6 +16,7 @@ export interface UserInfo {
   email: string;
   permissions: Permission[];
   avatar?: string;
+  caches: CacheMapping[];
 }
 
 export const getUserInfo = async (
@@ -99,6 +101,7 @@ export const listUsers = async (fetch: typeof window.fetch = window.fetch) => {
 
 export type DetailUserInfo = UserListInfo & {
   permissions: Permission[];
+  caches: CacheMapping[];
 };
 
 export const getListUserInfo = async (
@@ -174,10 +177,24 @@ export const simpleGroupList = async (
   }
 };
 
+export const simpleCacheList = async (
+  fetch: typeof window.fetch = window.fetch
+) => {
+  let ret = await get<SimpleCacheInfo[]>('/api/user/management/caches', {
+    res_type: ResponseType.Json,
+    fetch
+  });
+
+  if (ret && Array.isArray(ret)) {
+    return ret;
+  }
+};
+
 export interface UserEditRequest {
   uuid: string;
   name: string;
   groups: string[];
+  caches: CacheMapping[];
 }
 
 export const editUser = async (data: UserEditRequest) => {

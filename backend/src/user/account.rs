@@ -34,6 +34,10 @@ async fn update_account(
   updater: Updater,
   data: AccountUpdate,
 ) -> Result<()> {
+  if data.username.trim().is_empty() {
+    bail!(BAD_REQUEST, "Username cannot be empty");
+  }
+
   db.user()
     .update_user_name(auth.user_id, data.username)
     .await?;

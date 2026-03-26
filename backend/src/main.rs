@@ -21,6 +21,7 @@ mod db;
 mod gravatar;
 mod group;
 mod mail;
+mod nix;
 mod permissions;
 mod rate_limit;
 mod settings;
@@ -63,6 +64,7 @@ fn api_router(rate_limiter: &mut RateLimiter) -> Router {
     .nest("/cli", cli::router(rate_limiter))
     .nest("/cache", cache::router())
     .nest("/token", token::router())
+    .nest("/nix", nix::router())
 }
 
 async fn state(router: Router, config: Config) -> Router {
@@ -76,6 +78,7 @@ async fn state(router: Router, config: Config) -> Router {
   router = auth::state(router, &config, &db).await;
   router = mail::state(router, &db).await;
   router = cli::state(router);
+  router = cache::state(router, db.clone(), &config).await;
   router = version::middleware(router);
 
   router.layer(Extension(db)).layer(Extension(config))

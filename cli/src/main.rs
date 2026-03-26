@@ -1,35 +1,46 @@
-use std::path::PathBuf;
+use std::io::IsTerminal;
 
-use async_compression::tokio::bufread::ZstdEncoder;
-use centaurus::{
-  error::{ErrorReportExt, Result},
-  init::logging::init_logging,
-};
+use centaurus::error::{ErrorReportExt, Result};
 use clap::Parser;
-use harmonia_store_core::store_path::{StoreDir, StorePath};
-use harmonia_store_remote::{DaemonClient, DaemonStore};
-use tokio::{
-  fs::File,
-  io::{self},
-};
-use tracing::{error, info};
-use url::Url;
+use tracing::level_filters::LevelFilter;
+use tracing_error::ErrorLayer;
+use tracing_indicatif::IndicatifLayer;
+use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::{
-  api::ApiClient,
-  cli::{AuthenticatedCommand, Cli, Commands},
-  config::Config,
-};
+use crate::{cli::Cli, config::Config};
 
 mod api;
 mod auth;
 mod cli;
 mod config;
+mod push;
+
+pub fn init_logging(log_level: LevelFilter) {
+  color_eyre::install().expect("Failed to install color_eyre");
+
+  let indicatif_layer = IndicatifLayer::new();
+  let layer = tracing_subscriber::fmt::layer()
+    .with_writer(indicatif_layer.get_stderr_writer())
+    .with_ansi(true)
+    .with_filter(log_level);
+
+  tracing_subscriber::registry()
+    .with(layer)
+    .with(ErrorLayer::default())
+    .with(indicatif_layer)
+    .init();
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
   let level = config::log_level();
-  init_logging(level);
+
+  let tty = std::io::stdin().is_terminal();
+  if tty {
+    init_logging(level);
+  } else {
+    centaurus::init::logging::init_logging(level);
+  }
 
   let cli = Cli::parse();
   let config = Config::load(cli.config.clone())
@@ -38,76 +49,10 @@ async fn main() -> Result<()> {
 
   let url = cli
     .url
+    .clone()
     .or_else(|| config.as_ref().map(|c| c.app_url.clone()));
 
-  match cli.command {
-    Commands::SetUrl { url } => {
-      let mut config = config.unwrap_or_else(|| Config::new(url.clone(), None));
-      config.app_url = url;
-      config
-        .save(cli.config)
-        .await
-        .context("Failed to save config")?;
-    }
-    Commands::Auth { token } => {
-      let Some(url) = url else {
-        error!(
-          "No URL specified. Please provide a URL using --url or set it using the set-url command."
-        );
-        std::process::exit(1);
-      };
+  cli.run(config, url).await?;
 
-      if let Some(token) = token {
-        let mut config = config.unwrap_or_else(|| Config::new(url.clone(), Some(token.clone())));
-        config.token = Some(token);
-        config
-          .save(cli.config)
-          .await
-          .context("Failed to save config")?;
-        info!("Token saved successfully.");
-      }
-    }
-    Commands::AuthenticatedCommand(cmd) => handle_auth_command(cmd, config, url, cli.config).await,
-  }
-
-  // Tokio does not exit when other tasks are still running
-  std::process::exit(0);
-}
-
-async fn handle_auth_command(
-  cmd: AuthenticatedCommand,
-  config: Option<Config>,
-  url: Option<Url>,
-  config_path: Option<PathBuf>,
-) {
-  let client = ApiClient::build(config, url, config_path).await;
-
-  match cmd {
-    AuthenticatedCommand::Test => {
-      if let Err(e) = client.test().await {
-        error!("Test request failed: {:?}", e);
-        std::process::exit(1);
-      } else {
-        info!("Test request succeeded.");
-      }
-    }
-  }
-}
-
-async fn _test() {
-  let store_dir = StoreDir::default();
-  let path: StorePath = store_dir
-    .parse("/nix/store/hlxw2q9qansq7bn52xvlb5badw3z1v8s-coreutils-9.10")
-    .unwrap();
-
-  let mut conn = DaemonClient::builder().connect_daemon().await.unwrap();
-  let info = conn.query_path_info(&path).await.unwrap().unwrap();
-
-  println!("Daemon info: {:?}", info);
-
-  let nar = conn.nar_from_path(&path).await.unwrap();
-  let mut encoder = ZstdEncoder::new(nar);
-
-  let mut file = File::create("output.nar.zst").await.unwrap();
-  io::copy(&mut encoder, &mut file).await.unwrap();
+  Ok(())
 }

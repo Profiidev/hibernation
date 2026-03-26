@@ -36,6 +36,7 @@ pub enum UpdateMessage {
   UserPermissions,
   Group { uuid: Uuid },
   Token { uuid: Uuid },
+  Cache { uuid: Uuid },
 }
 
 impl UpdateState {

@@ -1,0 +1,88 @@
+<script lang="ts">
+  import { size_to_gib } from '$lib/backend/cache.svelte';
+  import { Progress } from 'positron-components/components/ui/progress';
+  import * as Code from '$lib/components/code';
+  import { ScrollArea } from 'positron-components/components/ui/scroll-area';
+  import { browser } from '$app/environment';
+
+  let { data } = $props();
+
+  let size_gib = $derived(size_to_gib(data.cacheInfo.size));
+  let quota_gib = $derived(size_to_gib(data.cacheInfo.quota));
+  let usage_percent = $derived((size_gib / quota_gib) * 100);
+
+  const url = $derived(
+    `${browser && window.location.origin}/api/nix/${data.cacheInfo.uuid}`
+  );
+  const nixConfig = $derived(`{
+  nixConfig = {
+    extra-substituters = [
+      "${url}"
+    ];
+    extra-trusted-public-keys = [
+      "${data.cacheInfo.sig_key}"
+    ];
+  };
+
+  ...
+}`);
+</script>
+
+<ScrollArea class="h-full">
+  <div class="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_auto_1fr]">
+    <div class="flex flex-col">
+      <p class="text-lg">Usage:</p>
+      <div class="mt-2 mb-1 flex">
+        <p>Number of paths:</p>
+        <p class="text-muted-foreground ml-auto">
+          {data.cacheInfo.nar_count}
+        </p>
+      </div>
+      <div class="mb-1 flex">
+        <p>Cache size:</p>
+        <p class="text-muted-foreground ml-auto">
+          {size_gib.toFixed(2)}GiB / {quota_gib.toFixed(2)}GiB ({usage_percent.toFixed(
+            1
+          )}%)
+        </p>
+      </div>
+      <Progress
+        min={0}
+        max={quota_gib}
+        value={size_gib}
+        class={usage_percent > 90
+          ? '*:data-[slot=progress-indicator]:bg-red-500'
+          : usage_percent > 70
+            ? '*:data-[slot=progress-indicator]:bg-yellow-500'
+            : ''}
+      />
+      <p class="mt-8 text-lg">Pushing paths:</p>
+      <Code.Root
+        code={`hibernation push "${data.cacheInfo.name}" /nix/store/...`}
+        lang="bash"
+        class="mt-2 h-auto"
+        hideLines
+      >
+        <Code.CopyButton />
+      </Code.Root>
+      <p class="mt-8 text-lg">Pulling paths:</p>
+      <p class="text-md mt-2">Cache URL:</p>
+      <Code.Root code={url} lang="nix" class="mt-2 h-auto" hideLines>
+        <Code.CopyButton />
+      </Code.Root>
+      <p class="text-md mt-2">Cache Public Key:</p>
+      <Code.Root
+        code={data.cacheInfo.sig_key}
+        lang="nix"
+        hideLines
+        class="mt-2 h-auto"
+      >
+        <Code.CopyButton />
+      </Code.Root>
+      <p class="text-md mt-2">Nix config:</p>
+      <Code.Root code={nixConfig} lang="nix" class="mt-2 h-auto">
+        <Code.CopyButton />
+      </Code.Root>
+    </div>
+  </div>
+</ScrollArea>

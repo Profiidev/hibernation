@@ -34,11 +34,31 @@ export const listGroups = async (fetch: typeof window.fetch = window.fetch) => {
   }
 };
 
+export enum AccessType {
+  View = 'View',
+  Edit = 'Edit'
+}
+
+export interface SimpleCacheInfo {
+  uuid: string;
+  name: string;
+}
+
+export interface CacheMapping {
+  uuid: string;
+  name: string;
+  access_type: AccessType;
+}
+
+export type GroupDetails = GroupInfo & {
+  caches: CacheMapping[];
+};
+
 export const getGroupInfo = async (
   uuid: string,
   fetch: typeof window.fetch = window.fetch
 ) => {
-  let ret = await get<GroupInfo>(`/api/group/${uuid}`, {
+  let ret = await get<GroupDetails>(`/api/group/${uuid}`, {
     res_type: ResponseType.Json,
     fetch
   });
@@ -78,6 +98,7 @@ export interface GroupEditRequest {
   name: string;
   permissions: string[];
   users: string[];
+  caches: CacheMapping[];
 }
 
 export const editGroup = async (data: GroupEditRequest) => {
@@ -90,6 +111,19 @@ export const simpleUserList = async (
   fetch: typeof window.fetch = window.fetch
 ) => {
   let ret = await get<SimpleUserInfo[]>('/api/group/users', {
+    res_type: ResponseType.Json,
+    fetch
+  });
+
+  if (ret && Array.isArray(ret)) {
+    return ret;
+  }
+};
+
+export const simpleCacheList = async (
+  fetch: typeof window.fetch = window.fetch
+) => {
+  let ret = await get<SimpleCacheInfo[]>('/api/group/caches', {
     res_type: ResponseType.Json,
     fetch
   });

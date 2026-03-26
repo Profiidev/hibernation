@@ -5,6 +5,7 @@ import type { Component } from 'svelte';
 import Users from '@lucide/svelte/icons/users';
 import User from '@lucide/svelte/icons/user';
 import KeyRound from '@lucide/svelte/icons/key-round';
+import DatabaseZap from '@lucide/svelte/icons/database-zap';
 
 export interface NavGroup {
   label: string;
@@ -23,6 +24,11 @@ export const items: NavGroup[] = [
     label: 'Cache',
     items: [
       { label: 'Overview', href: '/', icon: House },
+      {
+        label: 'Caches',
+        href: '/caches',
+        icon: DatabaseZap
+      },
       {
         label: 'Access Tokens',
         href: '/tokens',

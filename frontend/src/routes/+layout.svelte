@@ -39,7 +39,8 @@
       email: '',
       name: '',
       permissions: [],
-      uuid: ''
+      uuid: '',
+      caches: []
     }}
   >
     {@render children()}

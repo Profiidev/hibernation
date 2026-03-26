@@ -5,6 +5,8 @@ use crate::m20260123_144752_user::User;
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
+const TOKEN_USER_ID_INDEX_NAME: &str = "token.user_id";
+
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
   async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
@@ -28,10 +30,24 @@ impl MigrationTrait for Migration {
           )
           .to_owned(),
       )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(TOKEN_USER_ID_INDEX_NAME)
+          .table(Token::Table)
+          .col(Token::UserId)
+          .to_owned(),
+      )
       .await
   }
 
   async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    manager
+      .drop_index(Index::drop().name(TOKEN_USER_ID_INDEX_NAME).to_owned())
+      .await?;
+
     manager
       .drop_table(Table::drop().table(Token::Table).to_owned())
       .await

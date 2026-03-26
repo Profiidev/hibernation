@@ -34,12 +34,12 @@
     if (ret) {
       if (ret === RequestError.NotAcceptable) {
         return {
-          path: 'smtp_from_address',
+          field: 'smtp_from_address',
           error: 'Invalid From Address provided'
         };
       } else if (ret === RequestError.BadRequest) {
         return {
-          path: 'smtp_host',
+          field: 'smtp_host',
           error: 'Failed to create SMTP transport with provided settings'
         };
       }

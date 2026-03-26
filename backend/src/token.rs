@@ -86,6 +86,10 @@ async fn create_toke(
   updater: Updater,
   req: CreateTokenRequest,
 ) -> Result<Json<CreateTokenResponse>> {
+  if req.name.trim().is_empty() {
+    bail!(BAD_REQUEST, "Token name cannot be empty");
+  }
+
   if db
     .token()
     .get_by_name(auth.user_id, &req.name)
@@ -141,6 +145,10 @@ async fn edit_token(
   updater: Updater,
   req: EditTokenRequest,
 ) -> Result<()> {
+  if req.name.trim().is_empty() {
+    bail!(BAD_REQUEST, "Token name cannot be empty");
+  }
+
   if let Ok(token) = db.token().get_by_name(auth.user_id, &req.name).await
     && token.id != req.uuid
   {

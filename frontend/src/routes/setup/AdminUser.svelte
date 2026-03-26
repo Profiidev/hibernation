@@ -12,6 +12,7 @@
     isLoading
   }: StageProps<{
     db_backend: string;
+    storage_backend: string;
   }> = $props();
 
   let form: BaseForm<typeof adminUser> | undefined = $state();

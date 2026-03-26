@@ -9,7 +9,7 @@
 
   let stages: Stage[] = [
     {
-      title: 'Information',
+      title: 'Create Group',
       content: Information,
       data: {}
     }
@@ -22,7 +22,7 @@
       if (res === RequestError.Conflict) {
         return {
           error: 'A group with this name already exists.',
-          path: 'name'
+          field: 'name'
         };
       } else {
         return { error: 'Error creating group.' };

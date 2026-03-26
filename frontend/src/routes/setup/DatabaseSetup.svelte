@@ -14,6 +14,7 @@
     data
   }: StageProps<{
     db_backend: string;
+    storage_backend: string;
   }> = $props();
 
   let form: BaseForm<typeof databaseSetupSchema> | undefined = $state();
@@ -33,13 +34,19 @@
   {#snippet children({ props })}
     <Alert.Root variant="default" class="text-orange-500">
       <AlertCircle />
-      <Alert.Title>Database Disclaimer</Alert.Title>
+      <Alert.Title>Disclaimer</Alert.Title>
       <Alert.Description>
         <p class="text-orange-500">
           You are currently using <strong>{data.db_backend}</strong> as
           database. When this is not your intended database, set the
           <strong>DB_URL</strong> environment variable before continuing with the
           setup.
+        </p>
+        <p class="text-orange-500">
+          You are currently using <strong>{data.storage_backend}</strong> as
+          storage. When this is not your intended storage, set the
+          <strong>STORAGE_PATH</strong> or all S3 environment variable before continuing
+          with the setup.
         </p>
       </Alert.Description>
     </Alert.Root>

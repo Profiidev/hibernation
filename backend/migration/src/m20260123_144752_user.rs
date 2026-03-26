@@ -3,6 +3,8 @@ use sea_orm_migration::{prelude::*, schema::*};
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
+const EMAIL_INDEX_NAME: &str = "user.user_email";
+
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
   async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
@@ -18,10 +20,25 @@ impl MigrationTrait for Migration {
           .col(string(User::Salt))
           .to_owned(),
       )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(EMAIL_INDEX_NAME)
+          .table(User::Table)
+          .col(User::Email)
+          .unique()
+          .to_owned(),
+      )
       .await
   }
 
   async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    manager
+      .drop_index(Index::drop().name(EMAIL_INDEX_NAME).to_owned())
+      .await?;
+
     manager
       .drop_table(Table::drop().table(User::Table).to_owned())
       .await

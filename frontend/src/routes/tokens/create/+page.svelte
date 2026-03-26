@@ -9,7 +9,7 @@
 
   let stages: Stage[] = [
     {
-      title: 'Information',
+      title: 'Create Token',
       content: Information,
       data: {}
     }
@@ -24,7 +24,7 @@
       if (res === RequestError.Conflict) {
         return {
           error: 'A token with this name already exists.',
-          path: 'name'
+          field: 'name'
         };
       } else {
         return { error: 'Error creating token.' };

@@ -2,11 +2,18 @@
 
 pub mod prelude;
 
+pub mod cache;
+pub mod cache_access;
+pub mod downstream_cache;
 pub mod group;
 pub mod group_permission;
 pub mod group_user;
 pub mod invalid_jwt;
 pub mod key;
+pub mod nar;
+pub mod nar_info;
+pub mod nar_info_reference;
+pub mod sea_orm_active_enums;
 pub mod settings;
 pub mod setup;
 pub mod token;

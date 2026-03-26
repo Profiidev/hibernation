@@ -21,11 +21,13 @@ use crate::{
   auth::jwt_auth::JwtAuth,
   db::{
     DBTrait,
+    cache::SimpleCacheInfo,
+    group::CacheMapping,
     settings::GeneralSettings,
     user::{DetailUserInfo, SimpleGroupInfo, UserInfo},
   },
   mail::{state::Mailer, templates},
-  permissions::{UserEdit, UserView},
+  permissions::{CacheEdit, Permission, UserEdit, UserView},
   ws::state::{UpdateMessage, Updater},
 };
 
@@ -40,6 +42,7 @@ pub fn router() -> Router {
     .route("/{uuid}", get(user_info))
     .route("/mail", get(mail_active))
     .route("/groups", get(list_groups_simple))
+    .route("/caches", get(list_caches_simple))
     .route("/avatar", delete(reset_user_avatar))
     .route("/password", put(reset_user_password))
 }
@@ -98,6 +101,14 @@ async fn create_user(
   state: PasswordState,
   req: CreateUser,
 ) -> Result<Json<CreateUserResponse>> {
+  if req.name.trim().is_empty() {
+    bail!(BAD_REQUEST, "Name cannot be empty");
+  }
+
+  if req.email.trim().is_empty() {
+    bail!(BAD_REQUEST, "Email cannot be empty");
+  }
+
   if db.user().try_get_user_by_email(&req.email).await?.is_some() {
     bail!(CONFLICT, "User with this email already exists");
   }
@@ -193,12 +204,21 @@ async fn list_groups_simple(
   Ok(Json(groups))
 }
 
+async fn list_caches_simple(
+  auth: JwtAuth<UserView>,
+  db: Connection,
+) -> Result<Json<Vec<SimpleCacheInfo>>> {
+  let users = db.cache().list_caches_simple(auth.user_id).await?;
+  Ok(Json(users))
+}
+
 #[derive(Deserialize, FromRequest)]
 #[from_request(via(Json))]
 struct UserEditReq {
   uuid: Uuid,
   name: String,
   groups: Vec<Uuid>,
+  caches: Vec<CacheMapping>,
 }
 
 async fn edit_user(
@@ -207,6 +227,10 @@ async fn edit_user(
   updater: Updater,
   req: UserEditReq,
 ) -> Result<()> {
+  if req.name.trim().is_empty() {
+    bail!(BAD_REQUEST, "Name cannot be empty");
+  }
+
   let self_permissions = db.group().get_user_permissions(auth.user_id).await?;
   let target_permissions = db
     .group()
@@ -235,7 +259,22 @@ async fn edit_user(
     bail!(CONFLICT, "Cannot remove the last user from the admin group");
   }
 
+  let Some(user) = db.user().user_info(req.uuid).await? else {
+    bail!(NOT_FOUND, "User not found");
+  };
+
+  // only allow changing cache mappings if the user has the general cache edit permission
+  if user.caches != req.caches && !self_permissions.contains(&CacheEdit::name().to_string()) {
+    bail!(
+      FORBIDDEN,
+      "Cannot edit cache mappings via the group edit endpoint"
+    );
+  }
+
   db.user().edit_user(req.uuid, req.name, req.groups).await?;
+  db.user()
+    .update_cache_mappings(req.uuid, user.caches, req.caches)
+    .await?;
   updater
     .broadcast(UpdateMessage::User { uuid: req.uuid })
     .await;

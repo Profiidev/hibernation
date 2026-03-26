@@ -23,6 +23,7 @@ services:
       - ./.cargo:/app/.cargo
       - ./backend:/app
       - ./shared:/shared
+      - ./storage:/storage
     networks:
       - nginx
     tty: true

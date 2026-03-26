@@ -1,3 +1,4 @@
+import type { CacheMapping } from '$lib/backend/groups.svelte';
 import type { UserEditRequest, UserListInfo } from '$lib/backend/user.svelte';
 import type { FormValue } from 'positron-components/components/form/types';
 import { z } from 'zod';
@@ -9,12 +10,14 @@ export const userSettings = z.object({
 
 export const reformatData = (
   data: FormValue<typeof userSettings>,
-  uuid: string
+  uuid: string,
+  caches: CacheMapping[]
 ): UserEditRequest => {
   return {
     uuid,
     name: data.name,
-    groups: data.groups || []
+    groups: data.groups || [],
+    caches: caches
   };
 };
 

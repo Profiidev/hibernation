@@ -7,7 +7,7 @@ use figment::{
   providers::{Env, Serialized},
 };
 use serde::{Deserialize, Serialize};
-use tracing::instrument;
+use tracing::{instrument, warn};
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Config {
@@ -17,6 +17,8 @@ pub struct Config {
   pub db: DBConfig,
   #[serde(flatten)]
   pub metrics: MetricsConfig,
+  #[serde(flatten)]
+  pub storage: StorageConfig,
 
   pub db_url: String,
 
@@ -35,6 +37,7 @@ impl Default for Config {
         metrics_name: "hibernation".to_string(),
         ..Default::default()
       },
+      storage: StorageConfig::default(),
       auth_pepper: "__HIBERNATION_PEPPER__".to_string(),
       auth_issuer: "hibernation_auth".to_string(),
       auth_jwt_expiration: 60 * 60 * 24 * 7, // 7 days
@@ -49,12 +52,78 @@ impl Config {
       .merge(Serialized::defaults(Self::default()))
       .merge(Env::raw().global());
 
-    let config: Self = config.extract().expect("Failed to parse configuration");
+    let mut config: Self = config.extract().expect("Failed to parse configuration");
 
     if config.db_url.is_empty() {
-      panic!("Database URL is not set");
+      panic!("DB_URL is not set");
     }
 
+    if config.db_url.starts_with("sqlite") {
+      if config.db.database_max_connections > 1 {
+        config.db.database_max_connections = 1;
+        if config.db.database_max_connections != DBConfig::default().database_max_connections {
+          warn!(
+            "SQLite does not work properly with multiple connections. Setting DATABASE_MAX_CONNECTIONS to 1."
+          );
+        }
+      }
+
+      if config.db.database_min_connections > 1 {
+        config.db.database_min_connections = 1;
+        if config.db.database_min_connections != DBConfig::default().database_min_connections {
+          warn!(
+            "SQLite does not work properly with multiple connections. Setting DATABASE_MIN_CONNECTIONS to 1."
+          );
+        }
+      }
+    }
+
+    config.storage.validate();
+
     config
+  }
+}
+
+#[derive(Deserialize, Serialize, Clone, Default)]
+pub struct StorageConfig {
+  pub storage_path: String,
+  pub s3_bucket: Option<String>,
+  pub s3_region: Option<String>,
+  pub s3_host: Option<String>,
+  pub s3_access_key: Option<String>,
+  pub s3_secret_key: Option<String>,
+  pub s3_force_path_style: bool,
+}
+
+impl StorageConfig {
+  fn validate(&self) {
+    if (self.s3_bucket.is_some()
+      || self.s3_region.is_some()
+      || self.s3_access_key.is_some()
+      || self.s3_secret_key.is_some()
+      || self.s3_host.is_some())
+      && !self.use_s3()
+    {
+      warn!(
+        "Only some S3 config options are set: Bucket: {}, Region: {}, Host: {}, Access Key: {}, Secret Key: {}",
+        self.s3_bucket.is_some(),
+        self.s3_region.is_some(),
+        self.s3_host.is_some(),
+        self.s3_access_key.is_some(),
+        self.s3_secret_key.is_some()
+      );
+    }
+
+    if !self.use_s3() && self.storage_path.is_empty() {
+      panic!("STORAGE_PATH is not set and S3 config is incomplete");
+    }
+  }
+
+  pub fn use_s3(&self) -> bool {
+    self.s3_bucket.is_some()
+      && self.s3_region.is_some()
+      && self.s3_access_key.is_some()
+      && self.s3_secret_key.is_some()
+      && self.s3_host.is_some()
   }
 }

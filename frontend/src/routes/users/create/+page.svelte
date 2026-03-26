@@ -13,7 +13,7 @@
     mailActive: boolean;
   }>[] = [
     {
-      title: 'Information',
+      title: 'Create User',
       content: Information,
       data: {}
     }
@@ -27,7 +27,7 @@
     ) {
       return {
         error: 'Password must be at least 6 characters long.',
-        path: 'password'
+        field: 'password'
       };
     }
 
@@ -37,7 +37,7 @@
       if (res === RequestError.Conflict) {
         return {
           error: 'A user with this email already exists.',
-          path: 'email'
+          field: 'email'
         };
       } else {
         return { error: 'Error creating user.' };
