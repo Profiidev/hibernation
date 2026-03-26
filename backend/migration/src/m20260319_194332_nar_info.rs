@@ -5,6 +5,11 @@ use crate::{m20260319_192505_cache::Cache, m20260319_193259_nar::Nar};
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
+const NAR_INFO_CACHE_ID_INDEX_NAME: &str = "nar_info.cache_id";
+const NAR_INFO_NAR_ID_INDEX_NAME: &str = "nar_info.nar_id";
+const NAR_INFO_STORE_PATH_INDEX_NAME: &str = "nar_info.store_path";
+const NAR_INFO_REFERENCE_NAR_INFO_ID_INDEX_NAME: &str = "nar_info_reference.nar_info_id";
+
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
   async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
@@ -58,10 +63,74 @@ impl MigrationTrait for Migration {
           )
           .to_owned(),
       )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(NAR_INFO_CACHE_ID_INDEX_NAME)
+          .table(NarInfo::Table)
+          .col(NarInfo::CacheId)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(NAR_INFO_NAR_ID_INDEX_NAME)
+          .table(NarInfo::Table)
+          .col(NarInfo::NarId)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(NAR_INFO_STORE_PATH_INDEX_NAME)
+          .table(NarInfo::Table)
+          .col(NarInfo::StorePath)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(NAR_INFO_REFERENCE_NAR_INFO_ID_INDEX_NAME)
+          .table(NarInfoReference::Table)
+          .col(NarInfoReference::NarInfoId)
+          .to_owned(),
+      )
       .await
   }
 
   async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    manager
+      .drop_index(
+        Index::drop()
+          .name(NAR_INFO_REFERENCE_NAR_INFO_ID_INDEX_NAME)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .drop_index(
+        Index::drop()
+          .name(NAR_INFO_STORE_PATH_INDEX_NAME)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .drop_index(Index::drop().name(NAR_INFO_NAR_ID_INDEX_NAME).to_owned())
+      .await?;
+
+    manager
+      .drop_index(Index::drop().name(NAR_INFO_CACHE_ID_INDEX_NAME).to_owned())
+      .await?;
+
     manager
       .drop_table(Table::drop().table(NarInfoReference::Table).to_owned())
       .await?;

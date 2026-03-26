@@ -11,6 +11,10 @@ use crate::{
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
+const CACHE_ACCESS_CACHE_ID_INDEX_NAME: &str = "cache_access.cache_id";
+const CACHE_ACCESS_USER_ID_INDEX_NAME: &str = "cache_access.user_id";
+const CACHE_ACCESS_GROUP_ID_INDEX_NAME: &str = "cache_access.group_id";
+
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
   async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
@@ -74,10 +78,64 @@ impl MigrationTrait for Migration {
       )
       .await?;
 
+    manager
+      .create_index(
+        Index::create()
+          .name(CACHE_ACCESS_CACHE_ID_INDEX_NAME)
+          .table(CacheAccess::Table)
+          .col(CacheAccess::CacheId)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(CACHE_ACCESS_USER_ID_INDEX_NAME)
+          .table(CacheAccess::Table)
+          .col(CacheAccess::UserId)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(CACHE_ACCESS_GROUP_ID_INDEX_NAME)
+          .table(CacheAccess::Table)
+          .col(CacheAccess::GroupId)
+          .to_owned(),
+      )
+      .await?;
+
     Ok(())
   }
 
   async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    manager
+      .drop_index(
+        Index::drop()
+          .name(CACHE_ACCESS_CACHE_ID_INDEX_NAME)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .drop_index(
+        Index::drop()
+          .name(CACHE_ACCESS_USER_ID_INDEX_NAME)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .drop_index(
+        Index::drop()
+          .name(CACHE_ACCESS_GROUP_ID_INDEX_NAME)
+          .to_owned(),
+      )
+      .await?;
+
     manager
       .drop_table(Table::drop().table(CacheAccess::Table).to_owned())
       .await?;

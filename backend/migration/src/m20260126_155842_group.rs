@@ -5,6 +5,10 @@ use crate::m20260123_144752_user::User;
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
+const GROUP_USER_GROUP_ID_INDEX_NAME: &str = "group_user.group_id";
+const GROUP_USER_USER_ID_INDEX_NAME: &str = "group_user.user_id";
+const GROUP_PERMISSION_GROUP_ID_INDEX_NAME: &str = "group_permission.group_id";
+
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
   async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
@@ -72,10 +76,60 @@ impl MigrationTrait for Migration {
           )
           .to_owned(),
       )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(GROUP_USER_GROUP_ID_INDEX_NAME)
+          .table(GroupUser::Table)
+          .col(GroupUser::GroupId)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(GROUP_USER_USER_ID_INDEX_NAME)
+          .table(GroupUser::Table)
+          .col(GroupUser::UserId)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(GROUP_PERMISSION_GROUP_ID_INDEX_NAME)
+          .table(GroupPermission::Table)
+          .col(GroupPermission::GroupId)
+          .to_owned(),
+      )
       .await
   }
 
   async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    manager
+      .drop_index(
+        Index::drop()
+          .name(GROUP_USER_GROUP_ID_INDEX_NAME)
+          .to_owned(),
+      )
+      .await?;
+
+    manager
+      .drop_index(Index::drop().name(GROUP_USER_USER_ID_INDEX_NAME).to_owned())
+      .await?;
+
+    manager
+      .drop_index(
+        Index::drop()
+          .name(GROUP_PERMISSION_GROUP_ID_INDEX_NAME)
+          .to_owned(),
+      )
+      .await?;
+
     manager
       .drop_table(
         Table::drop()

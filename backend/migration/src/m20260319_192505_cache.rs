@@ -7,6 +7,8 @@ use sea_orm_migration::{
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
+const DOWNSTREAM_CACHE_CACHE_ID_INDEX_NAME: &str = "downstream_cache.cache_id";
+
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
   async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
@@ -66,10 +68,28 @@ impl MigrationTrait for Migration {
           )
           .to_owned(),
       )
+      .await?;
+
+    manager
+      .create_index(
+        Index::create()
+          .name(DOWNSTREAM_CACHE_CACHE_ID_INDEX_NAME)
+          .table(DownstreamCache::Table)
+          .col(DownstreamCache::CacheId)
+          .to_owned(),
+      )
       .await
   }
 
   async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    manager
+      .drop_index(
+        Index::drop()
+          .name(DOWNSTREAM_CACHE_CACHE_ID_INDEX_NAME)
+          .to_owned(),
+      )
+      .await?;
+
     manager
       .drop_table(Table::drop().table(DownstreamCache::Table).to_owned())
       .await?;
