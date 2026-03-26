@@ -15,7 +15,8 @@ use crate::{
   cache::state::CacheEvictionState,
   db::{
     DBTrait,
-    cache::{CacheDetails, CacheInfo, SearchOrder, SearchSort},
+    cache::{CacheDetails, CacheInfo},
+    nar::{SearchOrder, SearchSort},
   },
   permissions::CacheCreate,
   ws::state::{UpdateMessage, Updater},
@@ -156,7 +157,7 @@ async fn search_store_paths(
   }
 
   let paths = db
-    .cache()
+    .nar()
     .search_store_paths(path.uuid, req.query, req.order, req.sort)
     .await?
     .into_iter()

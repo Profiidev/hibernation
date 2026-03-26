@@ -20,7 +20,7 @@ pub fn start(db: Connection) {
 }
 
 async fn run_dedupe(db: &Connection) {
-  let duplicates = match db.cache().find_duplicate_nars().await {
+  let duplicates = match db.nar().find_duplicate_nars().await {
     Ok(dups) => dups,
     Err(e) => {
       warn!("Failed to find duplicate nars: {e}");
@@ -30,7 +30,7 @@ async fn run_dedupe(db: &Connection) {
   info!("Found {} duplicate nars", duplicates.len());
 
   for hash in duplicates {
-    let Ok(ids) = db.cache().find_nars_by_nar_hash(&hash).await else {
+    let Ok(ids) = db.nar().find_nars_by_nar_hash(&hash).await else {
       warn!("Failed to find nars by hash {hash}");
       continue;
     };
@@ -41,7 +41,7 @@ async fn run_dedupe(db: &Connection) {
     let id_to_keep = ids[0];
     let ids_to_delete = &ids[1..];
     if db
-      .cache()
+      .nar()
       .replace_nar_id(ids_to_delete, id_to_keep)
       .await
       .is_err()

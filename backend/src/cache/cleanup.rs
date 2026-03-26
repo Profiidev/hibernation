@@ -20,7 +20,7 @@ pub fn start(db: Connection, storage: FileStorage) {
 }
 
 async fn run_cleanup(db: &Connection, storage: &FileStorage) {
-  let orphan = match db.cache().orphan_nars().await {
+  let orphan = match db.nar().orphan_nars().await {
     Ok(orphan) => orphan,
     Err(e) => {
       warn!("Failed to get orphan nars: {e}");
@@ -33,7 +33,7 @@ async fn run_cleanup(db: &Connection, storage: &FileStorage) {
     if let Err(e) = storage.delete_file(orphan.id).await {
       warn!("Failed to delete orphan nar {}: {e}", orphan.id);
     } else {
-      if let Err(e) = db.cache().delete_nar(orphan.id).await {
+      if let Err(e) = db.nar().delete_nar(orphan.id).await {
         warn!("Failed to delete orphan nar {} from db: {e}", orphan.id);
       }
     }

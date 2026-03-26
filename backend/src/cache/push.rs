@@ -121,7 +121,7 @@ async fn upload_info(
     bail!(NOT_ACCEPTABLE, "Force push is not allowed for this cache");
   }
 
-  let mut missing_paths = db.cache().missing_paths(cache.id, req.paths).await?;
+  let mut missing_paths = db.nar().missing_paths(cache.id, req.paths).await?;
   if missing_paths.is_empty() {
     bail!(NO_CONTENT, "All paths are already present in the cache");
   }
@@ -212,7 +212,7 @@ async fn upload_path(
   }
 
   if db
-    .cache()
+    .nar()
     .is_store_path_in_cache(cache.id, &req.store_path.to_string())
     .await?
   {
@@ -264,7 +264,7 @@ async fn upload_nar(
 
   let nar_id = Uuid::new_v4();
   let (nar_hash, nar_size, file_hash, file_size, nar_found) = match db
-    .cache()
+    .nar()
     .create_nar(nar_id, &info.nar_hash, info.nar_size)
     .await?
   {
@@ -403,7 +403,7 @@ async fn upload_finish(
       .await?;
   }
 
-  db.cache()
+  db.nar()
     .create_path(
       data.nar_id,
       data.cache,

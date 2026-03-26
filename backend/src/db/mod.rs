@@ -6,6 +6,7 @@ use crate::db::cache::CacheTable;
 use crate::db::group::GroupTable;
 use crate::db::invalid_jwt::InvalidJwtTable;
 use crate::db::key::KeyTable;
+use crate::db::nar::NarTable;
 use crate::db::settings::SettingsTable;
 use crate::db::setup::SetupTable;
 use crate::db::token::TokenTable;
@@ -15,6 +16,7 @@ pub mod cache;
 pub mod group;
 pub mod invalid_jwt;
 pub mod key;
+pub mod nar;
 pub mod settings;
 pub mod setup;
 pub mod token;
@@ -29,6 +31,7 @@ pub trait DBTrait {
   fn settings(&self) -> SettingsTable<'_>;
   fn token(&self) -> TokenTable<'_>;
   fn cache(&self) -> CacheTable<'_>;
+  fn nar(&self) -> NarTable<'_>;
 }
 
 impl DBTrait for Connection {
@@ -62,6 +65,10 @@ impl DBTrait for Connection {
 
   fn cache(&self) -> CacheTable<'_> {
     CacheTable::new(self)
+  }
+
+  fn nar(&self) -> NarTable<'_> {
+    NarTable::new(self)
   }
 }
 
