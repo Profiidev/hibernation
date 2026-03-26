@@ -67,6 +67,7 @@ struct UploadFinishData {
   references: Vec<String>,
   signature: String,
   nar_id: Uuid,
+  nar_found: bool,
 }
 
 #[derive(FromRequestParts, Clone)]
@@ -262,61 +263,79 @@ async fn upload_nar(
   };
 
   let nar_id = Uuid::new_v4();
-  db.cache().create_nar(nar_id).await?;
+  let (nar_hash, nar_size, file_hash, file_size, nar_found) =
+    match db.cache().create_nar(nar_id, &info.nar_hash, info.nar_size).await? {
+      Some(existing) => {
+        // Just consume the body to avoid client issues, but ignore the content since we already have the NAR
+        let mut stream = body.into_body().into_data_stream();
+        while let Some(_chunk) = stream.next().await {}
 
-  let (mut pipe_writer, pipe_reader) = io::duplex(64 * 1024);
-  let hashing_task = tokio::spawn(async move {
-    let mut decompressed_hasher = Sha256::new();
-    let mut decoder = ZstdDecoder::new(BufReader::new(pipe_reader));
-    let mut buffer = [0u8; 8192];
-    let mut size = 0;
+        (
+          existing.nar_hash,
+          existing.nar_size as u64,
+          existing.hash,
+          existing.size as u64,
+          true,
+        )
+      }
+      None => {
+        let (mut pipe_writer, pipe_reader) = io::duplex(64 * 1024);
+        let hashing_task = tokio::spawn(async move {
+          let mut decompressed_hasher = Sha256::new();
+          let mut decoder = ZstdDecoder::new(BufReader::new(pipe_reader));
+          let mut buffer = [0u8; 8192];
+          let mut size = 0;
 
-    loop {
-      let n = match decoder.read(&mut buffer).await {
-        Ok(0) => break,
-        Ok(n) => n,
-        Err(e) => {
-          warn!("Error reading from decoder: {:?}", e);
-          return (String::new(), 0);
+          loop {
+            let n = match decoder.read(&mut buffer).await {
+              Ok(0) => break,
+              Ok(n) => n,
+              Err(e) => {
+                warn!("Error reading from decoder: {:?}", e);
+                return (String::new(), 0);
+              }
+            };
+
+            size += n as u64;
+            decompressed_hasher.update(&buffer[..n]);
+          }
+
+          (to_nix_base32(&decompressed_hasher.finalize()), size)
+        });
+
+        let (mut storage_writer, mut storage_reader) = io::duplex(64 * 1024);
+        let storage_task =
+          tokio::spawn(async move { storage.save_file(&mut storage_reader, nar_id).await });
+
+        let mut raw_hasher = Sha256::new();
+        let mut file_size = 0;
+        let mut stream = body.into_body().into_data_stream();
+
+        while let Some(chunk) = stream.next().await {
+          let chunk = chunk.context("Failed to read request body")?;
+
+          file_size += chunk.len() as u64;
+          raw_hasher.update(&chunk);
+          pipe_writer.write_all(&chunk).await?;
+          storage_writer.write_all(&chunk).await?;
         }
-      };
+        pipe_writer.shutdown().await?; // Ensure all data is flushed to the decoder
+        storage_writer.shutdown().await?; // Ensure all data is flushed to storage
+        drop(pipe_writer); // Close the writer to signal EOF to the decoder
+        drop(storage_writer); // Close the writer to signal EOF to storage
 
-      size += n as u64;
-      decompressed_hasher.update(&buffer[..n]);
-    }
+        storage_task.await.context("Storage task failed")??;
 
-    (to_nix_base32(&decompressed_hasher.finalize()), size)
-  });
+        let file_hash = to_nix_base32(&raw_hasher.finalize());
+        let (nar_hash, nar_size) = hashing_task.await.context("Hashing task failed")?;
 
-  let (mut storage_writer, mut storage_reader) = io::duplex(64 * 1024);
-  let storage_task =
-    tokio::spawn(async move { storage.save_file(&mut storage_reader, nar_id).await });
+        if nar_hash != info.nar_hash || nar_size != info.nar_size {
+          bail!("NAR hash or size mismatch");
+        }
 
-  let mut raw_hasher = Sha256::new();
-  let mut file_size = 0;
-  let mut stream = body.into_body().into_data_stream();
-
-  while let Some(chunk) = stream.next().await {
-    let chunk = chunk.context("Failed to read request body")?;
-
-    file_size += chunk.len() as u64;
-    raw_hasher.update(&chunk);
-    pipe_writer.write_all(&chunk).await?;
-    storage_writer.write_all(&chunk).await?;
-  }
-  pipe_writer.shutdown().await?; // Ensure all data is flushed to the decoder
-  storage_writer.shutdown().await?; // Ensure all data is flushed to storage
-  drop(pipe_writer); // Close the writer to signal EOF to the decoder
-  drop(storage_writer); // Close the writer to signal EOF to storage
-
-  storage_task.await.context("Storage task failed")??;
-
-  let file_hash = to_nix_base32(&raw_hasher.finalize());
-  let (nar_hash, nar_size) = hashing_task.await.context("Hashing task failed")?;
-
-  if nar_hash != info.nar_hash || nar_size != info.nar_size {
-    bail!("NAR hash or size mismatch");
-  }
+        (nar_hash, nar_size, file_hash, file_size, false)
+      }
+    };
 
   state.pending_finish.insert(
     path.uuid,
@@ -332,6 +351,7 @@ async fn upload_nar(
         deriver: info.deriver.map(|d| d.to_string()),
         references: info.references.into_iter().map(|r| r.to_string()).collect(),
         nar_id,
+        nar_found,
       },
       Instant::now(),
     ),
@@ -352,7 +372,7 @@ async fn upload_finish(
     bail!("Invalid upload session");
   };
 
-  if data.file_hash != req.file_hash || data.file_size != req.file_size {
+  if !data.nar_found && (data.file_hash != req.file_hash || data.file_size != req.file_size) {
     bail!("File hash or size mismatch");
   }
 

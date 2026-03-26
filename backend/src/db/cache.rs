@@ -372,7 +372,21 @@ impl<'db> CacheTable<'db> {
     Ok(count > 0)
   }
 
-  pub async fn create_nar(&self, nar_id: Uuid) -> Result<(), DbErr> {
+  pub async fn create_nar(
+    &self,
+    nar_id: Uuid,
+    nar_hash: &str,
+    nar_size: u64,
+  ) -> Result<Option<nar::Model>, DbErr> {
+    if let Some(existing) = nar::Entity::find()
+      .filter(nar::Column::NarHash.eq(nar_hash))
+      .filter(nar::Column::NarSize.eq(nar_size as i64))
+      .one(self.db)
+      .await?
+    {
+      return Ok(Some(existing));
+    }
+
     let nar = nar::ActiveModel {
       id: Set(nar_id),
       hash: Set("".to_string()),
@@ -383,7 +397,7 @@ impl<'db> CacheTable<'db> {
     };
     nar.insert(self.db).await?;
 
-    Ok(())
+    Ok(None)
   }
 
   pub async fn orphan_nars(&self) -> Result<Vec<nar::Model>, DbErr> {
