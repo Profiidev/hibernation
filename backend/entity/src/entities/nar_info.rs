@@ -10,6 +10,7 @@ pub struct Model {
   pub cache_id: Uuid,
   pub nar_id: Uuid,
   pub store_path: String,
+  pub store_path_hash: String,
   pub compression: String,
   pub deriver: Option<String>,
   pub signature: String,

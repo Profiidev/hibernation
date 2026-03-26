@@ -59,6 +59,7 @@ pub fn router() -> Router {
 struct UploadFinishData {
   cache: Uuid,
   store_path: String,
+  store_path_hash: String,
   nar_hash: String,
   nar_size: u64,
   file_hash: String,
@@ -350,6 +351,7 @@ async fn upload_nar(
       UploadFinishData {
         cache: info.cache,
         store_path: info.store_path.to_string(),
+        store_path_hash: info.store_path.hash().to_string(),
         nar_hash,
         nar_size,
         file_hash,
@@ -408,6 +410,7 @@ async fn upload_finish(
       data.nar_id,
       data.cache,
       data.store_path,
+      data.store_path_hash,
       data.nar_hash,
       data.nar_size,
       data.file_hash,

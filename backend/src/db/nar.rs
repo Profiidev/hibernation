@@ -33,6 +33,19 @@ pub struct SearchResult {
   pub accessed: i64,
 }
 
+#[derive(FromQueryResult)]
+pub struct NarInfoData {
+  pub id: Uuid,
+  pub store_path: String,
+  pub compression: String,
+  pub hash: String,
+  pub size: i64,
+  pub nar_hash: String,
+  pub nar_size: i64,
+  pub deriver: Option<String>,
+  pub signature: String,
+}
+
 pub struct NarTable<'db> {
   db: &'db DatabaseConnection,
 }
@@ -48,6 +61,7 @@ impl<'db> NarTable<'db> {
     nar_id: Uuid,
     cache: Uuid,
     store_path: String,
+    store_path_hash: String,
     nar_hash: String,
     nar_size: u64,
     file_hash: String,
@@ -89,6 +103,7 @@ impl<'db> NarTable<'db> {
             cache_id: Set(cache),
             compression: Set("zst".to_string()),
             store_path: Set(store_path),
+            store_path_hash: Set(store_path_hash),
             deriver: Set(deriver),
             signature: Set(signature),
             created_at: Set(chrono::Utc::now().naive_utc()),
@@ -299,5 +314,39 @@ impl<'db> NarTable<'db> {
       .await?;
 
     Ok(())
+  }
+
+  pub async fn nar_info_data(
+    &self,
+    cache: Uuid,
+    store_path_hash: &str,
+  ) -> Result<Option<NarInfoData>, DbErr> {
+    nar_info::Entity::find()
+      .filter(nar_info::Column::CacheId.eq(cache))
+      .filter(nar_info::Column::StorePathHash.eq(store_path_hash.to_string()))
+      .join(JoinType::LeftJoin, nar_info::Relation::Nar.def())
+      .select_only()
+      .column(nar_info::Column::Id)
+      .column(nar_info::Column::StorePath)
+      .column(nar_info::Column::Compression)
+      .column(nar::Column::NarHash)
+      .column(nar::Column::NarSize)
+      .column(nar::Column::Hash)
+      .column(nar::Column::Size)
+      .column(nar_info::Column::Deriver)
+      .column(nar_info::Column::Signature)
+      .into_model::<NarInfoData>()
+      .one(self.db)
+      .await
+  }
+
+  pub async fn nar_info_references(&self, nar_info_id: Uuid) -> Result<Vec<String>, DbErr> {
+    nar_info_reference::Entity::find()
+      .filter(nar_info_reference::Column::NarInfoId.eq(nar_info_id))
+      .select_only()
+      .column(nar_info_reference::Column::StorePath)
+      .into_tuple::<String>()
+      .all(self.db)
+      .await
   }
 }
