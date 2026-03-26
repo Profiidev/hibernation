@@ -29,7 +29,6 @@
   "dependencies": {
     "@lucide/svelte": "^0.577.0",
     "@sveltejs/enhanced-img": "0.10.4",
-    "isomorphic-dompurify": "3.3.0",
     "jsencrypt": "^3.5.4",
     "positron-components": "^1.14.1",
     "valibot": "^1.2.0"

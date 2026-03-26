@@ -56,17 +56,17 @@ impl<'db> NarTable<'db> {
     signature: String,
     references: Vec<String>,
   ) -> centaurus::error::Result<()> {
+    // Check if a nar with the same hash and size exists
+    let existing_nar = nar::Entity::find()
+      .filter(nar::Column::NarHash.eq(nar_hash.clone()))
+      .filter(nar::Column::NarSize.eq(nar_size as i64))
+      .one(self.db)
+      .await?;
+
     self
       .db
       .transaction::<_, (), DbErr>(|db| {
         Box::pin(async move {
-          // Check if a nar with the same hash and size exists
-          let existing_nar = nar::Entity::find()
-            .filter(nar::Column::NarHash.eq(nar_hash.clone()))
-            .filter(nar::Column::NarSize.eq(nar_size as i64))
-            .one(db)
-            .await?;
-
           let nar = if let Some(existing_nar) = existing_nar {
             existing_nar
           } else {

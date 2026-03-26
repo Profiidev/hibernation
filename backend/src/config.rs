@@ -52,10 +52,30 @@ impl Config {
       .merge(Serialized::defaults(Self::default()))
       .merge(Env::raw().global());
 
-    let config: Self = config.extract().expect("Failed to parse configuration");
+    let mut config: Self = config.extract().expect("Failed to parse configuration");
 
     if config.db_url.is_empty() {
       panic!("DB_URL is not set");
+    }
+
+    if config.db_url.starts_with("sqlite") {
+      if config.db.database_max_connections > 1 {
+        config.db.database_max_connections = 1;
+        if config.db.database_max_connections != DBConfig::default().database_max_connections {
+          warn!(
+            "SQLite does not work properly with multiple connections. Setting DATABASE_MAX_CONNECTIONS to 1."
+          );
+        }
+      }
+
+      if config.db.database_min_connections > 1 {
+        config.db.database_min_connections = 1;
+        if config.db.database_min_connections != DBConfig::default().database_min_connections {
+          warn!(
+            "SQLite does not work properly with multiple connections. Setting DATABASE_MIN_CONNECTIONS to 1."
+          );
+        }
+      }
     }
 
     config.storage.validate();

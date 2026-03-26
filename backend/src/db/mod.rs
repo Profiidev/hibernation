@@ -77,7 +77,7 @@ pub async fn init(db: &Connection) -> Result<()> {
   if db.0.get_database_backend() == DatabaseBackend::Sqlite {
     db.execute(Statement::from_string(
       DatabaseBackend::Sqlite,
-      "PRAGMA journal_mode = WAL;".to_string(),
+      "PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 60000;".to_string(),
     ))
     .await?;
   }
