@@ -53,10 +53,31 @@ See `backend/src/config.rs` for all non-standard configuration options.
 
 The CLI tool allows you to interact with the Hibernation server, primarily for authenticating and pushing Nix store paths.
 
-You can install it from the binaries published to GitHub Releases or using Cargo:
+You can install it from the binaries published to GitHub Releases, using Cargo:
 
 ```bash
 cargo install --git https://github.com/ProfiiDev/hibernation hibernation
+```
+
+Or in you nix config:
+
+```nix
+{
+  inputs = {
+    ...
+    hibernation.url = "github:profiidev/hibernation/latest";
+  }
+  ...
+}
+```
+
+```nix
+{ inputs, pkgs, ... }:
+{
+  environment.systemPackages = with pkgs; [
+    inputs.hibernation.packages.${stdenv.hostPlatform.system}.default
+  ];
+}
 ```
 
 ### Pushing Nix Store Paths
@@ -111,7 +132,9 @@ Once running, the services will be available at:
 
 ## TODO
 
-- cli flake install docs
+- automatic flake inputs update
+- cache overview page fills less than half of the page
 - github action for cache and cli setup
+- nix api support byte range queries
 - add overview page in frontend
 - nix store watch mode in cli + auto push + example in cache page
