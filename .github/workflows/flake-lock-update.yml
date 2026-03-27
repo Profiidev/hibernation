@@ -1,0 +1,30 @@
+name: Lock Update
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 1" # Every Monday at midnight UTC
+
+jobs:
+  update-components:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
+
+      - name: Update components
+        run: |
+          nix flake update
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.PERSONAL_TOKEN }}
+          commit-message: "chore: updated flake lock"
+          branch: "chore/update-flake-lock-${{ github.run_id }}"
+          title: "chore: update flake lock"
+          body: "This PR updates the flake inputs to the latest versions."
+          base: main
+          sign-commits: true
+          labels: flake-lock-update

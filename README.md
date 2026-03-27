@@ -132,7 +132,6 @@ Once running, the services will be available at:
 
 ## TODO
 
-- automatic flake inputs update
 - cache overview page fills less than half of the page
 - github action for cache and cli setup
 - nix api support byte range queries
