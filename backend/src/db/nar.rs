@@ -1,4 +1,5 @@
 use centaurus::error::ErrorReportStatusExt;
+use chrono::Utc;
 use entity::{nar, nar_info, nar_info_reference};
 use harmonia_store_core::store_path::StorePath;
 use http::StatusCode;
@@ -151,11 +152,14 @@ impl<'db> NarTable<'db> {
     nar_hash: &str,
     nar_size: u64,
   ) -> Result<Option<nar::Model>, DbErr> {
-    if let Some(existing) = nar::Entity::find()
+    if let Some(existing) = nar::Entity::update_many()
+      .col_expr(nar::Column::CreatedAt, Expr::value(Utc::now().naive_utc()))
       .filter(nar::Column::NarHash.eq(nar_hash))
       .filter(nar::Column::NarSize.eq(nar_size as i64))
-      .one(self.db)
+      .exec_with_returning(self.db)
       .await?
+      .into_iter()
+      .next()
     {
       return Ok(Some(existing));
     }

@@ -44,6 +44,7 @@ pub async fn push_paths(
   no_deps: bool,
   force: bool,
   signing_key: KeyPair,
+  threads: usize,
 ) {
   info!("Collecting paths for push");
   let store_dir = StoreDir::default();
@@ -129,7 +130,7 @@ pub async fn push_paths(
   }
   let enter = span.enter();
 
-  for _ in 0..(num_cpus::get()).min(to_push) {
+  for _ in 0..(threads).min(to_push) {
     let jobs = jobs.clone();
     let error = error.clone();
     let api = api.clone();

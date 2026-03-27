@@ -111,7 +111,7 @@ Once running, the services will be available at:
 
 ## TODO
 
-- nix flake for cli
+- cli flake install docs
 - github action for cache and cli setup
 - add overview page in frontend
 - nix store watch mode in cli + auto push + example in cache page

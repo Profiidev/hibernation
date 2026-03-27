@@ -63,6 +63,9 @@ pub enum AuthenticatedCommand {
     /// Path of the key to use for signing.
     #[arg(long)]
     key: Option<PathBuf>,
+    /// Number of upload threads to use. Defaults to 5.
+    #[arg(long, default_value_t = 5)]
+    threads: usize,
   },
 }
 
@@ -122,9 +125,10 @@ impl AuthenticatedCommand {
         no_deps,
         force,
         key,
+        threads,
       } => {
         let signing_key = get_signing_key(key).await;
-        push::push_paths(client, cache, &paths, no_deps, force, signing_key).await;
+        push::push_paths(client, cache, &paths, no_deps, force, signing_key, threads).await;
       }
     }
   }

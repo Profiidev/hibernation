@@ -27,7 +27,11 @@ pub fn init_logging(log_level: LevelFilter) {
   tracing_subscriber::registry()
     .with(layer)
     .with(ErrorLayer::default())
-    .with(indicatif_layer)
+    .with(
+      indicatif_layer.with_filter(tracing_subscriber::filter::filter_fn(|metadata| {
+        !metadata.target().starts_with("h2")
+      })),
+    )
     .init();
 }
 
