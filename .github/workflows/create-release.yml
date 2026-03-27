@@ -24,3 +24,8 @@ jobs:
           echo "Creating tag for version $VERSION"
           git tag "$VERSION"
           git push origin "$VERSION"
+
+      - name: Update latest tag
+        run: |
+          git tag -f latest
+          git push origin -f latest

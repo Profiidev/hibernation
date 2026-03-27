@@ -1,0 +1,28 @@
+name: Flake Build
+
+on:
+  pull_request:
+  release:
+    types:
+      - published
+
+jobs:
+  flake-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v16
+        if: github.event_name != 'pull_request'
+        with:
+          name: profidev
+          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+          skipPush: true
+
+      - name: Run build
+        run: nix build . -Lv --print-out-paths --accept-flake-config
+
+      - name: Cache results
+        if: github.event_name != 'pull_request'
+        run: readlink result | cachix push profidev
