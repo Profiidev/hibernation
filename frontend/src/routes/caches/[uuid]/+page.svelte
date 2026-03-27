@@ -28,8 +28,8 @@
 }`);
 </script>
 
-<ScrollArea class="h-full">
-  <div class="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_auto_1fr]">
+<ScrollArea class="h-full w-full">
+  <div class="grid w-full grid-cols-1 gap-4 xl:grid-cols-[1fr_auto_1fr]">
     <div class="flex flex-col">
       <p class="text-lg">Usage:</p>
       <div class="mt-2 mb-1 flex">
