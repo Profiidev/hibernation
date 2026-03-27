@@ -112,7 +112,6 @@ Once running, the services will be available at:
 ## TODO
 
 - debug upload errors and upload hangs and cli ui inconsistencies
-- nix flake for cli
 - github action for cache and cli setup
 - add overview page in frontend
 - nix store watch mode in cli + auto push + example in cache page
