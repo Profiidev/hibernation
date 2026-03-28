@@ -7,12 +7,15 @@ use centaurus::{
   error::{ErrorReportStatusExt, Result},
 };
 use http::StatusCode;
+use serde::Serialize;
+use url::Url;
 
 use crate::{
   auth::{jwt_auth::JwtAuth, oidc::OidcState},
+  config::Config,
   db::{
     DBTrait,
-    settings::{GeneralSettings, MailSettings, Settings, UserSettings},
+    settings::{MailSettings, Settings, UserSettings},
   },
   mail::state::Mailer,
   permissions::{SettingsEdit, SettingsView},
@@ -21,12 +24,22 @@ use crate::{
 
 pub fn router() -> Router {
   Router::new()
-    .route("/general", get(get_settings::<GeneralSettings>))
-    .route("/general", post(save_settings::<GeneralSettings>))
+    .route("/general", get(general_settings))
     .route("/user", get(get_settings::<UserSettings>))
     .route("/user", post(save_user_settings))
     .route("/mail", get(get_settings::<MailSettings>))
     .route("/mail", post(save_mail_settings))
+}
+
+#[derive(Serialize)]
+struct GeneralSettings {
+  site_url: Url,
+}
+
+async fn general_settings(_auth: JwtAuth, config: Config) -> Result<Json<GeneralSettings>> {
+  Ok(Json(GeneralSettings {
+    site_url: config.site_url,
+  }))
 }
 
 async fn get_settings<S: Settings>(
@@ -36,6 +49,7 @@ async fn get_settings<S: Settings>(
   Ok(Json(db.settings().get_settings::<S>().await?))
 }
 
+#[allow(unused)]
 async fn save_settings<S: Settings>(
   _auth: JwtAuth<SettingsEdit>,
   db: Connection,

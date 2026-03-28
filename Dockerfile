@@ -81,6 +81,7 @@ ARG FRONTEND_DIR
 
 ENV DB_URL="sqlite:/data/hibernation.db?mode=rwc"
 ENV STORAGE_PATH="/data/storage"
+ENV SITE_URL="http://localhost:8000"
 RUN mkdir -p /data/storage
 
 COPY --from=backend-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/

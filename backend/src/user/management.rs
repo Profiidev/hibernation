@@ -19,11 +19,11 @@ use uuid::Uuid;
 
 use crate::{
   auth::jwt_auth::JwtAuth,
+  config::Config,
   db::{
     DBTrait,
     cache::SimpleCacheInfo,
     group::CacheMapping,
-    settings::GeneralSettings,
     user::{DetailUserInfo, SimpleGroupInfo, UserInfo},
   },
   mail::{state::Mailer, templates},
@@ -99,6 +99,7 @@ async fn create_user(
   updater: Updater,
   mailer: Mailer,
   state: PasswordState,
+  config: Config,
   req: CreateUser,
 ) -> Result<Json<CreateUserResponse>> {
   if req.name.trim().is_empty() {
@@ -112,8 +113,6 @@ async fn create_user(
   if db.user().try_get_user_by_email(&req.email).await?.is_some() {
     bail!(CONFLICT, "User with this email already exists");
   }
-
-  let settings = db.settings().get_settings::<GeneralSettings>().await?;
 
   let password = if mailer.is_active().await {
     let mut rng = rand::rng();
@@ -148,7 +147,7 @@ async fn create_user(
         req.name,
         req.email,
         subject.to_string(),
-        templates::init_password(settings.site_url.as_str(), &password),
+        templates::init_password(config.site_url.as_str(), &password),
       )
       .await?;
   }

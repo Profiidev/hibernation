@@ -5,7 +5,8 @@ use tokio::spawn;
 use tracing::warn;
 
 use crate::{
-  db::{DBTrait, settings::GeneralSettings},
+  config::Config,
+  db::DBTrait,
   mail::{
     state::{Mailer, ResetPasswordState},
     templates,
@@ -29,6 +30,7 @@ async fn send_reset_link(
   mailer: Mailer,
   state: ResetPasswordState,
   db: Connection,
+  config: Config,
   ResetRequest { email }: ResetRequest,
 ) -> Result<(), ()> {
   // Spawn a new task to handle the email sending asynchronously and avoid exposing timing information
@@ -38,17 +40,9 @@ async fn send_reset_link(
       return;
     };
 
-    let Some(settings) = db.settings().get_settings::<GeneralSettings>().await.ok() else {
-      warn!(
-        "Failed to retrieve general settings for password reset email to: {}",
-        email
-      );
-      return;
-    };
-
     let token = state.generate_token(user.email.clone()).await;
 
-    let mut reset_link = settings.site_url.clone();
+    let mut reset_link = config.site_url.clone();
     if let Ok(segments) = &mut reset_link.path_segments_mut() {
       segments.pop_if_empty();
       segments.push("password");
@@ -61,7 +55,7 @@ async fn send_reset_link(
         user.name,
         user.email,
         "Hibernation Password Reset".to_string(),
-        templates::reset_link(reset_link.as_str(), settings.site_url.as_str()),
+        templates::reset_link(reset_link.as_str(), config.site_url.as_str()),
       )
       .await
     {

@@ -60,20 +60,7 @@ macro_rules! settings {
   };
 }
 
-settings!(GeneralSettings, 1);
-#[derive(Serialize, Deserialize, FromRequest)]
-#[from_request(via(Json))]
-pub struct GeneralSettings {
-  pub site_url: Url,
-}
-
-impl Default for GeneralSettings {
-  fn default() -> Self {
-    Self {
-      site_url: Url::parse("http://localhost:8000").unwrap(),
-    }
-  }
-}
+// Don't use id 1 it was used for GeneralSettings in the past which has been removed
 
 settings!(UserSettings, 2);
 #[derive(Serialize, Deserialize, FromRequest, Debug)]

@@ -33,9 +33,10 @@ use uuid::Uuid;
 
 use crate::{
   auth::jwt_state::JwtState,
+  config::Config,
   db::{
     DBTrait,
-    settings::{GeneralSettings, OidcSettings, UserSettings},
+    settings::{OidcSettings, UserSettings},
   },
   rate_limit::RateLimiter,
 };
@@ -312,6 +313,7 @@ async fn oidc_callback(
   oidc_state: OidcState,
   cookies: CookieJar,
   db: Connection,
+  app_config: Config,
   jwt: JwtState,
 ) -> Result<(CookieJar, Redirect)> {
   let mut lock = oidc_state.0.lock().await;
@@ -333,9 +335,7 @@ async fn oidc_callback(
 
   cookies = cookies.remove(Cookie::from(OIDC_STATE));
 
-  let config = db.settings().get_settings::<GeneralSettings>().await?;
-
-  let mut url = config.site_url;
+  let mut url = app_config.site_url;
   url.set_path(path);
   url.set_query(error.map(|e| format!("error={e}")).as_deref());
 

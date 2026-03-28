@@ -43,6 +43,7 @@ The critical configuration is done via environment variables everything else via
 | S3_REGION           | Region for S3 storage                                                      | -                                    |
 | S3_BUCKET           | Bucket name for S3 storage                                                 | -                                    |
 | S3_FORCE_PATH_STYLE | Whether to use path-style URLs for S3 (required for MinIO)                 | false                                |
+| SITE_URL            | The URL where the app is hosted. Important for Email links and Oidc.       | http://localhost:8000                |
 | LOG_LEVEL           | Log level for the backend (e.g., info, debug)                              | info                                 |
 | METRICS_NAME        | The name to use as the app label in Prometheus metrics                     | hibernation                          |
 | PORT                | Port for the backend server to listen on                                   | 8000                                 |
