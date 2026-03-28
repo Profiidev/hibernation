@@ -5,7 +5,7 @@ use axum::{
   routing::{get, head},
 };
 use centaurus::{bail, db::init::Connection, error::Result};
-use http::{HeaderMap, HeaderName, StatusCode, header};
+use http::{HeaderMap, HeaderValue, StatusCode, header};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -14,6 +14,11 @@ use crate::{
   cache::storage::FileStorage,
   db::{DBTrait, nar::NarInfoData},
 };
+
+const CACHE_INFO_MIME: HeaderValue = HeaderValue::from_static("text/x-nix-cache-info");
+const NAR_INFO_MIME: HeaderValue = HeaderValue::from_static("text/x-nix-narinfo");
+const NAR_MIME: HeaderValue = HeaderValue::from_static("application/x-nix-nar");
+const ACCEPT_RANGES: HeaderValue = HeaderValue::from_static("bytes");
 
 /// https://fzakaria.github.io/nix-http-binary-cache-api-spec/#/default
 pub fn router() -> Router {
@@ -55,7 +60,7 @@ async fn nix_cache_info(
   }
 
   let mut headers = HeaderMap::new();
-  headers.insert("Content-Type", "text/x-nix-cache-info".parse().unwrap());
+  headers.insert(header::CONTENT_TYPE, CACHE_INFO_MIME.clone());
 
   Ok((
     headers,
@@ -115,7 +120,7 @@ async fn head_nar_info(
   get_data(&db, path, auth).await?;
 
   let mut headers = HeaderMap::new();
-  headers.insert("Content-Type", "text/x-nix-narinfo".parse().unwrap());
+  headers.insert(header::CONTENT_TYPE, NAR_INFO_MIME.clone());
 
   Ok(headers)
 }
@@ -129,7 +134,7 @@ async fn nar_info(
   let references = db.nar().nar_info_references(data.id).await?;
 
   let mut headers = HeaderMap::new();
-  headers.insert("Content-Type", "text/x-nix-narinfo".parse().unwrap());
+  headers.insert(header::CONTENT_TYPE, NAR_INFO_MIME.clone());
 
   let compression = match data.compression.as_str() {
     "zst" => "zstd",
@@ -179,7 +184,8 @@ async fn nar(
   path: NarPath,
   storage: FileStorage,
   auth: Option<CliAuth>,
-) -> Result<(StatusCode, [(HeaderName, String); 2], Body)> {
+  headers: HeaderMap,
+) -> Result<(StatusCode, HeaderMap, Body)> {
   // parse hash as <hash>.nar.<compression>
   let Some((hash, compression)) = path.hash.split_once(".nar.") else {
     bail!(NOT_FOUND, "Invalid nar path");
@@ -205,12 +211,50 @@ async fn nar(
   };
   tracing::info!("Serving nar {} for cache {}", nar_id, path.uuid);
 
-  let body = storage.get_file(nar_id).await?;
+  let range = headers
+    .get(http::header::RANGE)
+    .and_then(|h| h.to_str().ok())
+    .and_then(|s| parse_range(s, file_size as u64));
 
-  let headers = [
-    (header::CONTENT_TYPE, "application/x-nix-nar".into()),
-    (header::CONTENT_LENGTH, file_size.to_string()),
-  ];
+  let status = if range.is_some() {
+    StatusCode::PARTIAL_CONTENT
+  } else {
+    StatusCode::OK
+  };
 
-  Ok((StatusCode::OK, headers, body))
+  let body = storage.get_file(nar_id, range).await?;
+
+  let mut headers = HeaderMap::new();
+  headers.insert(header::CONTENT_TYPE, NAR_MIME.clone());
+  headers.insert(header::ACCEPT_RANGES, ACCEPT_RANGES.clone());
+
+  if let Some((start, end)) = range {
+    headers.insert(
+      header::CONTENT_RANGE,
+      HeaderValue::from_str(&format!("bytes {}-{}/{}", start, end, file_size)).unwrap(),
+    );
+    headers.insert(
+      header::CONTENT_LENGTH,
+      HeaderValue::from_str(&((end - start + 1).to_string())).unwrap(),
+    );
+  } else {
+    headers.insert(header::CONTENT_LENGTH, file_size.into());
+  }
+
+  Ok((status, headers, body))
+}
+
+fn parse_range(range: &str, file_size: u64) -> Option<(u64, u64)> {
+  let parts: Vec<&str> = range.strip_prefix("bytes=")?.split('-').collect();
+  let start = parts.first()?.parse::<u64>().ok()?;
+  let end = parts
+    .get(1)
+    .and_then(|s| s.parse::<u64>().ok())
+    .unwrap_or(file_size - 1);
+
+  if start < file_size {
+    Some((start, end.min(file_size - 1)))
+  } else {
+    None
+  }
 }

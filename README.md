@@ -132,7 +132,6 @@ Once running, the services will be available at:
 
 ## TODO
 
-- nix api support byte range queries
 - move url setting from frontend to env var and document in readme
 - add support for virtual host based cache access (requires more restrictions on cache names)
 - document action usage in readme

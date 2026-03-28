@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{io::SeekFrom, path::PathBuf, sync::Arc};
 
 use aws_config::Region;
 use aws_sdk_s3::{
@@ -16,7 +16,7 @@ use centaurus::{
 use http::StatusCode;
 use tokio::{
   fs,
-  io::{self, AsyncRead, AsyncReadExt},
+  io::{self, AsyncRead, AsyncReadExt, AsyncSeekExt},
 };
 use tokio_util::io::ReaderStream;
 use tracing::info;
@@ -210,7 +210,7 @@ impl FileStorage {
     Ok(())
   }
 
-  pub async fn get_file(&self, nar_id: Uuid) -> Result<Body> {
+  pub async fn get_file(&self, nar_id: Uuid, range: Option<(u64, u64)>) -> Result<Body> {
     if !self.exists(nar_id).await? {
       bail!(NOT_FOUND, "Nar file not found");
     }
@@ -219,7 +219,18 @@ impl FileStorage {
     match self {
       Self::Local(path) => {
         let file_path = path.join(&name);
-        let file = fs::File::open(file_path).await?;
+        let mut file = fs::File::open(file_path).await?;
+
+        if let Some((start, end)) = range {
+          if file.seek(SeekFrom::Start(start)).await.is_err() {
+            bail!(RANGE_NOT_SATISFIABLE, "Invalid range header");
+          }
+
+          let reader = file.take(end - start + 1);
+          let stream = ReaderStream::new(reader);
+          return Ok(Body::from_stream(stream));
+        }
+
         Ok(Body::from_stream(ReaderStream::new(file)))
       }
       Self::S3 { client, bucket } => {
@@ -227,6 +238,7 @@ impl FileStorage {
           .get_object()
           .bucket(bucket)
           .key(&name)
+          .set_range(range.map(|(start, end)| format!("bytes={}-{}", start, end)))
           .send()
           .await
           .context("Failed to download nar from S3 Bucket")?;
