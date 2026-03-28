@@ -1,0 +1,12 @@
+name: Hibernation setup
+description: Setup Hibernation CLI
+
+inputs:
+  version:
+    description: The version of Hibernation CLI to install
+    required: true
+    default: latest
+
+runs:
+  using: node24
+  main: action/dist/index.js

@@ -17,6 +17,7 @@ jobs:
           token: ${{ secrets.PERSONAL_TOKEN }}
         uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
+      - uses: bahmutov/npm-install@v1
 
       - name: Update version
         id: update_version
@@ -29,6 +30,7 @@ jobs:
           sed -i "s/version = \".*\"/version = \"$NEW_VERSION\"/" flake.nix
           cargo metadata -q
           cd frontend && npm version $NEW_VERSION --no-git-tag-version
+          cd ../actions && npm version $NEW_VERSION --no-git-tag-version && npm run build
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v8

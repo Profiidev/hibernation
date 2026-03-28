@@ -1,0 +1,19 @@
+{
+  "name": "action",
+  "private": true,
+  "version": "0.1.1",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "format": "prettier --write .",
+    "lint": "prettier --check ."
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "@actions/core": "^3.0.0",
+    "@actions/tool-cache": "^4.0.0"
+  }
+}

@@ -1,6 +1,7 @@
 {
   "workspaces": [
-    "frontend"
+    "frontend",
+    "action"
   ],
   "devDependencies": {
     "prettier": "^3.8.1",

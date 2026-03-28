@@ -134,6 +134,7 @@ Once running, the services will be available at:
 
 - github action for cache and cli setup
 - nix api support byte range queries
-- add overview page in frontend
+- move url setting from frontend to env var and document in readme
 - add support for virtual host based cache access (requires more restrictions on cache names)
+- add overview page in frontend
 - nix store watch mode in cli + auto push + example in cache page
