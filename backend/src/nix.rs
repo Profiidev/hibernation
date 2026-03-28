@@ -7,7 +7,6 @@ use axum::{
 use centaurus::{bail, db::init::Connection, error::Result};
 use http::{HeaderMap, HeaderValue, StatusCode, header};
 use serde::Deserialize;
-use uuid::Uuid;
 
 use crate::{
   auth::cli_auth::CliAuth,
@@ -23,16 +22,16 @@ const ACCEPT_RANGES: HeaderValue = HeaderValue::from_static("bytes");
 /// https://fzakaria.github.io/nix-http-binary-cache-api-spec/#/default
 pub fn router() -> Router {
   Router::new()
-    .route("/{uuid}/nix-cache-info", get(nix_cache_info))
-    .route("/{uuid}/{path}", head(head_nar_info))
-    .route("/{uuid}/{path}", get(nar_info))
-    .route("/{uuid}/nar/{hash}", get(nar))
+    .route("/{name}/nix-cache-info", get(nix_cache_info))
+    .route("/{name}/{path}", head(head_nar_info))
+    .route("/{name}/{path}", get(nar_info))
+    .route("/{name}/nar/{hash}", get(nar))
 }
 
 #[derive(FromRequestParts, Deserialize)]
 #[from_request(via(Path))]
 struct CachePath {
-  uuid: Uuid,
+  name: String,
 }
 
 async fn nix_cache_info(
@@ -40,7 +39,7 @@ async fn nix_cache_info(
   path: CachePath,
   auth: Option<CliAuth>,
 ) -> Result<(HeaderMap, String)> {
-  let Some(cache) = db.cache().by_id(path.uuid).await? else {
+  let Some(cache) = db.cache().by_name(path.name).await? else {
     bail!(NOT_FOUND, "Cache not found");
   };
 
@@ -77,7 +76,7 @@ Priority: {}
 #[derive(FromRequestParts, Deserialize)]
 #[from_request(via(Path))]
 struct NarInfoPath {
-  uuid: Uuid,
+  name: String,
   path: String,
 }
 
@@ -90,14 +89,18 @@ async fn get_data(
     bail!(NOT_FOUND, "Invalid narinfo path");
   };
 
-  if !db.cache().is_public(path.uuid).await? {
+  let Some(cache) = db.cache().by_name(path.name).await? else {
+    bail!(NOT_FOUND, "Cache not found");
+  };
+
+  if !cache.public {
     let Some(auth) = auth else {
       bail!(UNAUTHORIZED, "Authentication required");
     };
 
     if db
       .cache()
-      .cache_user_access(auth.user_id, path.uuid)
+      .cache_user_access(auth.user_id, cache.id)
       .await?
       .is_none()
     {
@@ -105,7 +108,7 @@ async fn get_data(
     }
   }
 
-  let Some(data) = db.nar().nar_info_data(path.uuid, hash).await? else {
+  let Some(data) = db.nar().nar_info_data(cache.id, hash).await? else {
     bail!(NOT_FOUND, "Narinfo not found");
   };
 
@@ -175,7 +178,7 @@ Sig: {}
 #[derive(FromRequestParts, Deserialize)]
 #[from_request(via(Path))]
 struct NarPath {
-  uuid: Uuid,
+  name: String,
   hash: String,
 }
 
@@ -191,14 +194,18 @@ async fn nar(
     bail!(NOT_FOUND, "Invalid nar path");
   };
 
-  if !db.cache().is_public(path.uuid).await? {
+  let Some(cache) = db.cache().by_name(path.name).await? else {
+    bail!(NOT_FOUND, "Cache not found");
+  };
+
+  if !cache.public {
     let Some(auth) = auth else {
       bail!(UNAUTHORIZED, "Authentication required");
     };
 
     if db
       .cache()
-      .cache_user_access(auth.user_id, path.uuid)
+      .cache_user_access(auth.user_id, cache.id)
       .await?
       .is_none()
     {
@@ -206,10 +213,10 @@ async fn nar(
     }
   }
 
-  let Some((nar_id, file_size)) = db.nar().get_nar(path.uuid, hash, compression).await? else {
+  let Some((nar_id, file_size)) = db.nar().get_nar(cache.id, hash, compression).await? else {
     bail!(NOT_FOUND, "Nar not found");
   };
-  tracing::info!("Serving nar {} for cache {}", nar_id, path.uuid);
+  tracing::info!("Serving nar {} for cache {}", nar_id, cache.id);
 
   let range = headers
     .get(http::header::RANGE)

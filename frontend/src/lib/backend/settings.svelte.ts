@@ -5,7 +5,7 @@ const getSettings = async <T>(name: string, fetch: typeof window.fetch) => {
     res_type: ResponseType.Json,
     fetch
   });
-  if (typeof res === 'object') {
+  if (typeof res !== 'string') {
     return res;
   }
 };

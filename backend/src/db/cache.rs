@@ -459,11 +459,6 @@ impl<'db> CacheTable<'db> {
 
     Ok(())
   }
-
-  pub async fn is_public(&self, cache: Uuid) -> Result<bool, DbErr> {
-    let cache = cache::Entity::find_by_id(cache).one(self.db).await?;
-    Ok(cache.is_some_and(|c| c.public))
-  }
 }
 
 fn serialize_i64_or_zero<S>(num: &Option<i64>, serializer: S) -> Result<S::Ok, S::Error>
