@@ -913,6 +913,7 @@ dependencies = [
  "md5",
  "migration",
  "rand 0.10.0",
+ "regex",
  "reqwest",
  "rsa",
  "sea-orm",

@@ -73,6 +73,7 @@ sha2 = "0.10.9"
 tokio-util = { version = "0.7.18", features = ["io"] }
 aws-config = { version = "1.8.15", features = ["behavior-version-latest"] }
 aws-sdk-s3 = { version = "1.127.0", features = ["behavior-version-latest"] }
+regex = "1.12.3"
 
 [[bin]]
 name = "backend"

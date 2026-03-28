@@ -1,11 +1,14 @@
+use std::ops::Deref;
+
 use axum::{
-  Json, Router,
+  Extension, Json, Router,
   extract::{FromRequest, FromRequestParts, Path},
   routing::{delete, get, post},
 };
 use centaurus::{bail, db::init::Connection, error::Result};
 use chrono::{DateTime, Utc};
 use entity::sea_orm_active_enums::{AccessType, EvictionPolicy};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use shared::sig::PublicKey;
 use url::Url;
@@ -33,6 +36,27 @@ pub fn router() -> Router {
     .route("/{uuid}", post(edit_cache))
     .route("/{uuid}", delete(clear_cache))
     .route("/{uuid}/path", delete(delete_path))
+}
+
+#[derive(FromRequestParts, Clone)]
+#[from_request(via(Extension))]
+pub struct CacheRegex(Regex);
+
+impl Deref for CacheRegex {
+  type Target = Regex;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
+
+impl CacheRegex {
+  pub fn new() -> Self {
+    // Cache names must be 1-63 characters, can contain letters, numbers, and hyphens,
+    // but cannot start or end with a hyphen or be purely numeric.
+    let regex = Regex::new(r"^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$").unwrap();
+    CacheRegex(regex)
+  }
 }
 
 async fn list_caches(auth: JwtAuth, db: Connection) -> Result<Json<Vec<CacheInfo>>> {
@@ -75,10 +99,11 @@ async fn create_cache(
   auth: JwtAuth<CacheCreate>,
   db: Connection,
   updater: Updater,
+  regex: CacheRegex,
   req: CreateCacheRequest,
 ) -> Result<Json<CreateCacheResponse>> {
-  if req.name.trim().is_empty() {
-    bail!(BAD_REQUEST, "Cache name cannot be empty");
+  if !regex.is_match(&req.name) || req.name.len() > 63 {
+    bail!(BAD_REQUEST, "Invalid cache name format");
   }
 
   if db.cache().by_name(req.name.clone()).await?.is_some() {
@@ -196,10 +221,15 @@ async fn edit_cache(
   db: Connection,
   updater: Updater,
   lock: CacheEvictionState,
+  regex: CacheRegex,
   mut req: EditCacheRequest,
 ) -> Result<()> {
   if req.priority < 0 {
     bail!(BAD_REQUEST, "Priority must be non-negative");
+  }
+
+  if !regex.is_match(&req.name) || req.name.len() > 63 {
+    bail!(BAD_REQUEST, "Invalid cache name format");
   }
 
   if PublicKey::from_string(&req.sig_key).is_none() {

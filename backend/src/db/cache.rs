@@ -167,7 +167,7 @@ impl<'db> CacheTable<'db> {
 
   pub async fn by_name(&self, name: String) -> Result<Option<cache::Model>, DbErr> {
     cache::Entity::find()
-      .filter(cache::Column::Name.eq(name))
+      .filter(Func::lower(Expr::col(cache::Column::Name)).eq(name.to_lowercase()))
       .one(self.db)
       .await
   }
