@@ -2130,7 +2130,10 @@ function Me() {
       if ((typeof I == 'function' && ((p = I), (I = null)), p === void 0))
         return new Promise((L, T) => {
           this.destroy(I, (Y, v) =>
-            Y ? /* istanbul ignore next: should never error */ T(Y) : L(v)
+            Y
+              ? /* istanbul ignore next: should never error */
+                T(Y)
+              : L(v)
           );
         });
       if (typeof p != 'function') throw new n('invalid callback');
@@ -19983,7 +19986,7 @@ const oQ = async () => {
   let e = '';
   switch (t) {
     case 'darwin':
-      e = 'darwin';
+      e = 'macos';
       break;
     case 'linux':
       e = 'linux';

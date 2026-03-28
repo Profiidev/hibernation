@@ -11,7 +11,7 @@ const run = async () => {
   let osPart = '';
   switch (platform) {
     case 'darwin':
-      osPart = 'darwin';
+      osPart = 'macos';
       break;
     case 'linux':
       osPart = 'linux';
