@@ -1,0 +1,32 @@
+name: Test Setup ACtion
+on:
+  pull_request:
+
+jobs:
+  test-setup:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - macos-latest
+        version:
+          - v0.1.0
+          - latest
+    name: Test Setup Action on ${{ matrix.os }} with version ${{ matrix.version }}
+    steps:
+      - name: Setup Cli
+        uses: .
+        with:
+          version: ${{ matrix.version }}
+
+      - name: Verify Installation
+        if: matrix.version != 'latest'
+        run: |
+          hibernation --version || grep ${{ matrix.version }} || (echo "Version mismatch" && exit 1)
+
+      - name: Verify Latest Installation
+        if: matrix.version == 'latest'
+        run: |
+          hibernation --version || (echo "Failed to get version" && exit 1
