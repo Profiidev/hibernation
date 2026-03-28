@@ -29,3 +29,11 @@ jobs:
         run: |
           git tag -f latest
           git push origin -f latest
+
+      - name: Update major tag
+        run: |
+          VERSION=${{ github.event.pull_request.head.ref }}
+          VERSION=${VERSION#chore/release-version-}
+          MAJOR_VERSION=$(echo $VERSION | cut -d. -f1)
+          git tag -f "$MAJOR_VERSION"
+          git push origin -f "$MAJOR_VERSION"
