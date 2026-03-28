@@ -25,9 +25,9 @@ jobs:
       - name: Verify Installation
         if: matrix.version != 'latest'
         run: |
-          hibernation --version || grep ${{ matrix.version }} || (echo "Version mismatch" && exit 1)
+          hibernation --version | grep ${{ matrix.version }}
 
       - name: Verify Latest Installation
         if: matrix.version == 'latest'
         run: |
-          hibernation --version || (echo "Failed to get version" && exit 1
+          hibernation --version
