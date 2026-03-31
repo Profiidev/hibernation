@@ -8,7 +8,7 @@
   import type { FormValue } from 'positron-components/components/form/types';
   import { passwordLogin } from '$lib/backend/auth.svelte';
   import { RequestError } from 'positron-components/backend';
-  import { goto } from '$app/navigation';
+  import { goto, invalidate } from '$app/navigation';
   import { connectWebsocket } from '$lib/backend/updater.svelte';
   import { toast } from 'positron-components/components/util/general';
   import { SSOType } from '$lib/backend/sso.svelte';
@@ -61,6 +61,7 @@
     } else {
       setTimeout(() => {
         connectWebsocket(ret.user);
+        invalidate('/api/user/info');
         goto('/');
       });
     }

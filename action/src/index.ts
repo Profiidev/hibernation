@@ -1,8 +1,24 @@
 import * as core from '@actions/core';
 import * as tc from '@actions/tool-cache';
+import { execSync } from 'child_process';
+
+const execCmd = (command: string): boolean => {
+  try {
+    execSync(command, {
+      encoding: 'utf-8'
+    });
+    return true;
+  } catch (error) {
+    core.error(`Command failed: ${command}`);
+    return false;
+  }
+};
 
 const run = async () => {
   const version = core.getInput('version') || 'latest';
+  const url = core.getInput('url');
+  const token = core.getInput('token');
+  const signingKey = core.getInput('signing-key');
   const repo = 'ProfiiDev/hibernation';
 
   const platform = process.platform;
@@ -35,19 +51,34 @@ const run = async () => {
   const suffix = platform === 'linux' ? '-gnu' : '';
   const assetName = `hibernation-${osPart}-${archPart}${suffix}.tar.gz`;
 
-  const url =
+  const downloadUrl =
     version === 'latest'
       ? `https://github.com/${repo}/releases/latest/download/${assetName}`
       : `https://github.com/${repo}/releases/download/${version}/${assetName}`;
 
-  core.info(`Downloading ${assetName} from ${url}`);
+  core.info(`Downloading ${assetName} from ${downloadUrl}`);
 
-  const pathToTarball = await tc.downloadTool(url);
+  const pathToTarball = await tc.downloadTool(downloadUrl);
   const pathToCli = await tc.extractTar(pathToTarball);
 
   core.addPath(pathToCli);
 
   core.info(`Successfully installed hibernation CLI`);
+
+  if (url && token) {
+    execCmd(`hibernation auth --url ${url} ${token}`);
+    core.info('Configured hibernation CLI with provided URL and token');
+  } else if (url) {
+    execCmd(`hibernation set-url ${url}`);
+    core.info('Configured hibernation CLI with provided URL');
+  } else if (token) {
+    core.warning('Token provided without URL, skipping configuration');
+  }
+
+  if (signingKey) {
+    core.exportVariable('HIBERNATION_SIGNING_KEY', signingKey);
+    core.info('Set signing key for hibernation CLI');
+  }
 };
 
 try {

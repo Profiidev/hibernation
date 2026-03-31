@@ -1,7 +1,7 @@
 use axum::{Router, extract::Request, response::Response};
 use axum_extra::headers::{HeaderMapExt, Host};
 use tower_service::Service;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::config::Config;
 
@@ -57,13 +57,8 @@ impl HostRouter<Router> {
 
 impl<S> HostRouter<S> {
   fn modify_req(&self, req: &mut Request) -> Option<()> {
-    warn!("Host routing middleware: processing request");
     let host = req.headers().typed_get::<Host>()?;
     let subdomain = subdomain_from_host(host.hostname())?;
-    warn!(
-      "Host routing middleware: extracted subdomain '{}'",
-      subdomain
-    );
 
     let suffix = if self.prefix.is_empty() {
       ""
@@ -79,7 +74,6 @@ impl<S> HostRouter<S> {
     parts.path_and_query = Some(new_path.parse().ok()?);
     let new_uri = http::Uri::from_parts(parts).ok()?;
     *req.uri_mut() = new_uri;
-    warn!("Host routing middleware: rewritten URI to {}", req.uri());
 
     Some(())
   }

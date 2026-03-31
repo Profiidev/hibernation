@@ -21,6 +21,9 @@ jobs:
         uses: ./
         with:
           version: ${{ matrix.version }}
+          url: https://cache.example.com
+          token: test1234
+          signing-key: test5678
 
       - name: Verify Installation
         if: matrix.version != 'latest'
@@ -33,3 +36,7 @@ jobs:
         if: matrix.version == 'latest'
         run: |
           hibernation --version
+
+      - name: Verify Signing Key
+        run: |
+          echo $HIBERNATION_SIGNING_KEY | grep "test5678"

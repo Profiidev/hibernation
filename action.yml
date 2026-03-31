@@ -6,6 +6,15 @@ inputs:
     description: The version of Hibernation CLI to install
     required: true
     default: latest
+  url:
+    description: The URL of the Hibernation instance
+    required: false
+  token:
+    description: The API token for authentication with the Hibernation instance
+    required: false
+  signing-key:
+    description: The nix signing key for caching built artifacts
+    required: false
 
 runs:
   using: node24

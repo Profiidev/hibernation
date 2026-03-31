@@ -4,6 +4,7 @@
   import FormInput from 'positron-components/components/form/form-input.svelte';
   import type { StageProps } from '$lib/components/form/types.svelte';
   import FormDateInput from '$lib/components/form/FormDateInput.svelte';
+  import { today, getLocalTimeZone } from '@internationalized/date';
 
   let { initialValue, onsubmit, footer, isLoading }: StageProps = $props();
 
@@ -34,6 +35,7 @@
       key="exp"
       label="Expiration Date"
       placeholder="Enter date"
+      minValue={today(getLocalTimeZone())}
     />
   {/snippet}
 </BaseForm>

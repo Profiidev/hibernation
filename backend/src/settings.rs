@@ -34,11 +34,13 @@ pub fn router() -> Router {
 #[derive(Serialize)]
 struct GeneralSettings {
   site_url: Url,
+  virtual_host_routing: bool,
 }
 
 async fn general_settings(_auth: JwtAuth, config: Config) -> Result<Json<GeneralSettings>> {
   Ok(Json(GeneralSettings {
     site_url: config.site_url,
+    virtual_host_routing: config.virtual_host_routing,
   }))
 }
 

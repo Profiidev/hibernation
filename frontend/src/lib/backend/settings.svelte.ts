@@ -18,6 +18,7 @@ const saveSettings = async <T>(name: string, settings: T) => {
 
 export interface GeneralSettings {
   site_url: string;
+  virtual_host_routing: boolean;
 }
 
 export const getGeneralSettings = async (fetch: typeof window.fetch) => {

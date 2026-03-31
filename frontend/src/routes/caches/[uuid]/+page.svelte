@@ -10,9 +10,16 @@
   let quota_gib = $derived(size_to_gib(data.cacheInfo.quota));
   let usage_percent = $derived((size_gib / quota_gib) * 100);
 
-  const url = $derived(
-    `${data.generalSettings?.site_url}api/nix/${data.cacheInfo.name}`
-  );
+  const url = $derived.by(() => {
+    let url = new URL(data.generalSettings?.site_url || 'localhost:5173');
+    if (data.generalSettings?.virtual_host_routing) {
+      url.host = `${data.cacheInfo.name}.${url.host}`;
+      return url.origin;
+    } else {
+      url.pathname = `/api/nix/${data.cacheInfo.name}`;
+      return url.href;
+    }
+  });
   const nixConfig = $derived(`{
   nixConfig = {
     extra-substituters = [
@@ -28,8 +35,8 @@
 </script>
 
 <ScrollArea class="h-full w-full">
-  <div class="grid w-full grid-cols-1 gap-4 xl:grid-cols-[1fr_auto_1fr]">
-    <div class="flex flex-col">
+  <div class="grid w-full grid-cols-1 gap-4 2xl:grid-cols-[1fr_auto_1fr]">
+    <div class="flex min-w-0 flex-col">
       <p class="text-lg">Usage:</p>
       <div class="mt-2 mb-1 flex">
         <p>Number of paths:</p>

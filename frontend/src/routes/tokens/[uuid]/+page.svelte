@@ -25,6 +25,7 @@
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import { CopyButton } from 'positron-components/components/ui-extra/copy-button';
   import { onMount } from 'svelte';
+  import { today, getLocalTimeZone } from '@internationalized/date';
 
   const { data } = $props();
 
@@ -127,6 +128,7 @@
                 key="exp"
                 label="Expiration Date"
                 placeholder="Enter date"
+                minValue={today(getLocalTimeZone())}
               />
               <Label
                 >Token

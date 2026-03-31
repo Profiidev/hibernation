@@ -9,7 +9,7 @@
     fromDate,
     getLocalTimeZone,
     toCalendarDate,
-    today
+    type DateValue
   } from '@internationalized/date';
   import type {
     FormPath,
@@ -24,9 +24,19 @@
     label: string;
     disabled?: boolean;
     placeholder?: string;
+    minValue?: DateValue;
+    maxValue?: DateValue;
   }
 
-  let { formData: form, key, label, disabled, placeholder }: Props = $props();
+  let {
+    formData: form,
+    key,
+    label,
+    disabled,
+    placeholder,
+    maxValue,
+    minValue
+  }: Props = $props();
 
   let open = $state(false);
   let formData = $derived(form.form);
@@ -72,14 +82,15 @@
             onValueChange={(val) => {
               formData.set({
                 ...get(formData),
-                exp:
+                [key]:
                   val instanceof CalendarDate
                     ? val.toDate(getLocalTimeZone())
                     : null
               });
               open = false;
             }}
-            minValue={today(getLocalTimeZone())}
+            {minValue}
+            {maxValue}
           />
         </Popover.Content>
       </Popover.Root>

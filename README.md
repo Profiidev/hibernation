@@ -103,6 +103,41 @@ Or in you nix config:
    hibernation push <cache-name> /nix/store/your-store-path
    ```
 
+### Github Actions
+
+You can also use the CLI in a Github Action to push build artifacts from your CI runs to your Hibernation instance. Here's an example of how to set this up:
+
+```yaml
+name: Build and Push to Hibernation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
+
+      - name: Install Hibernation CLI
+        uses: profiidev/hibernation@v0
+        with:
+          url: ${{ secrets.HIBERNATION_URL }}
+          token: ${{ secrets.HIBERNATION_TOKEN }}
+          signing-key: ${{ secrets.HIBERNATION_SIGNING_KEY }}
+
+      - name: Build Path
+        run: nix build . --print-out-paths --accept-flake-config
+
+      - name: Cache Results
+        run: |
+          RESULT_PATH=$(readlink result)
+          hibernation push <cache-name> $RESULT_PATH
+```
+
 ## Deployment
 
 ### Prerequisites
@@ -134,8 +169,5 @@ Once running, the services will be available at:
 
 ## TODO
 
-- move url setting from frontend to env var and document in readme
-- add support for virtual host based cache access (requires more restrictions on cache names)
-- document action usage in readme
 - add overview page in frontend
 - nix store watch mode in cli + auto push + example in cache page
