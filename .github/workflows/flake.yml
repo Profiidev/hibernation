@@ -23,7 +23,7 @@ jobs:
         run: nix build . -Lv --print-out-paths --accept-flake-config
 
       - name: Cache results
-        if: github.event_name != 'pull_request'
+        #if: github.event_name != 'pull_request'
         run: |
           RESULT_PATH=$(readlink result)
           hibernation push projects $RESULT_PATH
