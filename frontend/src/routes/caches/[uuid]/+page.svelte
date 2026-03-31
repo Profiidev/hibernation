@@ -64,7 +64,7 @@
       />
       <p class="mt-8 text-lg">Pushing paths:</p>
       <Code.Root
-        code={`hibernation push "${data.cacheInfo.name}" /nix/store/...`}
+        code={`hibernation push ${data.cacheInfo.name} /nix/store/...`}
         lang="bash"
         class="mt-2 h-auto"
         hideLines

@@ -12,17 +12,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: cachix/install-nix-action@v31
-      - uses: cachix/cachix-action@v16
-        if: github.event_name != 'pull_request'
+      - name: Install Hibernation CLI
+        uses: profiidev/hibernation@v0
         with:
-          name: profidev
-          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-          skipPush: true
+          url: ${{ secrets.HIBERNATION_URL }}
+          token: ${{ secrets.HIBERNATION_TOKEN }}
+          signing-key: ${{ secrets.HIBERNATION_SIGNING_KEY }}
 
       - name: Run build
         run: nix build . -Lv --print-out-paths --accept-flake-config
 
       - name: Cache results
         if: github.event_name != 'pull_request'
-        run: readlink result | cachix push profidev
+        run: |
+          RESULT_PATH=$(readlink result)
+          hibernation push projects $RESULT_PATH
