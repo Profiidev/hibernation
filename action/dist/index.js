@@ -2144,10 +2144,7 @@ function Ge() {
       if ((typeof I == 'function' && ((p = I), (I = null)), p === void 0))
         return new Promise((L, T) => {
           this.destroy(I, (v, Y) =>
-            v
-              ? /* istanbul ignore next: should never error */
-                T(v)
-              : L(Y)
+            v ? /* istanbul ignore next: should never error */ T(v) : L(Y)
           );
         });
       if (typeof p != 'function') throw new n('invalid callback');
