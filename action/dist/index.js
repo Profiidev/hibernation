@@ -1,7 +1,7 @@
 import * as Ie from 'os';
 import Ba from 'os';
 import * as As from 'crypto';
-import * as pe from 'fs';
+import * as De from 'fs';
 import { promises as Xa } from 'fs';
 import * as ee from 'path';
 import * as wt from 'http';
@@ -100,8 +100,8 @@ function da(A, s) {
     throw new Error(
       `Unable to find environment variable for file command ${A}`
     );
-  if (!pe.existsSync(t)) throw new Error(`Missing file at path: ${t}`);
-  pe.appendFileSync(t, `${Me(s)}${Ie.EOL}`, {
+  if (!De.existsSync(t)) throw new Error(`Missing file at path: ${t}`);
+  De.appendFileSync(t, `${Me(s)}${Ie.EOL}`, {
     encoding: 'utf8'
   });
 }
@@ -2144,7 +2144,10 @@ function Ge() {
       if ((typeof I == 'function' && ((p = I), (I = null)), p === void 0))
         return new Promise((L, T) => {
           this.destroy(I, (v, Y) =>
-            v ? /* istanbul ignore next: should never error */ T(v) : L(Y)
+            v
+              ? /* istanbul ignore next: should never error */
+                T(v)
+              : L(Y)
           );
         });
       if (typeof p != 'function') throw new n('invalid callback');
@@ -2567,13 +2570,13 @@ function nt() {
   return ((Mt = a), Mt);
 }
 var Lt = {},
-  ke = {},
+  Fe = {},
   Ys;
 function Dc() {
-  if (Ys) return ke;
+  if (Ys) return Fe;
   ((Ys = 1),
-    Object.defineProperty(ke, '__esModule', { value: !0 }),
-    (ke.enumToMap = void 0));
+    Object.defineProperty(Fe, '__esModule', { value: !0 }),
+    (Fe.enumToMap = void 0));
   function A(s) {
     const t = {};
     return (
@@ -2584,7 +2587,7 @@ function Dc() {
       t
     );
   }
-  return ((ke.enumToMap = A), ke);
+  return ((Fe.enumToMap = A), Fe);
 }
 var Js;
 function Rc() {
@@ -4592,7 +4595,7 @@ function oe() {
   );
 }
 var Vt, _s;
-function we() {
+function ye() {
   return (
     _s ||
       ((_s = 1),
@@ -4611,7 +4614,7 @@ function pa() {
   if (Xs) return Wt;
   Xs = 1;
   const { Blob: A, File: s } = ae,
-    { kState: t } = we(),
+    { kState: t } = ye(),
     { webidl: n } = KA();
   class e {
     constructor(Q, g, a = {}) {
@@ -4669,7 +4672,7 @@ function it() {
   if (zs) return Ot;
   zs = 1;
   const { isBlobLike: A, iteratorMixin: s } = oe(),
-    { kState: t } = we(),
+    { kState: t } = ye(),
     { kEnumerableProperty: n } = UA(),
     { FileLike: e, isFileLike: i } = pa(),
     { webidl: o } = KA(),
@@ -5017,7 +5020,7 @@ function ve() {
       utf8DecodeBytes: g
     } = oe(),
     { FormData: a } = it(),
-    { kState: r } = we(),
+    { kState: r } = ye(),
     { webidl: c } = KA(),
     { Blob: E } = ae,
     l = HA,
@@ -10607,7 +10610,7 @@ function Pc() {
   );
 }
 var Nr, Yi;
-function De() {
+function Re() {
   if (Yi) return Nr;
   Yi = 1;
   const { kConstruct: A } = WA(),
@@ -11011,7 +11014,7 @@ function ct() {
       getHeadersGuard: n,
       setHeadersGuard: e,
       setHeadersList: i
-    } = De(),
+    } = Re(),
     {
       extractBody: o,
       cloneBody: Q,
@@ -11034,7 +11037,7 @@ function ct() {
       environmentSettingsObject: h
     } = oe(),
     { redirectStatusSet: u, nullBodyStatus: y } = st(),
-    { kState: C, kHeaders: d } = we(),
+    { kState: C, kHeaders: d } = ye(),
     { webidl: D } = KA(),
     { FormData: f } = it(),
     { URLSerializer: R } = re(),
@@ -11427,7 +11430,7 @@ function Ve() {
       getHeadersGuard: g,
       setHeadersList: a,
       getHeadersList: r
-    } = De(),
+    } = Re(),
     { FinalizationRegistry: c } = Zc()(),
     E = UA(),
     l = te,
@@ -11447,7 +11450,7 @@ function Ve() {
       normalizedMethodRecordsBase: d,
       normalizedMethodRecords: D
     } = E,
-    { kHeaders: f, kSignal: R, kState: w, kDispatcher: m } = we(),
+    { kHeaders: f, kSignal: R, kState: w, kDispatcher: m } = ye(),
     { webidl: b } = KA(),
     { URLSerializer: U } = re(),
     { kConstruct: G } = WA(),
@@ -12060,7 +12063,7 @@ function gt() {
       makeResponse: n,
       fromInnerResponse: e
     } = ct(),
-    { HeadersList: i } = De(),
+    { HeadersList: i } = Re(),
     { Request: o, cloneRequest: Q } = Ve(),
     g = es,
     {
@@ -12098,7 +12101,7 @@ function gt() {
       createInflate: lA,
       extractMimeType: oA
     } = oe(),
-    { kState: dA, kDispatcher: pA } = we(),
+    { kState: dA, kDispatcher: pA } = ye(),
     j = HA,
     { safelyExtractBody: P, extractBody: aA } = ve(),
     {
@@ -12841,7 +12844,7 @@ function gt() {
                 Pe.append(FA(Ae[Ee]), Ae[Ee + 1].toString('latin1'), !0);
               ((he = Pe.get('location', !0)),
                 (this.body = new iA({ read: ft })));
-              const ye = [],
+              const pe = [],
                 _a = he && W.redirect === 'follow' && wA.has(_A);
               if (
                 W.method !== 'HEAD' &&
@@ -12864,7 +12867,7 @@ function gt() {
                 for (let dt = Ze.length - 1; dt >= 0; --dt) {
                   const _e = Ze[dt].trim();
                   if (_e === 'x-gzip' || _e === 'gzip')
-                    ye.push(
+                    pe.push(
                       g.createGunzip({
                         // Be less strict when decoding compressed responses, since sometimes
                         // servers send slightly invalid responses that are still accepted
@@ -12875,21 +12878,21 @@ function gt() {
                       })
                     );
                   else if (_e === 'deflate')
-                    ye.push(
+                    pe.push(
                       lA({
                         flush: g.constants.Z_SYNC_FLUSH,
                         finishFlush: g.constants.Z_SYNC_FLUSH
                       })
                     );
                   else if (_e === 'br')
-                    ye.push(
+                    pe.push(
                       g.createBrotliDecompress({
                         flush: g.constants.BROTLI_OPERATION_FLUSH,
                         finishFlush: g.constants.BROTLI_OPERATION_FLUSH
                       })
                     );
                   else {
-                    ye.length = 0;
+                    pe.length = 0;
                     break;
                   }
                 }
@@ -12900,8 +12903,8 @@ function gt() {
                   status: _A,
                   statusText: qe,
                   headersList: Pe,
-                  body: ye.length
-                    ? fA(this.body, ...ye, (Ee) => {
+                  body: pe.length
+                    ? fA(this.body, ...pe, (Ee) => {
                         Ee && this.onError(Ee);
                       }).on('error', us)
                     : this.body.on('error', us)
@@ -13731,7 +13734,7 @@ function jc() {
     { webidl: i } = KA(),
     { Response: o, cloneResponse: Q, fromInnerResponse: g } = ct(),
     { Request: a, fromInnerRequest: r } = Ve(),
-    { kState: c } = we(),
+    { kState: c } = ye(),
     { fetching: E } = gt(),
     {
       urlIsHttpHttpsScheme: l,
@@ -14538,7 +14541,7 @@ function rg() {
   const { parseSetCookie: A } = tg(),
     { stringify: s } = La(),
     { webidl: t } = KA(),
-    { Headers: n } = De();
+    { Headers: n } = Re();
   function e(g) {
     (t.argumentLengthCheck(arguments, 1, 'getCookies'),
       t.brandCheck(g, n, { strict: !1 }));
@@ -14921,7 +14924,7 @@ function We() {
   );
 }
 var _r, ro;
-function Re() {
+function me() {
   if (ro) return _r;
   ro = 1;
   const A = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11',
@@ -15006,7 +15009,7 @@ function Et() {
       kBinaryType: n,
       kWebSocketURL: e
     } = Qt(),
-    { states: i, opcodes: o } = Re(),
+    { states: i, opcodes: o } = me(),
     { ErrorEvent: Q, createFastMessageEvent: g } = We(),
     { isUtf8: a } = ae,
     { collectASequenceOfCodePointsFast: r, removeHTTPWhitespace: c } = re();
@@ -15158,7 +15161,7 @@ var Kr, io;
 function cs() {
   if (io) return Kr;
   io = 1;
-  const { maxUnsigned16Bit: A } = Re(),
+  const { maxUnsigned16Bit: A } = me(),
     s = 16386;
   let t,
     n = null,
@@ -15227,7 +15230,7 @@ function Ta() {
       sentCloseFrameState: t,
       emptyBuffer: n,
       opcodes: e
-    } = Re(),
+    } = me(),
     {
       kReadyState: i,
       kSentClose: o,
@@ -15247,7 +15250,7 @@ function Ta() {
     { CloseEvent: k } = We(),
     { makeRequest: L } = Ve(),
     { fetching: T } = gt(),
-    { Headers: v, getHeadersList: Y } = De(),
+    { Headers: v, getHeadersList: Y } = Re(),
     { getDecodeSplit: h } = oe(),
     { WebsocketFrameSend: u } = cs();
   let y;
@@ -15499,7 +15502,7 @@ function sg() {
       states: e,
       emptyBuffer: i,
       sentCloseFrameState: o
-    } = Re(),
+    } = me(),
     { kReadyState: Q, kSentClose: g, kResponse: a, kReceivedClose: r } = Qt(),
     { channels: c } = Te(),
     {
@@ -15749,7 +15752,7 @@ function ig() {
   if (go) return en;
   go = 1;
   const { WebsocketFrameSend: A } = cs(),
-    { opcodes: s, sendHints: t } = Re(),
+    { opcodes: s, sendHints: t } = me(),
     n = Da(),
     e = Buffer[Symbol.species];
   class i {
@@ -15829,7 +15832,7 @@ function og() {
       states: e,
       sentCloseFrameState: i,
       sendHints: o
-    } = Re(),
+    } = me(),
     {
       kWebSocketURL: Q,
       kReadyState: g,
@@ -16752,7 +16755,7 @@ function gg() {
       throw (dA && typeof dA == 'object' && Error.captureStackTrace(dA), dA);
     }
   }),
-    (DA.Headers = De().Headers),
+    (DA.Headers = Re().Headers),
     (DA.Response = ct().Response),
     (DA.Request = Ve().Request),
     (DA.FormData = it().FormData),
@@ -17198,8 +17201,8 @@ class ug {
   }
   _mergeHeaders(s) {
     return this.requestOptions && this.requestOptions.headers
-      ? Object.assign({}, Fe(this.requestOptions.headers), Fe(s || {}))
-      : Fe(s || {});
+      ? Object.assign({}, Ne(this.requestOptions.headers), Ne(s || {}))
+      : Ne(s || {});
   }
   /**
    * Gets an existing header value or returns a default.
@@ -17211,7 +17214,7 @@ class ug {
   _getExistingOrDefaultHeader(s, t, n) {
     let e;
     if (this.requestOptions && this.requestOptions.headers) {
-      const o = Fe(this.requestOptions.headers)[t];
+      const o = Ne(this.requestOptions.headers)[t];
       o && (e = typeof o == 'number' ? o.toString() : o);
     }
     const i = s[t];
@@ -17233,7 +17236,7 @@ class ug {
   _getExistingOrDefaultContentTypeHeader(s, t) {
     let n;
     if (this.requestOptions && this.requestOptions.headers) {
-      const i = Fe(this.requestOptions.headers)[$A.ContentType];
+      const i = Ne(this.requestOptions.headers)[$A.ContentType];
       i &&
         (typeof i == 'number'
           ? (n = String(i))
@@ -17385,7 +17388,7 @@ class ug {
     });
   }
 }
-const Fe = (A) =>
+const Ne = (A) =>
     Object.keys(A).reduce((s, t) => ((s[t.toLowerCase()] = A[t]), s), {}),
   { access: XQ, appendFile: zQ, writeFile: KQ } = Xa;
 var va = function (A, s, t, n) {
@@ -17430,9 +17433,9 @@ const {
     stat: Kn,
     symlink: nE,
     unlink: sE
-  } = pe.promises,
-  de = process.platform === 'win32';
-pe.constants.O_RDONLY;
+  } = De.promises,
+  we = process.platform === 'win32';
+De.constants.O_RDONLY;
 function yg(A) {
   return va(this, void 0, void 0, function* () {
     try {
@@ -17447,7 +17450,7 @@ function yg(A) {
 function Ya(A) {
   if (((A = pg(A)), !A))
     throw new Error('isRooted() parameter "p" cannot be empty');
-  return de ? A.startsWith('\\') || /^[A-Z]:/i.test(A) : A.startsWith('/');
+  return we ? A.startsWith('\\') || /^[A-Z]:/i.test(A) : A.startsWith('/');
 }
 function Co(A, s) {
   return va(this, void 0, void 0, function* () {
@@ -17461,7 +17464,7 @@ function Co(A, s) {
         );
     }
     if (t && t.isFile()) {
-      if (de) {
+      if (we) {
         const e = ee.extname(A).toUpperCase();
         if (s.some((i) => i.toUpperCase() === e)) return A;
       } else if (ho(t)) return A;
@@ -17478,7 +17481,7 @@ function Co(A, s) {
           );
       }
       if (t && t.isFile()) {
-        if (de) {
+        if (we) {
           try {
             const i = ee.dirname(A),
               o = ee.basename(A).toUpperCase();
@@ -17502,7 +17505,7 @@ function Co(A, s) {
 function pg(A) {
   return (
     (A = A || ''),
-    de
+    we
       ? ((A = A.replace(/\//g, '\\')), A.replace(/\\\\+/g, '\\'))
       : A.replace(/\/\/+/g, '/')
   );
@@ -17549,7 +17552,7 @@ var lt = function (A, s, t, n) {
 };
 function Dg(A) {
   return lt(this, void 0, void 0, function* () {
-    if (de && /[*"<>|]/.test(A))
+    if (we && /[*"<>|]/.test(A))
       throw new Error(
         'File path must not contain `*`, `"`, `<`, `>` or `|` on Windows'
       );
@@ -17576,7 +17579,7 @@ function Ha(A, s) {
     if (s) {
       const n = yield Ha(A, !1);
       if (!n)
-        throw de
+        throw we
           ? new Error(
               `Unable to locate executable file: ${A}. Please verify either the file path exists or the file can be found within a directory specified by the PATH environment variable. Also verify the file has a valid extension for an executable file.`
             )
@@ -17593,7 +17596,7 @@ function Rg(A) {
   return lt(this, void 0, void 0, function* () {
     if (!A) throw new Error("parameter 'tool' is required");
     const s = [];
-    if (de && process.env.PATHEXT)
+    if (we && process.env.PATHEXT)
       for (const e of process.env.PATHEXT.split(ee.delimiter)) e && s.push(e);
     if (Ya(A)) {
       const e = yield Co(A, s);
@@ -18077,7 +18080,7 @@ function xa(A, s = {}) {
 function Mg(A, s = {}) {
   Le('warning', fa(s), A instanceof Error ? A.toString() : A);
 }
-function Ne(A) {
+function de(A) {
   process.stdout.write(A + Ie.EOL);
 }
 var At = { exports: {} },
@@ -18532,7 +18535,7 @@ function jA() {
   return ((Qn = Q), Qn);
 }
 var En, ko;
-function me() {
+function ke() {
   if (ko) return En;
   ko = 1;
   const A = jA();
@@ -18553,7 +18556,7 @@ var ln, Fo;
 function Lg() {
   if (Fo) return ln;
   Fo = 1;
-  const A = me();
+  const A = ke();
   return (
     (ln = (t, n) => {
       const e = A(t, n);
@@ -18566,7 +18569,7 @@ var Bn, No;
 function Tg() {
   if (No) return Bn;
   No = 1;
-  const A = me();
+  const A = ke();
   return (
     (Bn = (t, n) => {
       const e = A(t.trim().replace(/^[=v]+/, ''), n);
@@ -18596,7 +18599,7 @@ var Cn, bo;
 function vg() {
   if (bo) return Cn;
   bo = 1;
-  const A = me();
+  const A = ke();
   return (
     (Cn = (t, n) => {
       const e = A(t, null, !0),
@@ -18649,7 +18652,7 @@ var dn, To;
 function xg() {
   if (To) return dn;
   To = 1;
-  const A = me();
+  const A = ke();
   return (
     (dn = (t, n) => {
       const e = A(t, n);
@@ -18800,7 +18803,7 @@ function Pg() {
   if (Xo) return Ln;
   Xo = 1;
   const A = jA(),
-    s = me(),
+    s = ke(),
     { safeRe: t, t: n } = Oe();
   return (
     (Ln = (i, o) => {
@@ -19688,7 +19691,7 @@ function nQ() {
     s = Bt(),
     t = jA(),
     n = Va(),
-    e = me(),
+    e = ke(),
     i = Lg(),
     o = Tg(),
     Q = Gg(),
@@ -19828,10 +19831,10 @@ class sQ {
           return yield s();
         } catch (i) {
           if (t && !t(i)) throw i;
-          Ne(i.message);
+          de(i.message);
         }
         const e = this.getSleepAmount();
-        (Ne(`Waiting ${e} seconds before trying again`),
+        (de(`Waiting ${e} seconds before trying again`),
           yield this.sleep(e),
           n++);
       }
@@ -19916,7 +19919,7 @@ function aQ(A, s, t, n) {
 }
 function cQ(A, s, t, n) {
   return Se(this, void 0, void 0, function* () {
-    if (pe.existsSync(s))
+    if (De.existsSync(s))
       throw new Error(`Destination file path ${s} already exists`);
     const i = yield new ug(oQ, [], {
       allowRetries: !1
@@ -19935,7 +19938,7 @@ function cQ(A, s, t, n) {
     let a = !1;
     try {
       return (
-        yield o(g, pe.createWriteStream(s)),
+        yield o(g, De.createWriteStream(s)),
         Ce('download complete'),
         (a = !0),
         s
@@ -20045,19 +20048,21 @@ const la = (A) => {
         A === 'latest'
           ? `https://github.com/${e}/releases/latest/download/${r}`
           : `https://github.com/${e}/releases/download/${A}/${r}`;
-    Ne(`Downloading ${r} from ${c}`);
+    de(`Downloading ${r} from ${c}`);
     const E = await aQ(c),
       l = await gQ(E);
     (Sg(l),
-      Ne('Successfully installed hibernation CLI'),
+      de('Successfully installed hibernation CLI'),
       s && t
-        ? la(`hibernation auth --url ${s} ${t}`)
+        ? (la(`hibernation auth --url ${s} ${t}`),
+          de('Configured hibernation CLI with provided URL and token'))
         : s
-          ? la(`hibernation set-url ${s}`)
+          ? (la(`hibernation set-url ${s}`),
+            de('Configured hibernation CLI with provided URL'))
           : t && Mg('Token provided without URL, skipping configuration'),
       n &&
         (Ng('HIBERNATION_SIGNING_KEY', n),
-        Ne('Set signing key for hibernation CLI')));
+        de('Set signing key for hibernation CLI')));
   };
 try {
   EQ();

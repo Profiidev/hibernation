@@ -67,8 +67,10 @@ const run = async () => {
 
   if (url && token) {
     execCmd(`hibernation auth --url ${url} ${token}`);
+    core.info('Configured hibernation CLI with provided URL and token');
   } else if (url) {
     execCmd(`hibernation set-url ${url}`);
+    core.info('Configured hibernation CLI with provided URL');
   } else if (token) {
     core.warning('Token provided without URL, skipping configuration');
   }
