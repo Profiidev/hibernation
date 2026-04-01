@@ -56,11 +56,11 @@
         min={0}
         max={quota_gib}
         value={size_gib}
-        class={usage_percent > 90
+        class={(usage_percent > 90
           ? '*:data-[slot=progress-indicator]:bg-red-500'
           : usage_percent > 70
             ? '*:data-[slot=progress-indicator]:bg-yellow-500'
-            : ''}
+            : '') + ' h-2'}
       />
       <p class="mt-8 text-lg">Pushing paths:</p>
       <Code.Root

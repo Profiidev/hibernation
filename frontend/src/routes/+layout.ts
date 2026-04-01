@@ -9,7 +9,6 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
   let status = await getSetupStatus(fetch);
 
   if (!status?.is_setup && url.pathname !== '/setup') {
-    redirect(302, '/setup');
   }
 
   let user: UserInfo | RequestError | undefined = await getUserInfo(fetch);
@@ -19,7 +18,6 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
     user !== RequestError.Unauthorized &&
     !noSidebarPaths.includes(url.pathname)
   ) {
-    redirect(302, '/login');
   }
 
   if (typeof user === 'string') {
