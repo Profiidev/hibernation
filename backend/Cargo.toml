@@ -22,10 +22,10 @@ centaurus = { version = "0.4.13", features = [
   "url",
   "image",
 ] }
-uuid = { version = "1.22.0", features = ["v4"] }
+uuid = { version = "1.23.0", features = ["v4"] }
 entity = { path = "entity" }
 migration = { path = "migration" }
-sea-orm = { version = "1.1.19", features = [
+sea-orm = { version = "1.1.20", features = [
   "sqlx-postgres",
   "sqlx-sqlite",
   "runtime-tokio-rustls",
@@ -48,7 +48,7 @@ argon2 = "0.5.3"
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 time = "0.3.47"
 url = { version = "2.5.8", features = ["serde"] }
-lettre = { version = "0.11.19", default-features = false, features = [
+lettre = { version = "0.11.20", default-features = false, features = [
   "smtp-transport",
   "rustls",
   "builder",
@@ -69,10 +69,10 @@ tower_governor = { version = "0.8.0", features = [
 governor = "0.10.4"
 dashmap = "6.1.0"
 async-compression = { version = "0.4.41", features = ["tokio", "zstd"] }
-sha2 = "0.10.9"
+sha2 = "0.11.0"
 tokio-util = { version = "0.7.18", features = ["io"] }
 aws-config = { version = "1.8.15", features = ["behavior-version-latest"] }
-aws-sdk-s3 = { version = "1.127.0", features = ["behavior-version-latest"] }
+aws-sdk-s3 = { version = "1.128.0", features = ["behavior-version-latest"] }
 regex = "1.12.3"
 addr = "0.15.6"
 tower-service = "0.3.3"
