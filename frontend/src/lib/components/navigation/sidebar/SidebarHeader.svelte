@@ -44,7 +44,7 @@
         class="data-[open=true]:bg-sidebar-primary data-[open=true]:text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
       >
         {#if isOpen}
-          <PanelLeftClose />
+          <PanelLeftClose class="size-6!" />
         {:else}
           <PanelLeftOpen />
         {/if}

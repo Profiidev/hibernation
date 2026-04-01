@@ -36,7 +36,7 @@
 {#each filteredItems as group}
   <Sidebar.Group>
     <Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
-    <Sidebar.Menu>
+    <Sidebar.Menu class="gap-1">
       {#each group.items as item}
         <Sidebar.MenuItem>
           <Sidebar.MenuButton
