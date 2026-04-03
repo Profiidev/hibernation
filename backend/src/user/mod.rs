@@ -1,4 +1,4 @@
-use axum::Router;
+use aide::axum::ApiRouter;
 
 use crate::rate_limit::RateLimiter;
 
@@ -6,8 +6,8 @@ mod account;
 mod info;
 mod management;
 
-pub fn router(rate_limiter: &mut RateLimiter) -> Router {
-  Router::new()
+pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
+  ApiRouter::new()
     .nest("/account", account::router(rate_limiter))
     .nest("/info", info::router())
     .nest("/management", management::router())

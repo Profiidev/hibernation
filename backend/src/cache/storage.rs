@@ -1,5 +1,6 @@
 use std::{io::SeekFrom, path::PathBuf, sync::Arc};
 
+use aide::OperationIo;
 use aws_config::Region;
 use aws_sdk_s3::{
   config::{Credentials, SharedCredentialsProvider},
@@ -24,7 +25,7 @@ use uuid::Uuid;
 
 use crate::config::StorageConfig;
 
-#[derive(Clone, FromRequestParts)]
+#[derive(Clone, FromRequestParts, OperationIo)]
 #[from_request(via(Extension))]
 pub enum FileStorage {
   Local(PathBuf),

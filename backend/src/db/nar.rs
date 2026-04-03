@@ -4,19 +4,20 @@ use entity::{nar, nar_info, nar_info_reference};
 use harmonia_store_core::store_path::StorePath;
 use http::StatusCode;
 use migration::ExprTrait;
+use schemars::JsonSchema;
 use sea_orm::{
   ActiveValue::Set, FromQueryResult, IntoActiveModel, JoinType, QueryOrder, QuerySelect,
   QueryTrait, TransactionTrait, prelude::*,
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, JsonSchema)]
 pub enum SearchOrder {
   Asc,
   Desc,
 }
 
-#[derive(Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, JsonSchema)]
 pub enum SearchSort {
   StorePath,
   Created,

@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
+use aide::OperationIo;
 use axum::{Extension, extract::FromRequestParts};
 use dashmap::DashMap;
 use tokio::sync::{Mutex, OwnedMutexGuard};
 use uuid::Uuid;
 
-#[derive(Clone, FromRequestParts)]
+#[derive(Clone, FromRequestParts, OperationIo)]
 #[from_request(via(Extension))]
 pub struct CacheEvictionState {
   cache_locks: Arc<DashMap<Uuid, Arc<Mutex<()>>>>,

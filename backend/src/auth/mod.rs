@@ -1,3 +1,4 @@
+use aide::axum::ApiRouter;
 use axum::{Extension, Router};
 use centaurus::{auth::pw::PasswordState, db::init::Connection};
 use rsa::{
@@ -29,8 +30,8 @@ mod password;
 mod res;
 mod test_token;
 
-pub fn router(rate_limiter: &mut RateLimiter) -> Router {
-  Router::new()
+pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
+  ApiRouter::new()
     .nest("/password", password::router(rate_limiter))
     .nest("/logout", logout::router())
     .nest("/test_token", test_token::router())

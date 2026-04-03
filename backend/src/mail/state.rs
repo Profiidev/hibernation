@@ -4,6 +4,7 @@ use std::{
   time::{Duration, Instant},
 };
 
+use aide::OperationIo;
 use axum::{Extension, extract::FromRequestParts};
 use centaurus::{
   bail,
@@ -26,7 +27,7 @@ use crate::db::{
   settings::{MailSettings, SmtpSettings},
 };
 
-#[derive(Clone, FromRequestParts)]
+#[derive(Clone, FromRequestParts, OperationIo)]
 #[from_request(via(Extension))]
 pub struct Mailer(Arc<Mutex<Option<MailConfig>>>);
 
@@ -136,7 +137,7 @@ impl MailConfig {
   }
 }
 
-#[derive(FromRequestParts, Clone)]
+#[derive(FromRequestParts, Clone, OperationIo)]
 #[from_request(via(Extension))]
 pub struct ResetPasswordState {
   tokens: Arc<DashMap<String, (String, Instant)>>,

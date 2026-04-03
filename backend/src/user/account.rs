@@ -1,9 +1,11 @@
 use std::io::Cursor;
 
-use axum::{Json, Router, extract::FromRequest, routing::post};
+use aide::axum::{ApiRouter, routing::post};
+use axum::Json;
 use base64::prelude::*;
 use centaurus::{auth::pw::PasswordState, bail, db::init::Connection, error::Result};
 use image::{ImageFormat, imageops::FilterType};
+use schemars::JsonSchema;
 use serde::Deserialize;
 use tower_governor::GovernorLayer;
 
@@ -14,16 +16,15 @@ use crate::{
   ws::state::{UpdateMessage, Updater},
 };
 
-pub fn router(rate_limiter: &mut RateLimiter) -> Router {
-  Router::new()
-    .route("/avatar", post(update_avatar))
-    .route("/password", post(update_password))
+pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
+  ApiRouter::new()
+    .api_route("/avatar", post(update_avatar))
+    .api_route("/password", post(update_password))
     .layer(GovernorLayer::new(rate_limiter.create_limiter()))
-    .route("/update", post(update_account))
+    .api_route("/update", post(update_account))
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct AccountUpdate {
   username: String,
 }
@@ -32,7 +33,7 @@ async fn update_account(
   auth: JwtAuth,
   db: Connection,
   updater: Updater,
-  data: AccountUpdate,
+  Json(data): Json<AccountUpdate>,
 ) -> Result<()> {
   if data.username.trim().is_empty() {
     bail!(BAD_REQUEST, "Username cannot be empty");
@@ -47,8 +48,7 @@ async fn update_account(
   Ok(())
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct AvatarUpdate {
   avatar: String,
 }
@@ -57,7 +57,7 @@ async fn update_avatar(
   auth: JwtAuth,
   db: Connection,
   updater: Updater,
-  data: AvatarUpdate,
+  Json(data): Json<AvatarUpdate>,
 ) -> Result<()> {
   if data.avatar.len() > 10 * 1024 * 1024 {
     bail!(PAYLOAD_TOO_LARGE, "Avatar size exceeds 10MB limit");
@@ -78,8 +78,7 @@ async fn update_avatar(
   Ok(())
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct PasswordUpdate {
   old_password: String,
   new_password: String,
@@ -89,7 +88,7 @@ async fn update_password(
   auth: JwtAuth,
   db: Connection,
   state: PasswordState,
-  data: PasswordUpdate,
+  Json(data): Json<PasswordUpdate>,
 ) -> Result<()> {
   let user = db.user().get_user_by_id(auth.user_id).await?;
 

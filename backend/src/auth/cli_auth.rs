@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use aide::OperationIo;
 use axum::{
   RequestPartsExt,
   extract::{FromRequestParts, OptionalFromRequestParts},
@@ -28,7 +29,7 @@ use crate::{
 
 pub const CLI_TOKEN_LEN: usize = 32;
 
-#[derive(Debug)]
+#[derive(Debug, OperationIo)]
 pub struct CliAuth<P: Permission = NoPerm> {
   pub user_id: Uuid,
   _perm: PhantomData<P>,

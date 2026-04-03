@@ -1,12 +1,13 @@
-use argon2::password_hash::SaltString;
-use axum::{
-  Json, Router,
-  extract::FromRequest,
+use aide::axum::{
+  ApiRouter,
   routing::{get, post},
 };
+use argon2::password_hash::SaltString;
+use axum::Json;
 use axum_extra::extract::CookieJar;
 use centaurus::{auth::pw::PasswordState, bail, db::init::Connection, error::Result};
 use rsa::rand_core::OsRng;
+use schemars::JsonSchema;
 use sea_orm::ConnectionTrait;
 use serde::{Deserialize, Serialize};
 use tracing::info;
@@ -14,10 +15,10 @@ use uuid::Uuid;
 
 use crate::{auth::jwt_state::JwtState, cache::storage::FileStorage, db::DBTrait};
 
-pub fn router() -> Router {
-  Router::new()
-    .route("/", post(complete_setup))
-    .route("/", get(is_setup))
+pub fn router() -> ApiRouter {
+  ApiRouter::new()
+    .api_route("/", post(complete_setup))
+    .api_route("/", get(is_setup))
 }
 
 pub async fn create_admin_group(db: &Connection) -> Result<()> {
@@ -64,15 +65,14 @@ pub async fn create_admin_group(db: &Connection) -> Result<()> {
   Ok(())
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct SetupPayload {
   admin_username: String,
   admin_password: String,
   admin_email: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct SetupResponse {
   user: Uuid,
 }
@@ -82,7 +82,7 @@ async fn complete_setup(
   jwt: JwtState,
   state: PasswordState,
   mut cookies: CookieJar,
-  payload: SetupPayload,
+  Json(payload): Json<SetupPayload>,
 ) -> Result<(CookieJar, Json<SetupResponse>)> {
   if db.setup().is_setup().await? {
     bail!(CONFLICT, "Setup has already been completed");
@@ -124,7 +124,7 @@ async fn complete_setup(
   Ok((cookies, Json(SetupResponse { user: admin })))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct IsSetupResponse {
   is_setup: bool,
   db_backend: String,

@@ -4,11 +4,14 @@ use std::{
   time::{Duration, Instant},
 };
 
+use aide::{
+  OperationIo,
+  axum::{ApiRouter, routing::get},
+};
 use argon2::password_hash::SaltString;
 use axum::{
-  Extension, Json, Router,
+  Extension, Json,
   extract::{FromRequestParts, Query},
-  routing::get,
 };
 use axum_extra::extract::{CookieJar, cookie::Cookie};
 use centaurus::{
@@ -24,6 +27,7 @@ use jsonwebtoken::{
 };
 use reqwest::{Client, redirect::Policy};
 use rsa::rand_core::OsRng;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tokio::{spawn, sync::Mutex, time::sleep};
 use tower_governor::GovernorLayer;
@@ -43,14 +47,14 @@ use crate::{
 
 pub const OIDC_STATE: &str = "oidc_state";
 
-pub fn router(rate_limiter: &mut RateLimiter) -> Router {
-  Router::new()
-    .route("/url", get(oidc_url))
+pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
+  ApiRouter::new()
+    .api_route("/url", get(oidc_url))
     .layer(GovernorLayer::new(rate_limiter.create_limiter()))
-    .route("/callback", get(oidc_callback))
+    .api_route("/callback", get(oidc_callback))
 }
 
-#[derive(Clone, FromRequestParts, Debug)]
+#[derive(Clone, FromRequestParts, Debug, OperationIo)]
 #[from_request(via(Extension))]
 pub struct OidcState(Arc<Mutex<Option<OidcConfig>>>);
 
@@ -226,7 +230,7 @@ impl OidcConfig {
   }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct OidcResponse {
   url: String,
 }
@@ -289,8 +293,7 @@ async fn oidc_url(
   }
 }
 
-#[derive(Deserialize, FromRequestParts)]
-#[from_request(via(Query))]
+#[derive(Deserialize, JsonSchema)]
 struct OidcCallbackQuery {
   code: Option<String>,
   state: Uuid,
@@ -309,7 +312,7 @@ pub struct AuthInfo {
 }
 
 async fn oidc_callback(
-  OidcCallbackQuery { code, state, error }: OidcCallbackQuery,
+  Query(OidcCallbackQuery { code, state, error }): Query<OidcCallbackQuery>,
   oidc_state: OidcState,
   cookies: CookieJar,
   db: Connection,

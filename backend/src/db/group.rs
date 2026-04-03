@@ -1,6 +1,7 @@
 use entity::{
   cache, cache_access, group, group_permission, group_user, sea_orm_active_enums::AccessType, user,
 };
+use schemars::JsonSchema;
 use sea_orm::{FromQueryResult, IntoActiveModel, JoinType, QuerySelect, Set, prelude::*};
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +11,7 @@ pub struct GroupTable<'db> {
   db: &'db DatabaseConnection,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct GroupInfo {
   pub id: Uuid,
   pub name: String,
@@ -18,7 +19,7 @@ pub struct GroupInfo {
   pub users: Vec<SimpleUserInfo>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct GroupDetails {
   pub id: Uuid,
   pub name: String,
@@ -27,13 +28,13 @@ pub struct GroupDetails {
   pub caches: Vec<CacheMapping>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct SimpleUserInfo {
   pub id: Uuid,
   pub name: String,
 }
 
-#[derive(Serialize, Deserialize, FromQueryResult, PartialEq)]
+#[derive(Serialize, Deserialize, FromQueryResult, PartialEq, JsonSchema)]
 pub struct CacheMapping {
   pub uuid: Uuid,
   pub name: String,

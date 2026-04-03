@@ -1,6 +1,10 @@
 use std::net::SocketAddr;
 
-use axum::{Extension, Router, ServiceExt, serve};
+use aide::{
+  axum::{ApiRouter, IntoApiResponse},
+  openapi::{Info, OpenApi},
+};
+use axum::{Extension, Json, Router, ServiceExt, serve};
 use centaurus::{
   db::init::init_db,
   init::{
@@ -65,8 +69,8 @@ async fn main() {
   }
 }
 
-fn api_router(rate_limiter: &mut RateLimiter) -> Router {
-  Router::new()
+fn api_router(rate_limiter: &mut RateLimiter) -> ApiRouter {
+  ApiRouter::new()
     .nest("/ws", ws::router())
     .nest("/setup", setup::router())
     .nest("/auth", auth::router(rate_limiter))

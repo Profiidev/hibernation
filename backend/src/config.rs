@@ -1,3 +1,4 @@
+use aide::OperationIo;
 use axum::{Extension, extract::FromRequestParts};
 use centaurus::{
   config::{BaseConfig, MetricsConfig},
@@ -11,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{instrument, warn};
 use url::Url;
 
-#[derive(Deserialize, Serialize, Clone, FromRequestParts)]
+#[derive(Deserialize, Serialize, Clone, FromRequestParts, OperationIo)]
 #[from_request(via(Extension))]
 pub struct Config {
   #[serde(flatten)]

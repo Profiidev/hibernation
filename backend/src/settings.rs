@@ -1,12 +1,14 @@
-use axum::{
-  Json, Router,
+use aide::axum::{
+  ApiRouter,
   routing::{get, post},
 };
+use axum::Json;
 use centaurus::{
   db::init::Connection,
   error::{ErrorReportStatusExt, Result},
 };
 use http::StatusCode;
+use schemars::JsonSchema;
 use serde::Serialize;
 use url::Url;
 
@@ -22,16 +24,16 @@ use crate::{
   ws::state::{UpdateMessage, Updater},
 };
 
-pub fn router() -> Router {
-  Router::new()
-    .route("/general", get(general_settings))
-    .route("/user", get(get_settings::<UserSettings>))
-    .route("/user", post(save_user_settings))
-    .route("/mail", get(get_settings::<MailSettings>))
-    .route("/mail", post(save_mail_settings))
+pub fn router() -> ApiRouter {
+  ApiRouter::new()
+    .api_route("/general", get(general_settings))
+    .api_route("/user", get(get_settings::<UserSettings>))
+    .api_route("/user", post(save_user_settings))
+    .api_route("/mail", get(get_settings::<MailSettings>))
+    .api_route("/mail", post(save_mail_settings))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct GeneralSettings {
   site_url: Url,
   virtual_host_routing: bool,
@@ -56,7 +58,7 @@ async fn save_settings<S: Settings>(
   _auth: JwtAuth<SettingsEdit>,
   db: Connection,
   updater: Updater,
-  settings: S,
+  Json(settings): Json<S>,
 ) -> Result<()> {
   db.settings().save_settings(&settings).await?;
   updater.broadcast(UpdateMessage::Settings).await;
@@ -68,7 +70,7 @@ async fn save_user_settings(
   db: Connection,
   state: OidcState,
   updater: Updater,
-  settings: UserSettings,
+  Json(settings): Json<UserSettings>,
 ) -> Result<()> {
   if let Some(oidc_settings) = &settings.oidc {
     state.try_init(oidc_settings).await.status_context(
@@ -90,7 +92,7 @@ async fn save_mail_settings(
   db: Connection,
   state: Mailer,
   updater: Updater,
-  settings: MailSettings,
+  Json(settings): Json<MailSettings>,
 ) -> Result<()> {
   if let Some(smtp_settings) = &settings.smtp {
     state.try_init(smtp_settings).await?;

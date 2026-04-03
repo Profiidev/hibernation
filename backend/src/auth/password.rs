@@ -1,10 +1,11 @@
-use axum::{
-  Json, Router,
-  extract::FromRequest,
+use aide::axum::{
+  ApiRouter,
   routing::{get, post},
 };
+use axum::Json;
 use axum_extra::extract::CookieJar;
 use centaurus::{auth::pw::PasswordState, bail, db::init::Connection, error::Result};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tower_governor::GovernorLayer;
 use tracing::debug;
@@ -16,14 +17,14 @@ use crate::{
   rate_limit::RateLimiter,
 };
 
-pub fn router(rate_limiter: &mut RateLimiter) -> Router {
-  Router::new()
-    .route("/", post(authenticate))
+pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
+  ApiRouter::new()
+    .api_route("/", post(authenticate))
     .layer(GovernorLayer::new(rate_limiter.create_limiter()))
-    .route("/", get(key))
+    .api_route("/", get(key))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct KeyRes {
   key: String,
 }
@@ -32,14 +33,13 @@ async fn key(state: PasswordState) -> Json<KeyRes> {
   Json(KeyRes { key: state.pub_key })
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct LoginReq {
   email: String,
   password: String,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, JsonSchema)]
 struct LoginResponse {
   user: Uuid,
 }
@@ -49,7 +49,7 @@ async fn authenticate(
   jwt: JwtState,
   db: Connection,
   mut cookies: CookieJar,
-  req: LoginReq,
+  Json(req): Json<LoginReq>,
 ) -> Result<(CookieJar, TokenRes<LoginResponse>)> {
   let user = db.user().get_user_by_email(&req.email).await?;
   let hash = state.pw_hash(&user.salt, &req.password)?;

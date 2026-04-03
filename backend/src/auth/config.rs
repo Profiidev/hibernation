@@ -1,5 +1,7 @@
-use axum::{Json, Router, routing::get};
+use aide::axum::{ApiRouter, routing::get};
+use axum::Json;
 use centaurus::{db::init::Connection, error::Result};
+use schemars::JsonSchema;
 use serde::Serialize;
 
 use crate::{
@@ -8,17 +10,17 @@ use crate::{
   mail::state::Mailer,
 };
 
-pub fn router() -> Router {
-  Router::new().route("/", get(config))
+pub fn router() -> ApiRouter {
+  ApiRouter::new().api_route("/", get(config))
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, JsonSchema)]
 enum SSOType {
   Oidc,
   None,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct AuthConfig {
   sso_type: SSOType,
   instant_redirect: bool,

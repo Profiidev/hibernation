@@ -1,9 +1,10 @@
-use axum::{
-  Json, Router,
-  extract::{FromRequest, FromRequestParts, Path},
+use aide::axum::{
+  ApiRouter,
   routing::{delete, get, post, put},
 };
+use axum::{Json, extract::Path};
 use centaurus::{bail, db::init::Connection, error::Result};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -18,18 +19,18 @@ use crate::{
   ws::state::{UpdateMessage, Updater},
 };
 
-pub fn router() -> Router {
-  Router::new()
-    .route("/", get(list_groups))
-    .route("/", post(create_group))
-    .route("/", delete(delete_group))
-    .route("/", put(edit_group))
-    .route("/{uuid}", get(group_info))
-    .route("/users", get(list_users_simple))
-    .route("/caches", get(list_caches_simple))
+pub fn router() -> ApiRouter {
+  ApiRouter::new()
+    .api_route("/", get(list_groups))
+    .api_route("/", post(create_group))
+    .api_route("/", delete(delete_group))
+    .api_route("/", put(edit_group))
+    .api_route("/{uuid}", get(group_info))
+    .api_route("/users", get(list_users_simple))
+    .api_route("/caches", get(list_caches_simple))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct ListGroupResponse {
   groups: Vec<GroupInfo>,
   admin_group: Option<Uuid>,
@@ -44,8 +45,7 @@ async fn list_groups(_auth: JwtAuth<GroupView>, db: Connection) -> Result<Json<L
   }))
 }
 
-#[derive(Deserialize, FromRequestParts)]
-#[from_request(via(Path))]
+#[derive(Deserialize, JsonSchema)]
 struct GroupViewPath {
   uuid: Uuid,
 }
@@ -53,7 +53,7 @@ struct GroupViewPath {
 async fn group_info(
   _auth: JwtAuth<GroupView>,
   db: Connection,
-  path: GroupViewPath,
+  Path(path): Path<GroupViewPath>,
 ) -> Result<Json<GroupDetails>> {
   let info = db.group().group_info(path.uuid).await?;
   let Some(info) = info else {
@@ -62,13 +62,12 @@ async fn group_info(
   Ok(Json(info))
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct CreateGroupRequest {
   name: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct GroupCreateResponse {
   uuid: Uuid,
 }
@@ -77,7 +76,7 @@ async fn create_group(
   _auth: JwtAuth<GroupEdit>,
   db: Connection,
   updater: Updater,
-  data: CreateGroupRequest,
+  Json(data): Json<CreateGroupRequest>,
 ) -> Result<Json<GroupCreateResponse>> {
   if data.name.trim().is_empty() {
     bail!(BAD_REQUEST, "Group name cannot be empty");
@@ -95,8 +94,7 @@ async fn create_group(
   Ok(Json(GroupCreateResponse { uuid: group_id }))
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct DeleteGroupRequest {
   uuid: Uuid,
 }
@@ -105,7 +103,7 @@ async fn delete_group(
   _auth: JwtAuth<GroupEdit>,
   db: Connection,
   updater: Updater,
-  data: DeleteGroupRequest,
+  Json(data): Json<DeleteGroupRequest>,
 ) -> Result<()> {
   if let Some(admin_group) = db.setup().get_admin_group_id().await?
     && admin_group == data.uuid
@@ -128,8 +126,7 @@ async fn delete_group(
   Ok(())
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct EditGroupRequest {
   uuid: Uuid,
   name: String,
@@ -142,7 +139,7 @@ async fn edit_group(
   auth: JwtAuth<GroupEdit>,
   db: Connection,
   updater: Updater,
-  data: EditGroupRequest,
+  Json(data): Json<EditGroupRequest>,
 ) -> Result<()> {
   if data.name.trim().is_empty() {
     bail!(BAD_REQUEST, "Group name cannot be empty");

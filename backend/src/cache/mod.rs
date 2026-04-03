@@ -1,4 +1,5 @@
-use axum::{Router, routing::get};
+use aide::axum::{ApiRouter, routing::get};
+use axum::Router;
 use centaurus::{db::init::Connection, error::Result};
 
 use crate::{
@@ -16,11 +17,11 @@ mod push;
 mod state;
 pub mod storage;
 
-pub fn router() -> Router {
-  Router::new()
+pub fn router() -> ApiRouter {
+  ApiRouter::new()
     .nest("/management", management::router())
     .nest("/push", push::router())
-    .route("/test", get(test))
+    .api_route("/test", get(test))
 }
 
 pub async fn state(router: Router, db: Connection, config: &Config) -> Router {
