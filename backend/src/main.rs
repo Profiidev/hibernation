@@ -1,12 +1,11 @@
-use std::net::SocketAddr;
-
-use aide::{
-  axum::{ApiRouter, IntoApiResponse},
-  openapi::{Info, OpenApi},
-};
-use axum::{Extension, Json, Router, ServiceExt, serve};
+use aide::axum::ApiRouter;
+use axum::Extension;
 use centaurus::{
-  backend::{init::listener_setup, rate_limiter::RateLimiter, router::base_router},
+  backend::{
+    init::{listener_setup, run_app_connect_info},
+    rate_limiter::RateLimiter,
+    router::build_router,
+  },
   db::init::init_db,
   logging::init_logging,
 };
@@ -43,17 +42,11 @@ async fn main() {
   init_logging(config.base.log_level);
 
   let listener = listener_setup(config.base.port).await;
-  let app = base_router(api_router, state, config).await;
+  let app = build_router(api_router, state, config.clone()).await;
 
   info!("Starting application");
   if let Some(host_router) = HostRouter::new(&app, &config) {
-    serve(
-      listener,
-      host_router.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .with_graceful_shutdown(shutdown_signal())
-    .await
-    .expect("Failed to start server");
+    run_app_connect_info(listener, host_router).await;
   } else {
     run_app_connect_info(listener, app).await;
   }
@@ -74,7 +67,7 @@ fn api_router(rate_limiter: &mut RateLimiter) -> ApiRouter {
     .nest("/nix", nix::router())
 }
 
-async fn state(router: ApiRouter, config: &Config) -> ApiRouter {
+async fn state(router: ApiRouter, config: Config) -> ApiRouter {
   let db = init_db::<migration::Migrator>(&config.db, &config.db_url).await;
   db::init(&db).await.expect("Failed to initialize database");
   setup::create_admin_group(&db)

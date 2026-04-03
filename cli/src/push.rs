@@ -104,7 +104,7 @@ pub async fn push_paths(
 
   let path_infos = path_infos
     .into_iter()
-    .filter(|info| res.paths.contains(&info.store_path))
+    .filter(|info| res.paths.contains(&info.store_path.to_string()))
     .collect::<Vec<_>>();
 
   let to_push = path_infos.len();
@@ -210,11 +210,11 @@ async fn upload_path(
     .upload_path(&UploadPathRequest {
       cache,
       force,
-      store_path: info.store_path.clone(),
-      deriver: info.deriver.clone(),
+      store_path: info.store_path.to_string(),
+      deriver: info.deriver.as_ref().map(|d| d.to_string()),
       nar_size: info.nar_size,
       nar_hash,
-      references: info.references.clone(),
+      references: info.references.iter().map(|r| r.to_string()).collect(),
       signature,
     })
     .await?
