@@ -1,19 +1,30 @@
 use std::{
+  net::IpAddr,
+  sync::Arc,
   thread::{sleep, spawn},
   time::Duration,
 };
 
-use governor::middleware::StateInformationMiddleware;
+use dashmap::DashMap;
+use governor::{clock::QuantaClock, middleware::StateInformationMiddleware, state::InMemoryState};
 use tower_governor::{
   governor::{GovernorConfig, GovernorConfigBuilder},
   key_extractor::SmartIpKeyExtractor,
 };
 
 pub type Governor = GovernorConfig<SmartIpKeyExtractor, StateInformationMiddleware>;
+type Limiter = Arc<
+  governor::RateLimiter<
+    IpAddr,
+    DashMap<IpAddr, InMemoryState>,
+    QuantaClock,
+    StateInformationMiddleware,
+  >,
+>;
 
 #[derive(Default)]
 pub struct RateLimiter {
-  cleaner: Vec<Box<dyn Fn() + Send + Sync>>,
+  cleaner: Vec<Limiter>,
 }
 
 impl RateLimiter {
@@ -26,10 +37,7 @@ impl RateLimiter {
       .finish()
       .unwrap();
 
-    let limiter = conf.limiter().clone();
-    self.cleaner.push(Box::new(move || {
-      limiter.retain_recent();
-    }));
+    self.cleaner.push(conf.limiter().clone());
 
     conf
   }
@@ -39,8 +47,8 @@ impl RateLimiter {
       loop {
         sleep(Duration::from_secs(600));
         tracing::debug!("Cleaning rate limiter state");
-        for clean in &self.cleaner {
-          clean();
+        for limiter in &self.cleaner {
+          limiter.retain_recent();
         }
       }
     });
