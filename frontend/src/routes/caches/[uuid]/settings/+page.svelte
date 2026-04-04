@@ -1,11 +1,5 @@
 <script lang="ts">
   import { Button } from 'positron-components/components/ui/button';
-  import {
-    clearCache,
-    deleteCache,
-    editCache,
-    EvictionPolicy
-  } from '$lib/backend/cache.svelte.js';
   import BaseForm from 'positron-components/components/form/base-form.svelte';
   import { cacheSchema, keySchema, quotaSchema } from './schema.svelte.js';
   import FormInput from 'positron-components/components/form/form-input.svelte';
@@ -14,7 +8,6 @@
   import FormSwitch from 'positron-components/components/form/form-switch.svelte';
   import type { FormValue } from 'positron-components/components/form/types';
   import { toast } from 'positron-components/components/util/general';
-  import { RequestError } from 'positron-components/backend';
   import FormDialog from 'positron-components/components/form/form-dialog.svelte';
   import { z } from 'zod';
   import Trash from '@lucide/svelte/icons/trash';
@@ -27,6 +20,8 @@
   import FormSelect from 'positron-components/components/form/form-select.svelte';
   import { TagsInput } from 'positron-components/components/ui-extra/tags-input';
   import { Label } from 'positron-components/components/ui/label';
+  import { clearCache, deleteCache, editCache } from '$lib/client';
+  import { EvictionPolicy } from '$lib/client/types.gen.js';
 
   const { data } = $props();
 
@@ -39,15 +34,18 @@
   let visibilityOpen = $state(false);
 
   const onsubmit = async (form: FormValue<typeof cacheSchema>) => {
-    let res = await editCache(data.cacheInfo.uuid, {
-      ...data.cacheInfo,
-      ...form,
-      eviction_policy: form.eviction_policy[0],
-      downstream_caches: downstreamCaches
+    let res = await editCache({
+      path: { uuid: data.cacheInfo.uuid },
+      body: {
+        ...data.cacheInfo,
+        ...form,
+        eviction_policy: form.eviction_policy[0],
+        downstream_caches: downstreamCaches
+      }
     });
 
-    if (res) {
-      if (res === RequestError.Conflict) {
+    if (res.error) {
+      if (res.response.status === 409) {
         return { error: 'This cache name is already in use', field: 'name' };
       } else {
         return { error: 'Failed to update cache' };
@@ -59,9 +57,9 @@
   };
 
   const deleteConfirm = async () => {
-    let res = await deleteCache({ uuid: data.cacheInfo.uuid });
+    let res = await deleteCache({ body: { uuid: data.cacheInfo.uuid } });
 
-    if (res) {
+    if (res.error) {
       return { error: 'Failed to delete cache' };
     } else {
       toast.success(`Cache ${data.cacheInfo.name} deleted successfully`);
@@ -72,9 +70,9 @@
   };
 
   const clearConfirm = async () => {
-    let res = await clearCache(data.cacheInfo.uuid);
+    let res = await clearCache({ path: { uuid: data.cacheInfo.uuid } });
 
-    if (res) {
+    if (res.error) {
       return { error: 'Failed to clear cache' };
     } else {
       toast.success(`Cache ${data.cacheInfo.name} cleared successfully`);
@@ -82,12 +80,15 @@
   };
 
   const visibilityConfirm = async () => {
-    let res = await editCache(data.cacheInfo.uuid, {
-      ...data.cacheInfo,
-      public: !data.cacheInfo.public
+    let res = await editCache({
+      path: { uuid: data.cacheInfo.uuid },
+      body: {
+        ...data.cacheInfo,
+        public: !data.cacheInfo.public
+      }
     });
 
-    if (res) {
+    if (res.error) {
       toast.error(
         `Failed to change cache visibility for ${data.cacheInfo.name}`
       );
@@ -99,12 +100,15 @@
   };
 
   const quotaConfirm = async (form: FormValue<typeof quotaSchema>) => {
-    let res = await editCache(data.cacheInfo.uuid, {
-      ...data.cacheInfo,
-      quota: form.quota * 1024 * 1024
+    let res = await editCache({
+      path: { uuid: data.cacheInfo.uuid },
+      body: {
+        ...data.cacheInfo,
+        quota: form.quota * 1024 * 1024
+      }
     });
 
-    if (res) {
+    if (res.error) {
       return { error: 'Failed to change cache quota' };
     } else {
       toast.success(`Cache ${data.cacheInfo.name} quota updated successfully`);
@@ -112,13 +116,16 @@
   };
 
   const keyConfirm = async (form: FormValue<typeof keySchema>) => {
-    let res = await editCache(data.cacheInfo.uuid, {
-      ...data.cacheInfo,
-      sig_key: form.sig_key
+    let res = await editCache({
+      path: { uuid: data.cacheInfo.uuid },
+      body: {
+        ...data.cacheInfo,
+        sig_key: form.sig_key
+      }
     });
 
-    if (res) {
-      if (res === RequestError.NotAcceptable) {
+    if (res.error) {
+      if (res.response.status === 406) {
         return {
           error: 'The provided key is not a valid public signing key',
           field: 'sig_key'
@@ -167,13 +174,13 @@
             label="Eviction Policy"
             single
             data={[
-              { value: EvictionPolicy.OldestFirst, label: 'Oldest First' },
+              { value: EvictionPolicy.OLDEST_FIRST, label: 'Oldest First' },
               {
-                value: EvictionPolicy.LeastRecentlyUsed,
+                value: EvictionPolicy.LEAST_RECENTLY_USED,
                 label: 'Least Recently Used'
               },
               {
-                value: EvictionPolicy.LeastFrequentlyUsed,
+                value: EvictionPolicy.LEAST_FREQUENTLY_USED,
                 label: 'Least Frequently Used'
               }
             ]}

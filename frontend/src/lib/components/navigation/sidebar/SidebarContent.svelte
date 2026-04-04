@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import type { UserInfo } from '$lib/backend/user.svelte';
   import * as Sidebar from 'positron-components/components/ui/sidebar';
   import type { NavGroup, NavItem } from './items.svelte';
+  import type { UserInfo } from '$lib/client';
 
   interface Props {
     items: NavGroup[];

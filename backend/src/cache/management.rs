@@ -1,14 +1,16 @@
+use aide::axum::routing::{delete_with, get_with, post_with};
 use std::ops::Deref;
 
+use aide::{OperationIo, axum::ApiRouter};
 use axum::{
-  Extension, Json, Router,
-  extract::{FromRequest, FromRequestParts, Path},
-  routing::{delete, get, post},
+  Extension, Json,
+  extract::{FromRequestParts, Path},
 };
 use centaurus::{bail, db::init::Connection, error::Result};
 use chrono::{DateTime, Utc};
 use entity::sea_orm_active_enums::{AccessType, EvictionPolicy};
 use regex::Regex;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use shared::sig::PublicKey;
 use url::Url;
@@ -26,19 +28,31 @@ use crate::{
   ws::state::{UpdateMessage, Updater},
 };
 
-pub fn router() -> Router {
-  Router::new()
-    .route("/", get(list_caches))
-    .route("/", post(create_cache))
-    .route("/", delete(delete_cache))
-    .route("/{uuid}", get(cache_details))
-    .route("/{uuid}/search", post(search_store_paths))
-    .route("/{uuid}", post(edit_cache))
-    .route("/{uuid}", delete(clear_cache))
-    .route("/{uuid}/path", delete(delete_path))
+pub fn router() -> ApiRouter {
+  ApiRouter::new()
+    .api_route("/", get_with(list_caches, |op| op.id("listCaches")))
+    .api_route("/", post_with(create_cache, |op| op.id("createCache")))
+    .api_route("/", delete_with(delete_cache, |op| op.id("deleteCache")))
+    .api_route(
+      "/{uuid}",
+      get_with(cache_details, |op| op.id("cacheDetails")),
+    )
+    .api_route(
+      "/{uuid}/search",
+      post_with(search_store_paths, |op| op.id("searchStorePaths")),
+    )
+    .api_route("/{uuid}", post_with(edit_cache, |op| op.id("editCache")))
+    .api_route(
+      "/{uuid}",
+      delete_with(clear_cache, |op| op.id("clearCache")),
+    )
+    .api_route(
+      "/{uuid}/path",
+      delete_with(delete_path, |op| op.id("deletePath")),
+    )
 }
 
-#[derive(FromRequestParts, Clone)]
+#[derive(FromRequestParts, Clone, OperationIo)]
 #[from_request(via(Extension))]
 pub struct CacheRegex(Regex);
 
@@ -63,15 +77,14 @@ async fn list_caches(auth: JwtAuth, db: Connection) -> Result<Json<Vec<CacheInfo
   Ok(Json(db.cache().list_caches(auth.user_id).await?))
 }
 
-#[derive(Deserialize, FromRequestParts)]
-#[from_request(via(Path))]
+#[derive(Deserialize, JsonSchema)]
 struct CachePath {
   uuid: Uuid,
 }
 
 async fn cache_details(
   auth: JwtAuth,
-  path: CachePath,
+  Path(path): Path<CachePath>,
   db: Connection,
 ) -> Result<Json<CacheDetails>> {
   let Some(details) = db.cache().cache_details(path.uuid, auth.user_id).await? else {
@@ -81,8 +94,7 @@ async fn cache_details(
   Ok(Json(details))
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct CreateCacheRequest {
   name: String,
   public: bool,
@@ -90,7 +102,7 @@ struct CreateCacheRequest {
   sig_key: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct CreateCacheResponse {
   uuid: Uuid,
 }
@@ -100,7 +112,7 @@ async fn create_cache(
   db: Connection,
   updater: Updater,
   regex: CacheRegex,
-  req: CreateCacheRequest,
+  Json(req): Json<CreateCacheRequest>,
 ) -> Result<Json<CreateCacheResponse>> {
   if !regex.is_match(&req.name) || req.name.len() > 63 {
     bail!(BAD_REQUEST, "Invalid cache name format");
@@ -124,8 +136,7 @@ async fn create_cache(
   Ok(Json(CreateCacheResponse { uuid }))
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct DeleteCacheRequest {
   uuid: Uuid,
 }
@@ -134,7 +145,7 @@ async fn delete_cache(
   auth: JwtAuth,
   db: Connection,
   updater: Updater,
-  req: DeleteCacheRequest,
+  Json(req): Json<DeleteCacheRequest>,
 ) -> Result<()> {
   if db.cache().cache_user_access(auth.user_id, req.uuid).await? != Some(AccessType::Edit) {
     bail!(FORBIDDEN, "Insufficient permissions");
@@ -147,15 +158,14 @@ async fn delete_cache(
   Ok(())
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct SearchStorePathsRequest {
   query: String,
   sort: SearchSort,
   order: SearchOrder,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct SearchResult {
   store_path: String,
   created_at: DateTime<Utc>,
@@ -166,9 +176,9 @@ pub struct SearchResult {
 
 async fn search_store_paths(
   auth: JwtAuth,
-  path: CachePath,
+  Path(path): Path<CachePath>,
   db: Connection,
-  req: SearchStorePathsRequest,
+  Json(req): Json<SearchStorePathsRequest>,
 ) -> Result<Json<Vec<SearchResult>>> {
   if req.query.trim().is_empty() {
     bail!(BAD_REQUEST, "Query cannot be empty");
@@ -202,8 +212,7 @@ async fn search_store_paths(
   Ok(Json(paths))
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct EditCacheRequest {
   name: String,
   priority: i32,
@@ -217,12 +226,12 @@ struct EditCacheRequest {
 
 async fn edit_cache(
   auth: JwtAuth,
-  path: CachePath,
+  Path(path): Path<CachePath>,
   db: Connection,
   updater: Updater,
   lock: CacheEvictionState,
   regex: CacheRegex,
-  mut req: EditCacheRequest,
+  Json(mut req): Json<EditCacheRequest>,
 ) -> Result<()> {
   if req.priority < 0 {
     bail!(BAD_REQUEST, "Priority must be non-negative");
@@ -300,7 +309,7 @@ async fn edit_cache(
   Ok(())
 }
 
-async fn clear_cache(auth: JwtAuth, path: CachePath, db: Connection) -> Result<()> {
+async fn clear_cache(auth: JwtAuth, Path(path): Path<CachePath>, db: Connection) -> Result<()> {
   if db
     .cache()
     .cache_user_access(auth.user_id, path.uuid)
@@ -314,17 +323,16 @@ async fn clear_cache(auth: JwtAuth, path: CachePath, db: Connection) -> Result<(
   Ok(())
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct DeletePathRequest {
   store_path: String,
 }
 
 async fn delete_path(
   auth: JwtAuth,
-  path: CachePath,
+  Path(path): Path<CachePath>,
   db: Connection,
-  req: DeletePathRequest,
+  Json(req): Json<DeletePathRequest>,
 ) -> Result<()> {
   if db
     .cache()

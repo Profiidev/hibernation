@@ -1,9 +1,4 @@
-import type {
-  CacheMapping,
-  GroupDetails,
-  GroupEditRequest,
-  GroupInfo
-} from '$lib/backend/groups.svelte';
+import type { CacheMapping, EditGroupRequest, GroupDetails } from '$lib/client';
 import type { FormValue } from 'positron-components/components/form/types';
 import { z } from 'zod';
 
@@ -25,7 +20,7 @@ export const reformatData = (
   data: FormValue<typeof groupSettings>,
   uuid: string,
   mappings: CacheMapping[]
-): GroupEditRequest => {
+): EditGroupRequest => {
   const permissions: string[] = [];
 
   for (const [key, value] of Object.entries(data)) {

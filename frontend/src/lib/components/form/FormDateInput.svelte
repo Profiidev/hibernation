@@ -79,6 +79,8 @@
             type="single"
             bind:value={date}
             captionLayout="dropdown"
+            weekStartsOn={new Intl.Locale(navigator.language).getWeekInfo()
+              .firstDay}
             onValueChange={(val) => {
               formData.set({
                 ...get(formData),

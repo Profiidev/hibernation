@@ -3,8 +3,7 @@ import * as DataTable from 'positron-components/components/ui/data-table';
 import { createColumn } from 'positron-components/components/table/helpers.svelte';
 import Actions from '$lib/components/table/Actions.svelte';
 import { Permission } from '$lib/permissions.svelte';
-import type { GroupInfo, SimpleUserInfo } from '$lib/backend/groups.svelte';
-import type { UserInfo } from '$lib/backend/user.svelte';
+import type { GroupInfo, SimpleUserInfo, UserInfo } from '$lib/client';
 
 export const columns = ({
   deleteGroup,

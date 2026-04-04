@@ -1,5 +1,6 @@
 use std::sync::{Arc, atomic::AtomicI32};
 
+use aide::OperationIo;
 use axum::{Extension, extract::FromRequestParts};
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use centaurus::{db::init::Connection, error::Result};
@@ -29,7 +30,7 @@ pub struct JwtClaims {
   pub sub: Uuid,
 }
 
-#[derive(Clone, FromRequestParts)]
+#[derive(Clone, FromRequestParts, OperationIo)]
 #[from_request(via(Extension))]
 pub struct JwtState {
   header: Header,
@@ -124,7 +125,7 @@ impl JwtState {
   }
 }
 
-#[derive(FromRequestParts, Clone, Default)]
+#[derive(FromRequestParts, Clone, Default, OperationIo)]
 #[from_request(via(Extension))]
 pub struct JwtInvalidState {
   pub count: Arc<AtomicI32>,

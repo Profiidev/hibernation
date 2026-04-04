@@ -9,15 +9,14 @@
   import FormInput from 'positron-components/components/form/form-input.svelte';
   import * as ImageCropper from 'positron-components/components/ui-extra/image-cropper';
   import { arrayBufferToBase64 } from 'positron-components/util/convert.svelte';
-  import { updateAccount, updateAvatar } from '$lib/backend/user.svelte';
-  import { RequestError } from 'positron-components/backend';
+  import { updateAccount, updateAvatar } from '$lib/client';
 
   let { data } = $props();
 
   const onsubmit = async (form: FormValue<typeof generalSettings>) => {
-    let ret = await updateAccount(form);
+    let ret = await updateAccount({ body: form });
 
-    if (ret) {
+    if (ret.error) {
       toast.error('Failed to save general settings');
     } else {
       toast.success('General settings saved successfully');
@@ -43,10 +42,10 @@
           onCropped={async (url) => {
             let file = await ImageCropper.getFileFromUrl(url);
             let data = arrayBufferToBase64(await file.arrayBuffer());
-            let ret = await updateAvatar({ avatar: data });
-            if (ret === RequestError.TooManyRequests) {
+            let ret = await updateAvatar({ body: { avatar: data } });
+            if (ret.error && ret.response.status === 429) {
               toast.error('Rate limit exceeded. Please try again later.');
-            } else if (ret) {
+            } else if (ret.error) {
               toast.error('Failed to update avatar');
             } else {
               toast.success('Avatar updated successfully');

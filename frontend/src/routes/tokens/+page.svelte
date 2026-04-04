@@ -7,8 +7,7 @@
   import { z } from 'zod';
   import { toast } from 'positron-components/components/util/general';
   import { invalidate } from '$app/navigation';
-  import { Permission } from '$lib/permissions.svelte';
-  import { deleteToken, type TokenInfo } from '$lib/backend/token.svelte';
+  import { deleteToken, type TokenInfo } from '$lib/client';
 
   const { data } = $props();
 
@@ -35,11 +34,13 @@
 
     isLoading = true;
     let ret = await deleteToken({
-      uuid: selected.uuid
+      body: {
+        uuid: selected.uuid
+      }
     });
     isLoading = false;
 
-    if (ret) {
+    if (ret.error) {
       return { error: 'Failed to delete token' };
     } else {
       toast.success(`Token ${selected.name} deleted successfully`);

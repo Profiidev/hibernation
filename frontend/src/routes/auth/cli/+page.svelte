@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { newCliCode, sendCliCode } from '$lib/backend/cli.svelte';
   import * as Card from 'positron-components/components/ui/card';
   import { onMount } from 'svelte';
   import { Input } from 'positron-components/components/ui/input';
   import { Button } from 'positron-components/components/ui/button';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+  import { newCode } from '$lib/client';
+  import { sendCliCode } from '$lib/backend/util.svelte.js';
 
   type CliAuthStatus =
     | 'Requesting'
@@ -20,15 +21,15 @@
   let code = $state('');
 
   const authCli = async () => {
-    let res = await newCliCode();
-    if (typeof res === 'string') {
+    let res = await newCode();
+    if (!res.data) {
       error = true;
       status = 'Error';
     } else {
       error = false;
       status = 'Success';
-      code = res.code;
-      let ret = await sendCliCode(res.code, data.user?.uuid ?? '');
+      code = res.data.code;
+      let ret = await sendCliCode(res.data.code);
       if (!ret) {
         status = 'Finished';
         window.close();

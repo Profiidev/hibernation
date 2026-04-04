@@ -6,10 +6,10 @@
   import CheckIcon from '@lucide/svelte/icons/check';
   import type { FormValue } from 'positron-components/components/form/types';
   import type { adminUser } from './schema.svelte';
-  import { performSetup } from '$lib/backend/setup.svelte';
-  import { RequestError } from 'positron-components/backend';
   import { goto } from '$app/navigation';
   import { connectWebsocket } from '$lib/backend/updater.svelte';
+  import { completeSetup } from '$lib/client';
+  import { getEncrypt } from '$lib/backend/auth.svelte';
 
   let { data } = $props();
 
@@ -28,24 +28,32 @@
 
   const submit = async (rawData: object) => {
     let data: FormValue<typeof adminUser> = rawData as any;
+    let encrypt = getEncrypt();
+    if (!encrypt) {
+      return {
+        error: 'Encryption function not available. Please try again later.'
+      };
+    }
 
-    let ret = await performSetup({
-      admin_email: data.email,
-      admin_password: data.password,
-      admin_username: data.username
+    let ret = await completeSetup({
+      body: {
+        admin_email: data.email,
+        admin_password: encrypt.encrypt(data.password) || '',
+        admin_username: data.username
+      }
     });
 
-    if (typeof ret !== 'object') {
-      if (ret === RequestError.Conflict) {
+    if (!ret.data) {
+      if (ret.response.status === 409) {
         return { error: 'The setup was already completed.' };
-      } else if (ret === RequestError.InternalServerError) {
+      } else if (ret.response.status === 500) {
         return { error: 'The server failed to find the admin group.' };
       } else {
         return { error: 'An unknown error occurred.' };
       }
     } else {
       setTimeout(() => {
-        connectWebsocket(ret.user);
+        connectWebsocket((ret.data as { user: string }).user);
         goto('/');
       });
     }

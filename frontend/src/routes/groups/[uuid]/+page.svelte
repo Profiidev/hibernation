@@ -8,11 +8,9 @@
   import { z } from 'zod';
   import { toast } from 'positron-components/components/util/general';
   import { goto } from '$app/navigation';
-  import { deleteGroup, editGroup } from '$lib/backend/groups.svelte.js';
   import BaseForm from 'positron-components/components/form/base-form.svelte';
   import { formatData, groupSettings, reformatData } from './schema.svelte.js';
   import type { FormValue } from 'positron-components/components/form/types';
-  import { RequestError } from 'positron-components/backend';
   import FormInput from 'positron-components/components/form/form-input.svelte';
   import Save from '@lucide/svelte/icons/save';
   import { Spinner } from 'positron-components/components/ui/spinner';
@@ -20,6 +18,7 @@
   import Permissions from './Permissions.svelte';
   import CacheAccess from './CacheAccess.svelte';
   import { ScrollArea } from 'positron-components/components/ui/scroll-area';
+  import { deleteGroup, editGroup } from '$lib/client';
 
   const { data } = $props();
 
@@ -32,10 +31,10 @@
 
   const deleteItemConfirm = async () => {
     isLoading = true;
-    let ret = await deleteGroup({ uuid: data.group.id });
+    let ret = await deleteGroup({ body: { uuid: data.group.id } });
     isLoading = false;
 
-    if (ret) {
+    if (ret.error) {
       return { error: 'Failed to delete group' };
     } else {
       toast.success(`Group ${data.group.name} deleted successfully`);
@@ -47,10 +46,10 @@
 
   const onsubmit = async (form: FormValue<typeof groupSettings>) => {
     let group = reformatData(form, data.group.id, mappings);
-    let res = await editGroup(group);
+    let res = await editGroup({ body: group });
 
-    if (res) {
-      if (res === RequestError.Conflict) {
+    if (res.error) {
+      if (res.response.status === 409) {
         return { error: 'This group name is already in use', field: 'name' };
       } else {
         return { error: 'Failed to update group' };

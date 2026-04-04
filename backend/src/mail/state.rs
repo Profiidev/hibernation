@@ -4,6 +4,7 @@ use std::{
   time::{Duration, Instant},
 };
 
+use aide::OperationIo;
 use axum::{Extension, extract::FromRequestParts};
 use centaurus::{
   bail,
@@ -26,7 +27,7 @@ use crate::db::{
   settings::{MailSettings, SmtpSettings},
 };
 
-#[derive(Clone, FromRequestParts)]
+#[derive(Clone, FromRequestParts, OperationIo)]
 #[from_request(via(Extension))]
 pub struct Mailer(Arc<Mutex<Option<MailConfig>>>);
 
@@ -47,10 +48,8 @@ impl Mailer {
 
   pub async fn try_init(&self, smtp_config: &SmtpSettings) -> Result<()> {
     let mut guard = self.0.lock().await;
-    if guard.is_none() {
-      let config = MailConfig::new(smtp_config)?;
-      *guard = Some(config);
-    }
+    let config = MailConfig::new(smtp_config)?;
+    *guard = Some(config);
     Ok(())
   }
 
@@ -136,7 +135,7 @@ impl MailConfig {
   }
 }
 
-#[derive(FromRequestParts, Clone)]
+#[derive(FromRequestParts, Clone, OperationIo)]
 #[from_request(via(Extension))]
 pub struct ResetPasswordState {
   tokens: Arc<DashMap<String, (String, Instant)>>,

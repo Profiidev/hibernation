@@ -10,15 +10,9 @@
   import BaseForm from 'positron-components/components/form/base-form.svelte';
   import { formatData, tokenSettings, reformatData } from './schema.svelte.js';
   import type { FormValue } from 'positron-components/components/form/types';
-  import { RequestError } from 'positron-components/backend';
   import FormInput from 'positron-components/components/form/form-input.svelte';
   import Save from '@lucide/svelte/icons/save';
   import { Spinner } from 'positron-components/components/ui/spinner';
-  import {
-    deleteToken,
-    editToken,
-    regenerateToken
-  } from '$lib/backend/token.svelte.js';
   import FormDateInput from '$lib/components/form/FormDateInput.svelte';
   import { Input } from 'positron-components/components/ui/input';
   import { Label } from 'positron-components/components/ui/label';
@@ -26,6 +20,7 @@
   import { CopyButton } from 'positron-components/components/ui-extra/copy-button';
   import { onMount } from 'svelte';
   import { today, getLocalTimeZone } from '@internationalized/date';
+  import { deleteToken, editToken, tokenRegenerate } from '$lib/client';
 
   const { data } = $props();
 
@@ -44,10 +39,10 @@
 
   const deleteItemConfirm = async () => {
     isLoading = true;
-    let ret = await deleteToken({ uuid: data.tokenInfo.uuid });
+    let ret = await deleteToken({ body: { uuid: data.tokenInfo.uuid } });
     isLoading = false;
 
-    if (ret) {
+    if (ret.error) {
       return { error: 'Failed to delete token' };
     } else {
       toast.success(`Token ${data.tokenInfo.name} deleted successfully`);
@@ -59,23 +54,25 @@
 
   const regenerateConfirm = async () => {
     isLoading = true;
-    let res = await regenerateToken(data.tokenInfo.uuid);
+    let res = await tokenRegenerate({
+      path: { uuid: data.tokenInfo.uuid }
+    });
     isLoading = false;
 
-    if (typeof res !== 'object') {
+    if (!res.data) {
       return { error: 'Failed to regenerate token' };
     } else {
       toast.success(`Token ${data.tokenInfo.name} regenerated successfully`);
-      token = res.token;
+      token = res.data.token;
     }
   };
 
   const onsubmit = async (form: FormValue<typeof tokenSettings>) => {
     let token = reformatData(form, data.tokenInfo.uuid);
-    let res = await editToken(token);
+    let res = await editToken({ body: token });
 
-    if (res) {
-      if (res === RequestError.Conflict) {
+    if (res.error) {
+      if (res.response.status === 409) {
         return { error: 'This token name is already in use', field: 'name' };
       } else {
         return { error: 'Failed to update token' };

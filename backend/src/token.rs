@@ -1,10 +1,9 @@
-use axum::{
-  Json, Router,
-  extract::{FromRequest, FromRequestParts, Path},
-  routing::{delete, get, post, put},
-};
+use aide::axum::ApiRouter;
+use aide::axum::routing::{delete_with, get_with, post_with, put_with};
+use axum::{Json, extract::Path};
 use centaurus::{auth::pw::PasswordState, bail, db::init::Connection, error::Result};
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -15,17 +14,20 @@ use crate::{
   ws::state::{UpdateMessage, Updater},
 };
 
-pub fn router() -> Router {
-  Router::new()
-    .route("/", get(list_tokens))
-    .route("/", post(create_toke))
-    .route("/", delete(delete_token))
-    .route("/", put(edit_token))
-    .route("/{uuid}", get(token_info))
-    .route("/{uuid}", post(token_regenerate))
+pub fn router() -> ApiRouter {
+  ApiRouter::new()
+    .api_route("/", get_with(list_tokens, |op| op.id("listTokens")))
+    .api_route("/", post_with(create_token, |op| op.id("createToken")))
+    .api_route("/", delete_with(delete_token, |op| op.id("deleteToken")))
+    .api_route("/", put_with(edit_token, |op| op.id("editToken")))
+    .api_route("/{uuid}", get_with(token_info, |op| op.id("tokenInfo")))
+    .api_route(
+      "/{uuid}",
+      post_with(token_regenerate, |op| op.id("tokenRegenerate")),
+    )
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct TokenInfo {
   uuid: Uuid,
   name: String,
@@ -52,13 +54,16 @@ async fn list_tokens(auth: JwtAuth, db: Connection) -> Result<Json<Vec<TokenInfo
   Ok(Json(token_info))
 }
 
-#[derive(Deserialize, FromRequestParts)]
-#[from_request(via(Path))]
+#[derive(Deserialize, JsonSchema)]
 struct TokenViewPath {
   uuid: Uuid,
 }
 
-async fn token_info(auth: JwtAuth, db: Connection, path: TokenViewPath) -> Result<Json<TokenInfo>> {
+async fn token_info(
+  auth: JwtAuth,
+  db: Connection,
+  Path(path): Path<TokenViewPath>,
+) -> Result<Json<TokenInfo>> {
   let info = db.token().by_id_user(path.uuid, auth.user_id).await?;
   let Some(info) = info else {
     bail!(NOT_FOUND, "Token not found");
@@ -66,25 +71,24 @@ async fn token_info(auth: JwtAuth, db: Connection, path: TokenViewPath) -> Resul
   Ok(Json(info.into()))
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct CreateTokenRequest {
   name: String,
   exp: DateTime<Utc>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct CreateTokenResponse {
   token: String,
   uuid: Uuid,
 }
 
-async fn create_toke(
+async fn create_token(
   auth: JwtAuth,
   db: Connection,
   pw: PasswordState,
   updater: Updater,
-  req: CreateTokenRequest,
+  Json(req): Json<CreateTokenRequest>,
 ) -> Result<Json<CreateTokenResponse>> {
   if req.name.trim().is_empty() {
     bail!(BAD_REQUEST, "Token name cannot be empty");
@@ -112,8 +116,7 @@ async fn create_toke(
   Ok(Json(CreateTokenResponse { token, uuid }))
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct DeleteTokenRequest {
   uuid: Uuid,
 }
@@ -122,7 +125,7 @@ async fn delete_token(
   auth: JwtAuth,
   db: Connection,
   updater: Updater,
-  req: DeleteTokenRequest,
+  Json(req): Json<DeleteTokenRequest>,
 ) -> Result<()> {
   db.token().invalidate(auth.user_id, req.uuid).await?;
   updater
@@ -131,8 +134,7 @@ async fn delete_token(
   Ok(())
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct EditTokenRequest {
   uuid: Uuid,
   name: String,
@@ -143,7 +145,7 @@ async fn edit_token(
   auth: JwtAuth,
   db: Connection,
   updater: Updater,
-  req: EditTokenRequest,
+  Json(req): Json<EditTokenRequest>,
 ) -> Result<()> {
   if req.name.trim().is_empty() {
     bail!(BAD_REQUEST, "Token name cannot be empty");
@@ -164,7 +166,7 @@ async fn edit_token(
   Ok(())
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct TokenRegenerateResponse {
   token: String,
 }
@@ -173,7 +175,7 @@ async fn token_regenerate(
   auth: JwtAuth,
   db: Connection,
   pw: PasswordState,
-  path: TokenViewPath,
+  Path(path): Path<TokenViewPath>,
 ) -> Result<Json<TokenRegenerateResponse>> {
   let token = cli::gen_token();
   let hash = pw.pw_hash_raw("", &token)?;

@@ -97,7 +97,9 @@
         {data}
       >
         {#snippet footer({ isLoading })}
-          <Card.Footer class="w-full gap-2 px-0">
+          <Card.Footer
+            class="w-full gap-2 border-none bg-transparent px-0 pt-0"
+          >
             {#if stages.length > 1}
               <Button
                 class="cursor-pointer"

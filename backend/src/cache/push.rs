@@ -1,13 +1,14 @@
+use aide::axum::routing::{post_with, put_with};
 use std::{
   sync::Arc,
   time::{Duration, Instant},
 };
 
+use aide::{OperationIo, axum::ApiRouter};
 use async_compression::tokio::bufread::ZstdDecoder;
 use axum::{
-  Extension, Json, Router,
+  Extension, Json,
   extract::{DefaultBodyLimit, FromRequestParts, Path, Request},
-  routing::{post, put},
 };
 use centaurus::{
   bail,
@@ -18,8 +19,10 @@ use centaurus::{
 use dashmap::DashMap;
 use entity::sea_orm_active_enums::AccessType;
 use futures_util::StreamExt;
+use harmonia_store_core::store_path::StorePath;
 use http::StatusCode;
 use reqwest::Client;
+use schemars::JsonSchema;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use shared::{
@@ -45,15 +48,18 @@ use crate::{
   db::DBTrait,
 };
 
-pub fn router() -> Router {
-  Router::new()
-    .route("/info", post(upload_info))
-    .route("/", post(upload_path))
-    .route(
+pub fn router() -> ApiRouter {
+  ApiRouter::new()
+    .api_route("/info", post_with(upload_info, |op| op.id("uploadInfo")))
+    .api_route("/", post_with(upload_path, |op| op.id("uploadPath")))
+    .api_route(
       "/{uuid}",
-      post(upload_nar).layer(DefaultBodyLimit::disable()),
+      post_with(upload_nar, |op| op.id("uploadNar")).layer(DefaultBodyLimit::disable()),
     )
-    .route("/{uuid}", put(upload_finish))
+    .api_route(
+      "/{uuid}",
+      put_with(upload_finish, |op| op.id("uploadFinish")),
+    )
 }
 
 struct UploadFinishData {
@@ -71,7 +77,7 @@ struct UploadFinishData {
   nar_found: bool,
 }
 
-#[derive(FromRequestParts, Clone)]
+#[derive(FromRequestParts, Clone, OperationIo)]
 #[from_request(via(Extension))]
 pub struct PushState {
   pending_uploads: Arc<DashMap<Uuid, (UploadPathRequest, i64, Instant)>>,
@@ -110,6 +116,15 @@ async fn upload_info(
   db: Connection,
   Json(req): Json<UploadInfoRequest>,
 ) -> Result<Json<UploadInfoResponse>> {
+  let paths = req
+    .paths
+    .iter()
+    .filter_map(|p| StorePath::from_base_path(p).ok())
+    .collect::<Vec<_>>();
+  if paths.len() != req.paths.len() {
+    bail!(UNPROCESSABLE_ENTITY, "One or more invalid store paths");
+  }
+
   let Some(cache) = db
     .cache()
     .by_name_filtered(req.cache, auth.user_id, AccessType::Edit)
@@ -122,14 +137,14 @@ async fn upload_info(
     bail!(NOT_ACCEPTABLE, "Force push is not allowed for this cache");
   }
 
-  let mut missing_paths = db.nar().missing_paths(cache.id, req.paths).await?;
+  let mut missing_paths = db.nar().missing_paths(cache.id, paths).await?;
   if missing_paths.is_empty() {
     bail!(NO_CONTENT, "All paths are already present in the cache");
   }
 
   if req.force {
     return Ok(Json(UploadInfoResponse {
-      paths: missing_paths,
+      paths: missing_paths.into_iter().map(|p| p.to_string()).collect(),
       cache: cache.id,
     }));
   }
@@ -179,7 +194,7 @@ async fn upload_info(
   }
 
   Ok(Json(UploadInfoResponse {
-    paths: missing_paths,
+    paths: missing_paths.into_iter().map(|p| p.to_string()).collect(),
     cache: cache.id,
   }))
 }
@@ -190,6 +205,21 @@ async fn upload_path(
   state: PushState,
   Json(req): Json<UploadPathRequest>,
 ) -> Result<Json<UploadPathResponse>> {
+  let Ok(store_path) = StorePath::from_base_path(&req.store_path) else {
+    bail!(UNPROCESSABLE_ENTITY, "Invalid store path format");
+  };
+  let references = req
+    .references
+    .iter()
+    .flat_map(|r| StorePath::from_base_path(r).ok())
+    .collect::<Vec<_>>();
+  if references.len() != req.references.len() {
+    bail!(
+      UNPROCESSABLE_ENTITY,
+      "One or more invalid reference store paths"
+    );
+  }
+
   let Some(cache) = db
     .cache()
     .by_id_filtered(req.cache, auth.user_id, AccessType::Edit)
@@ -206,10 +236,10 @@ async fn upload_path(
     PublicKey::from_string(&cache.public_signing_key).status(StatusCode::INTERNAL_SERVER_ERROR)?;
   if !pk.verify(
     &req.signature,
-    &req.store_path,
+    &store_path,
     &req.nar_hash,
     req.nar_size,
-    &req.references,
+    &references,
   ) {
     bail!("Invalid signature");
   }
@@ -228,7 +258,7 @@ async fn upload_path(
     while let Some(downstream) = downstream_caches.pop() {
       let url = Url::parse(&downstream.url)
         .unwrap()
-        .join(&format!("{}.narinfo", req.store_path.hash()))?;
+        .join(&format!("{}.narinfo", store_path.hash()))?;
       let req = client.head(url).build()?;
       if let Ok(res) = client.execute(req).await
         && let Ok(res) = res.error_for_status()
@@ -247,8 +277,7 @@ async fn upload_path(
   Ok(Json(UploadPathResponse { uuid: upload_id }))
 }
 
-#[derive(Deserialize, FromRequestParts, Clone, Copy)]
-#[from_request(via(Path))]
+#[derive(Deserialize, Clone, Copy, JsonSchema)]
 struct UploadNarPath {
   uuid: Uuid,
 }
@@ -256,7 +285,7 @@ struct UploadNarPath {
 async fn upload_nar(
   _auth: CliAuth,
   state: PushState,
-  path: UploadNarPath,
+  Path(path): Path<UploadNarPath>,
   storage: FileStorage,
   db: Connection,
   body: Request,
@@ -353,7 +382,10 @@ async fn upload_nar(
       UploadFinishData {
         cache: info.cache,
         store_path: info.store_path.to_string(),
-        store_path_hash: info.store_path.hash().to_string(),
+        store_path_hash: StorePath::from_base_path(&info.store_path)
+          .unwrap()
+          .hash()
+          .to_string(),
         nar_hash,
         nar_size,
         file_hash,

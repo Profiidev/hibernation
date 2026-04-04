@@ -1,4 +1,5 @@
-use axum::{Router, routing::post};
+use aide::axum::ApiRouter;
+use aide::axum::routing::post_with;
 use axum_extra::extract::CookieJar;
 use centaurus::{
   db::init::Connection,
@@ -17,8 +18,8 @@ use crate::{
   db::DBTrait,
 };
 
-pub fn router() -> Router {
-  Router::new().route("/", post(logout))
+pub fn router() -> ApiRouter {
+  ApiRouter::new().api_route("/", post_with(logout, |op| op.id("logout")))
 }
 
 async fn logout(

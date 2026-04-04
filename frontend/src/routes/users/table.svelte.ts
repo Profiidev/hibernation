@@ -3,20 +3,16 @@ import * as DataTable from 'positron-components/components/ui/data-table';
 import { createColumn } from 'positron-components/components/table/helpers.svelte';
 import Actions from '$lib/components/table/Actions.svelte';
 import { Permission } from '$lib/permissions.svelte';
-import {
-  type SimpleGroupInfo,
-  type UserInfo,
-  type UserListInfo
-} from '$lib/backend/user.svelte';
 import SimpleAvatar from 'positron-components/components/util/simple-avatar.svelte';
+import type { SimpleGroupInfo, UserInfo, UserInfo2 } from '$lib/client';
 
 export const columns = ({
   deleteUser,
   user
 }: {
-  deleteUser: (user: UserListInfo) => void;
+  deleteUser: (user: UserInfo2) => void;
   user?: UserInfo;
-}): ColumnDef<UserListInfo>[] => [
+}): ColumnDef<UserInfo2>[] => [
   {
     accessorKey: 'avatar',
     header: () => {},

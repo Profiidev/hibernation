@@ -1,4 +1,4 @@
-import type { MailSettings } from '$lib/backend/settings.svelte';
+import type { MailSettings } from '$lib/client';
 import type { FormValue } from 'positron-components/components/form/types';
 import { z } from 'zod';
 

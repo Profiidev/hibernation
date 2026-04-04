@@ -7,8 +7,8 @@
   import Lock from '@lucide/svelte/icons/lock';
   import LockOpen from '@lucide/svelte/icons/lock-open';
   import { Badge } from 'positron-components/components/ui/badge';
-  import { size_to_gib } from '$lib/backend/cache.svelte.js';
   import { Progress } from 'positron-components/components/ui/progress';
+  import { size_to_gib } from '$lib/backend/util.svelte.js';
 
   const { data } = $props();
 
@@ -49,7 +49,7 @@
         </p>
       {/if}
       {#each data.caches as cache}
-        {@const size_gib = size_to_gib(cache.size)}
+        {@const size_gib = size_to_gib(cache.size ?? 0)}
         {@const quota_gib = size_to_gib(cache.quota)}
         {@const usage_percent = (size_gib / quota_gib) * 100}
         <Button

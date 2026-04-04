@@ -5,15 +5,13 @@
   import { Button } from 'positron-components/components/ui/button';
   import { Spinner } from 'positron-components/components/ui/spinner';
   import Save from '@lucide/svelte/icons/save';
-  import { saveMailSettings } from '$lib/backend/settings.svelte';
   import { toast } from 'positron-components/components/util/general';
   import { Permission } from '$lib/permissions.svelte';
   import FormSwitch from 'positron-components/components/form/form-switch.svelte';
   import FormInput from 'positron-components/components/form/form-input.svelte';
   import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
-  import { RequestError } from 'positron-components/backend';
   import Send from '@lucide/svelte/icons/send';
-  import { sendTestEmail } from '$lib/backend/mail.svelte';
+  import { saveMailSettings, testMail } from '$lib/client';
 
   let { data } = $props();
 
@@ -29,15 +27,15 @@
 
   const onsubmit = async (form: FormValue<typeof mailSettings>) => {
     let data = reformat(form);
-    let ret = await saveMailSettings(data);
+    let ret = await saveMailSettings({ body: data });
 
-    if (ret) {
-      if (ret === RequestError.NotAcceptable) {
+    if (ret.error) {
+      if (ret.response.status === 406) {
         return {
           field: 'smtp_from_address',
           error: 'Invalid From Address provided'
         };
-      } else if (ret === RequestError.BadRequest) {
+      } else if (ret.response.status === 400) {
         return {
           field: 'smtp_host',
           error: 'Failed to create SMTP transport with provided settings'
@@ -53,11 +51,11 @@
 
   const testEmail = async () => {
     isLoading = true;
-    let ret = await sendTestEmail();
+    let ret = await testMail();
     isLoading = false;
-    if (ret === RequestError.TooManyRequests) {
+    if (ret.error && ret.response.status === 429) {
       toast.error('Rate limit exceeded. Please try again later.');
-    } else if (ret) {
+    } else if (ret.error) {
       toast.error('Failed to send test email. Check SMTP settings.');
     } else {
       toast.success('Test email sent successfully.');

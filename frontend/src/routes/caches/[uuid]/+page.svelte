@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { size_to_gib } from '$lib/backend/cache.svelte';
   import { Progress } from 'positron-components/components/ui/progress';
   import * as Code from '$lib/components/code';
   import { ScrollArea } from 'positron-components/components/ui/scroll-area';
+  import { size_to_gib } from '$lib/backend/util.svelte.js';
 
   let { data } = $props();
 
-  let size_gib = $derived(size_to_gib(data.cacheInfo.size));
+  let size_gib = $derived(size_to_gib(data.cacheInfo.size ?? 0));
   let quota_gib = $derived(size_to_gib(data.cacheInfo.quota));
   let usage_percent = $derived((size_gib / quota_gib) * 100);
 

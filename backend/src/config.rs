@@ -1,6 +1,8 @@
+use aide::OperationIo;
 use axum::{Extension, extract::FromRequestParts};
 use centaurus::{
-  config::{BaseConfig, MetricsConfig},
+  Config,
+  backend::config::{BaseConfig, MetricsConfig},
   db::config::DBConfig,
 };
 use figment::{
@@ -11,13 +13,15 @@ use serde::{Deserialize, Serialize};
 use tracing::{instrument, warn};
 use url::Url;
 
-#[derive(Deserialize, Serialize, Clone, FromRequestParts)]
+#[derive(Deserialize, Serialize, Clone, FromRequestParts, OperationIo, Config)]
 #[from_request(via(Extension))]
 pub struct Config {
+  #[base]
   #[serde(flatten)]
   pub base: BaseConfig,
   #[serde(flatten)]
   pub db: DBConfig,
+  #[metrics]
   #[serde(flatten)]
   pub metrics: MetricsConfig,
   #[serde(flatten)]

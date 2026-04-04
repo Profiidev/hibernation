@@ -4,23 +4,32 @@
   import * as Card from 'positron-components/components/ui/card';
   import { resetPassword } from './schema.svelte';
   import type { FormValue } from 'positron-components/components/form/types';
-  import { sendResetPassword } from '$lib/backend/mail.svelte';
   import { toast } from 'positron-components/components/util/general';
   import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
   import { goto } from '$app/navigation';
-  import { RequestError } from 'positron-components/backend';
+  import { resetPassword as sendResetPassword } from '$lib/client';
+  import { getEncrypt } from '$lib/backend/auth.svelte';
 
   let { data } = $props();
 
   const onsubmit = async (data: FormValue<typeof resetPassword>) => {
+    let encrypt = getEncrypt();
+    if (!encrypt) {
+      return {
+        error: 'Encryption function not available. Please try again later.'
+      };
+    }
+
     let ret = await sendResetPassword({
-      token: data.token,
-      new_password: data.new_password
+      body: {
+        token: data.token,
+        new_password: encrypt.encrypt(data.new_password) || ''
+      }
     });
 
-    if (ret === RequestError.TooManyRequests) {
+    if (ret.error && ret.response.status === 429) {
       return { error: 'Rate limit exceeded. Please try again later.' };
-    } else if (ret) {
+    } else if (ret.error) {
       return { error: 'Failed to reset password.' };
     } else {
       toast.success(

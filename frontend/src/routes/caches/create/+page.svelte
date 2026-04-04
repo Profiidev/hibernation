@@ -1,11 +1,10 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { RequestError } from 'positron-components/backend';
   import { toast } from 'positron-components/components/util/general';
   import type { Stage } from '$lib/components/form/types.svelte';
   import MultiStepForm from '$lib/components/form/MultiStepForm.svelte';
   import Information from './Information.svelte';
-  import { createCache } from '$lib/backend/cache.svelte';
+  import { createCache } from '$lib/client';
 
   let stages: Stage[] = [
     {
@@ -17,15 +16,15 @@
 
   const submit = async (rawData: object) => {
     let anyData = rawData as any;
-    let res = await createCache(anyData);
+    let res = await createCache({ body: anyData });
 
-    if (typeof res === 'string') {
-      if (res === RequestError.Conflict) {
+    if (!res.data) {
+      if (res.response.status === 409) {
         return {
           error: 'A cache with this name already exists.',
           field: 'name'
         };
-      } else if (res === RequestError.NotAcceptable) {
+      } else if (res.response.status === 406) {
         return {
           error: 'Invalid signature key format.',
           field: 'sig_key'
@@ -36,7 +35,7 @@
     } else {
       toast.success('Cache created successfully.');
       setTimeout(() => {
-        goto(`/caches/${res.uuid}`);
+        goto(`/caches/${res.data.uuid}`);
       });
     }
   };

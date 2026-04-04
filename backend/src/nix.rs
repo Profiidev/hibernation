@@ -1,11 +1,12 @@
+use aide::axum::ApiRouter;
 use axum::{
-  Router,
   body::Body,
-  extract::{FromRequestParts, Path},
+  extract::Path,
   routing::{get, head},
 };
 use centaurus::{bail, db::init::Connection, error::Result};
 use http::{HeaderMap, HeaderValue, StatusCode, header};
+use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::{
@@ -20,23 +21,22 @@ const NAR_MIME: HeaderValue = HeaderValue::from_static("application/x-nix-nar");
 const ACCEPT_RANGES: HeaderValue = HeaderValue::from_static("bytes");
 
 /// https://fzakaria.github.io/nix-http-binary-cache-api-spec/#/default
-pub fn router() -> Router {
-  Router::new()
+pub fn router() -> ApiRouter {
+  ApiRouter::new()
     .route("/{name}/nix-cache-info", get(nix_cache_info))
     .route("/{name}/{path}", head(head_nar_info))
     .route("/{name}/{path}", get(nar_info))
     .route("/{name}/nar/{hash}", get(nar))
 }
 
-#[derive(FromRequestParts, Deserialize)]
-#[from_request(via(Path))]
+#[derive(Deserialize, JsonSchema)]
 struct CachePath {
   name: String,
 }
 
 async fn nix_cache_info(
   db: Connection,
-  path: CachePath,
+  Path(path): Path<CachePath>,
   auth: Option<CliAuth>,
 ) -> Result<(HeaderMap, String)> {
   let Some(cache) = db.cache().by_name(path.name).await? else {
@@ -73,8 +73,7 @@ Priority: {}
   ))
 }
 
-#[derive(FromRequestParts, Deserialize)]
-#[from_request(via(Path))]
+#[derive(Deserialize, JsonSchema)]
 struct NarInfoPath {
   name: String,
   path: String,
@@ -117,7 +116,7 @@ async fn get_data(
 
 async fn head_nar_info(
   db: Connection,
-  path: NarInfoPath,
+  Path(path): Path<NarInfoPath>,
   auth: Option<CliAuth>,
 ) -> Result<HeaderMap> {
   get_data(&db, path, auth).await?;
@@ -130,7 +129,7 @@ async fn head_nar_info(
 
 async fn nar_info(
   db: Connection,
-  path: NarInfoPath,
+  Path(path): Path<NarInfoPath>,
   auth: Option<CliAuth>,
 ) -> Result<(HeaderMap, String)> {
   let data = get_data(&db, path, auth).await?;
@@ -175,8 +174,7 @@ Sig: {}
   ))
 }
 
-#[derive(FromRequestParts, Deserialize)]
-#[from_request(via(Path))]
+#[derive(Deserialize, JsonSchema)]
 struct NarPath {
   name: String,
   hash: String,
@@ -184,7 +182,7 @@ struct NarPath {
 
 async fn nar(
   db: Connection,
-  path: NarPath,
+  Path(path): Path<NarPath>,
   storage: FileStorage,
   auth: Option<CliAuth>,
   headers: HeaderMap,

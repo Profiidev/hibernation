@@ -1,5 +1,8 @@
-use axum::{Json, Router, extract::FromRequest, routing::post};
+use aide::axum::ApiRouter;
+use aide::axum::routing::post_with;
+use axum::Json;
 use centaurus::{auth::pw::PasswordState, db::init::Connection};
+use schemars::JsonSchema;
 use serde::Deserialize;
 use tokio::spawn;
 use tracing::warn;
@@ -13,14 +16,19 @@ use crate::{
   },
 };
 
-pub fn router() -> Router {
-  Router::new()
-    .route("/send", post(send_reset_link))
-    .route("/confirm", post(reset_password))
+pub fn router() -> ApiRouter {
+  ApiRouter::new()
+    .api_route(
+      "/send",
+      post_with(send_reset_link, |op| op.id("sendResetLink")),
+    )
+    .api_route(
+      "/confirm",
+      post_with(reset_password, |op| op.id("resetPassword")),
+    )
 }
 
-#[derive(FromRequest, Deserialize)]
-#[from_request(via(Json))]
+#[derive(JsonSchema, Deserialize)]
 struct ResetRequest {
   email: String,
 }
@@ -31,7 +39,7 @@ async fn send_reset_link(
   state: ResetPasswordState,
   db: Connection,
   config: Config,
-  ResetRequest { email }: ResetRequest,
+  Json(ResetRequest { email }): Json<ResetRequest>,
 ) -> Result<(), ()> {
   // Spawn a new task to handle the email sending asynchronously and avoid exposing timing information
   spawn(async move {
@@ -66,8 +74,7 @@ async fn send_reset_link(
   Ok(())
 }
 
-#[derive(FromRequest, Deserialize)]
-#[from_request(via(Json))]
+#[derive(JsonSchema, Deserialize)]
 struct ResetPasswordPayload {
   token: String,
   new_password: String,
@@ -77,10 +84,10 @@ async fn reset_password(
   db: Connection,
   state: ResetPasswordState,
   pw: PasswordState,
-  ResetPasswordPayload {
+  Json(ResetPasswordPayload {
     token,
     new_password,
-  }: ResetPasswordPayload,
+  }): Json<ResetPasswordPayload>,
 ) -> Result<(), ()> {
   // Do reset async to avoid exposing timing information
   spawn(async move {

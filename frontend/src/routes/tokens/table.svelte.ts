@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/table-core';
 import * as DataTable from 'positron-components/components/ui/data-table';
 import { createColumn } from 'positron-components/components/table/helpers.svelte';
 import Actions from '$lib/components/table/Actions.svelte';
-import type { TokenInfo } from '$lib/backend/token.svelte';
+import type { TokenInfo } from '$lib/client';
 
 export const columns = ({
   deleteToken

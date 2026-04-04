@@ -1,11 +1,8 @@
-use axum::{
-  Router,
-  extract::{
-    WebSocketUpgrade,
-    ws::{Message, WebSocket},
-  },
-  response::IntoResponse,
-  routing::any,
+use aide::axum::routing::get_with;
+use aide::axum::{ApiRouter, IntoApiResponse};
+use axum::extract::{
+  WebSocketUpgrade,
+  ws::{Message, WebSocket},
 };
 use futures_util::StreamExt;
 use tokio::sync::mpsc::Receiver;
@@ -16,11 +13,11 @@ use crate::{
   ws::state::{UpdateMessage, UpdateState},
 };
 
-pub fn router() -> Router {
-  Router::new().route("/updater", any(update))
+pub fn router() -> ApiRouter {
+  ApiRouter::new().route("/updater", get_with(update, |op| op.id("update")))
 }
 
-async fn update(auth: JwtAuth, ws: WebSocketUpgrade, state: UpdateState) -> impl IntoResponse {
+async fn update(auth: JwtAuth, ws: WebSocketUpgrade, state: UpdateState) -> impl IntoApiResponse {
   let (uuid, recv) = state.create_session(auth.user_id).await;
 
   ws.on_upgrade(move |socket| handle_socket(socket, auth.user_id, uuid, recv, state))

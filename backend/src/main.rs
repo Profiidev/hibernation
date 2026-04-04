@@ -1,19 +1,19 @@
-use std::net::SocketAddr;
-
-use axum::{Extension, Router, ServiceExt, serve};
+use aide::axum::ApiRouter;
+use axum::Extension;
 use centaurus::{
-  db::init::init_db,
-  init::{
-    axum::{listener_setup, run_app_connect_info, shutdown_signal},
-    logging::init_logging,
-    router::base_router,
+  backend::{
+    init::{listener_setup, run_app_connect_info},
+    rate_limiter::RateLimiter,
+    router::build_router,
   },
+  db::init::init_db,
+  logging::init_logging,
 };
 #[cfg(debug_assertions)]
 use dotenvy::dotenv;
 use tracing::info;
 
-use crate::{config::Config, host::HostRouter, rate_limit::RateLimiter};
+use crate::{config::Config, host::HostRouter};
 
 mod auth;
 mod cache;
@@ -26,7 +26,6 @@ mod host;
 mod mail;
 mod nix;
 mod permissions;
-mod rate_limit;
 mod settings;
 mod setup;
 mod token;
@@ -43,30 +42,18 @@ async fn main() {
   init_logging(config.base.log_level);
 
   let listener = listener_setup(config.base.port).await;
-  let mut rate_limiter = RateLimiter::default();
-
-  let mut router = api_router(&mut rate_limiter);
-  router = base_router(router, &config.base, &config.metrics).await;
-  let app = state(router, config.clone()).await;
-
-  rate_limiter.init();
+  let app = build_router(api_router, state, config.clone()).await;
 
   info!("Starting application");
   if let Some(host_router) = HostRouter::new(&app, &config) {
-    serve(
-      listener,
-      host_router.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .with_graceful_shutdown(shutdown_signal())
-    .await
-    .expect("Failed to start server");
+    run_app_connect_info(listener, host_router).await;
   } else {
     run_app_connect_info(listener, app).await;
   }
 }
 
-fn api_router(rate_limiter: &mut RateLimiter) -> Router {
-  Router::new()
+fn api_router(rate_limiter: &mut RateLimiter) -> ApiRouter {
+  ApiRouter::new()
     .nest("/ws", ws::router())
     .nest("/setup", setup::router())
     .nest("/auth", auth::router(rate_limiter))
@@ -80,7 +67,7 @@ fn api_router(rate_limiter: &mut RateLimiter) -> Router {
     .nest("/nix", nix::router())
 }
 
-async fn state(router: Router, config: Config) -> Router {
+async fn state(router: ApiRouter, config: Config) -> ApiRouter {
   let db = init_db::<migration::Migrator>(&config.db, &config.db_url).await;
   db::init(&db).await.expect("Failed to initialize database");
   setup::create_admin_group(&db)
@@ -94,5 +81,5 @@ async fn state(router: Router, config: Config) -> Router {
   router = cache::state(router, db.clone(), &config).await;
   router = version::middleware(router);
 
-  router.layer(Extension(db)).layer(Extension(config))
+  router.layer(Extension(db))
 }

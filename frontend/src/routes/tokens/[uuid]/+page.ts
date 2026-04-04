@@ -1,13 +1,15 @@
-import { RequestError } from 'positron-components/backend';
 import type { PageLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { getTokenInfo } from '$lib/backend/token.svelte';
+import { tokenInfo } from '$lib/client';
 
 export const load: PageLoad = async ({ params, fetch }) => {
-  let res = await getTokenInfo(params.uuid, fetch);
+  let res = await tokenInfo({
+    path: { uuid: params.uuid },
+    fetch
+  });
 
-  if (typeof res !== 'object') {
-    if (res === RequestError.NotFound) {
+  if (!res.data) {
+    if (res.response.status === 404) {
       redirect(307, '/tokens?error=token_not_found');
     } else {
       redirect(307, '/tokens?error=token_other');
@@ -16,6 +18,6 @@ export const load: PageLoad = async ({ params, fetch }) => {
 
   return {
     uuid: params.uuid,
-    tokenInfo: res
+    tokenInfo: res.data
   };
 };

@@ -1,4 +1,4 @@
-import type { TokenEditRequest, TokenInfo } from '$lib/backend/token.svelte';
+import type { EditTokenRequest, TokenInfo } from '$lib/client';
 import type { FormValue } from 'positron-components/components/form/types';
 import { z } from 'zod';
 
@@ -12,11 +12,11 @@ export const tokenSettings = z.object({
 export const reformatData = (
   data: FormValue<typeof tokenSettings>,
   uuid: string
-): TokenEditRequest => {
+): EditTokenRequest => {
   return {
     uuid,
     name: data.name,
-    exp: data.exp.toISOString()
+    exp: data.exp
   };
 };
 

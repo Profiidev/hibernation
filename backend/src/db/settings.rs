@@ -1,6 +1,6 @@
-use axum::{Json, extract::FromRequest};
 use centaurus::error::ErrorReport;
 use entity::settings;
+use schemars::JsonSchema;
 use sea_orm::{IntoActiveModel, Set, prelude::*};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use url::Url;
@@ -46,7 +46,7 @@ impl<'db> SettingsTable<'db> {
   }
 }
 
-pub trait Settings: Serialize + DeserializeOwned + Default {
+pub trait Settings: Serialize + DeserializeOwned + Default + JsonSchema {
   fn id() -> i32;
 }
 
@@ -63,8 +63,7 @@ macro_rules! settings {
 // Don't use id 1 it was used for GeneralSettings in the past which has been removed
 
 settings!(UserSettings, 2);
-#[derive(Serialize, Deserialize, FromRequest, Debug)]
-#[from_request(via(Json))]
+#[derive(Serialize, Deserialize, Debug, JsonSchema)]
 pub struct UserSettings {
   pub oidc: Option<OidcSettings>,
   pub sso_instant_redirect: bool,
@@ -81,7 +80,7 @@ impl Default for UserSettings {
   }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, JsonSchema)]
 pub struct OidcSettings {
   pub issuer: Url,
   pub client_id: String,
@@ -90,13 +89,12 @@ pub struct OidcSettings {
 }
 
 settings!(MailSettings, 3);
-#[derive(Serialize, Deserialize, FromRequest, Default)]
-#[from_request(via(Json))]
+#[derive(Serialize, Deserialize, Default, JsonSchema)]
 pub struct MailSettings {
   pub smtp: Option<SmtpSettings>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct SmtpSettings {
   pub server: String,
   pub port: u16,

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { UserInfo } from '$lib/backend/user.svelte';
   import FormCheckbox from '$lib/components/form/FormCheckbox.svelte';
   import { Permission } from '$lib/permissions.svelte';
   import type {
@@ -7,6 +6,7 @@
     SuperForm
   } from 'positron-components/components/form/types';
   import type { groupSettings } from './schema.svelte';
+  import type { UserInfo } from '$lib/client';
 
   interface Props {
     user?: UserInfo;

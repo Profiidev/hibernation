@@ -1,4 +1,5 @@
-use axum::{Router, routing::post};
+use aide::axum::ApiRouter;
+use aide::axum::routing::post_with;
 use centaurus::{db::init::Connection, error::Result};
 
 use crate::{
@@ -9,8 +10,8 @@ use crate::{
   permissions::SettingsEdit,
 };
 
-pub fn router() -> Router {
-  Router::new().route("/", post(test_mail))
+pub fn router() -> ApiRouter {
+  ApiRouter::new().api_route("/", post_with(test_mail, |op| op.id("testMail")))
 }
 
 async fn test_mail(

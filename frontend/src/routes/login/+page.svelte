@@ -6,13 +6,12 @@
   import { FieldSeparator } from 'positron-components/components/ui/field';
   import { login } from './schema.svelte';
   import type { FormValue } from 'positron-components/components/form/types';
-  import { passwordLogin } from '$lib/backend/auth.svelte';
-  import { RequestError } from 'positron-components/backend';
   import { goto, invalidate } from '$app/navigation';
   import { connectWebsocket } from '$lib/backend/updater.svelte';
   import { toast } from 'positron-components/components/util/general';
-  import { SSOType } from '$lib/backend/sso.svelte';
   import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
+  import { authenticate, SsoType } from '$lib/client';
+  import { getEncrypt } from '$lib/backend/auth.svelte';
 
   let { data } = $props();
 
@@ -50,17 +49,29 @@
   });
 
   const onsubmit = async (data: FormValue<typeof login>) => {
-    let ret = await passwordLogin(data.email, data.password);
+    let encrypt = getEncrypt();
+    if (!encrypt) {
+      return {
+        error: 'Encryption function not available. Please try again later.'
+      };
+    }
 
-    if (ret === RequestError.Unauthorized) {
+    let ret = await authenticate({
+      body: {
+        email: data.email,
+        password: encrypt.encrypt(data.password) || ''
+      }
+    });
+
+    if (!ret.data && ret.response.status === 401) {
       return { error: 'Invalid email or password.' };
-    } else if (ret === RequestError.TooManyRequests) {
+    } else if (!ret.data && ret.response.status === 429) {
       return { error: 'Rate limit exceeded. Please try again later.' };
-    } else if (typeof ret !== 'object') {
+    } else if (!ret.data) {
       return { error: 'Login failed. Please try again.' };
     } else {
       setTimeout(() => {
-        connectWebsocket(ret.user);
+        connectWebsocket((ret.data as { user: string }).user);
         invalidate('/api/user/info');
         goto('/');
       });
@@ -106,7 +117,7 @@
           {@render defaultBtn({ content: 'Login' })}
         {/snippet}
       </BaseForm>
-      {#if data.config?.sso_type !== SSOType.None}
+      {#if data.config?.sso_type !== SsoType.NONE}
         <FieldSeparator
           class="*:data-[slot=field-separator-content]:bg-card my-4"
           >Or continue with</FieldSeparator

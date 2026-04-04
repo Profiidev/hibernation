@@ -8,11 +8,11 @@
   import { toast } from 'positron-components/components/util/general';
   import { invalidate } from '$app/navigation';
   import { Permission } from '$lib/permissions.svelte';
-  import { deleteUser, type UserListInfo } from '$lib/backend/user.svelte';
+  import { deleteUser, type UserInfo2 } from '$lib/client';
 
   const { data } = $props();
 
-  let selected: UserListInfo | undefined = $state();
+  let selected: UserInfo2 | undefined = $state();
   let deleteOpen = $state(false);
   let isLoading = $state(false);
 
@@ -34,10 +34,14 @@
     if (!selected) return;
 
     isLoading = true;
-    let ret = await deleteUser(selected.uuid);
+    let ret = await deleteUser({
+      body: {
+        uuid: selected.uuid
+      }
+    });
     isLoading = false;
 
-    if (ret) {
+    if (ret.error) {
       return { error: 'Failed to delete user' };
     } else {
       toast.success(`User ${selected.name} deleted successfully`);
@@ -45,7 +49,7 @@
     }
   };
 
-  const startDeleteUser = (item: UserListInfo) => {
+  const startDeleteUser = (item: UserInfo2) => {
     selected = item;
     deleteOpen = true;
   };

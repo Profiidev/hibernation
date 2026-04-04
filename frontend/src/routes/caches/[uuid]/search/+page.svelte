@@ -1,40 +1,51 @@
 <script lang="ts">
-  import {
-    deletePath,
-    searchCache,
-    SearchOrder,
-    SearchSort,
-    type SearchResult
-  } from '$lib/backend/cache.svelte';
   import { Input } from 'positron-components/components/ui/input';
   import { toast } from 'positron-components/components/util/general';
   import * as Select from 'positron-components/components/ui/select';
   import Table from '$lib/components/table/Table.svelte';
   import { columns } from './table.svelte';
+  import {
+    deletePath,
+    SearchOrder,
+    SearchSort,
+    searchStorePaths,
+    type SearchResult
+  } from '$lib/client';
 
   let { data } = $props();
 
   let input = $state('');
-  let sort: SearchSort = $state(SearchSort.StorePath);
-  let order: SearchOrder = $state(SearchOrder.Ascending);
+  let sort: SearchSort = $state(SearchSort.STORE_PATH);
+  let order: SearchOrder = $state(SearchOrder.ASC);
   let paths = $state<SearchResult[]>([]);
   let searchTrigger = $state(0);
 
   $effect(() => {
     searchTrigger;
-    searchCache(data.cacheInfo.uuid, input, sort, order).then((result) => {
-      if (result === undefined) {
+    if (!input) return;
+    searchStorePaths({
+      path: { uuid: data.cacheInfo.uuid },
+      body: {
+        order,
+        query: input,
+        sort
+      }
+    }).then((result) => {
+      if (!result.data) {
         toast.error('Failed to search cache');
         return;
       }
-      paths = result;
+      paths = result.data;
     });
   });
 
   const delete_path = async (path: string) => {
-    let res = await deletePath(data.cacheInfo.uuid, path);
+    let res = await deletePath({
+      path: { uuid: data.cacheInfo.uuid },
+      body: { store_path: path }
+    });
 
-    if (res) {
+    if (res.error) {
       toast.error('Failed to delete path');
     } else {
       searchTrigger += 1;

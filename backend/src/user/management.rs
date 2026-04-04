@@ -1,9 +1,7 @@
+use aide::axum::ApiRouter;
+use aide::axum::routing::{delete_with, get_with, post_with, put_with};
 use argon2::password_hash::SaltString;
-use axum::{
-  Json, Router,
-  extract::{FromRequest, FromRequestParts, Path},
-  routing::{delete, get, post, put},
-};
+use axum::{Json, extract::Path};
 use base64::prelude::*;
 use centaurus::{
   auth::pw::PasswordState,
@@ -14,6 +12,7 @@ use centaurus::{
 use http::StatusCode;
 use rand::RngExt;
 use rsa::rand_core::OsRng;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -33,18 +32,30 @@ use crate::{
 
 const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789)(*&^%$#@!~";
 
-pub fn router() -> Router {
-  Router::new()
-    .route("/", get(list_users))
-    .route("/", post(create_user))
-    .route("/", delete(delete_user))
-    .route("/", put(edit_user))
-    .route("/{uuid}", get(user_info))
-    .route("/mail", get(mail_active))
-    .route("/groups", get(list_groups_simple))
-    .route("/caches", get(list_caches_simple))
-    .route("/avatar", delete(reset_user_avatar))
-    .route("/password", put(reset_user_password))
+pub fn router() -> ApiRouter {
+  ApiRouter::new()
+    .api_route("/", get_with(list_users, |op| op.id("listUsers")))
+    .api_route("/", post_with(create_user, |op| op.id("createUser")))
+    .api_route("/", delete_with(delete_user, |op| op.id("deleteUser")))
+    .api_route("/", put_with(edit_user, |op| op.id("editUser")))
+    .api_route("/{uuid}", get_with(user_info, |op| op.id("userInfo")))
+    .api_route("/mail", get_with(mail_active, |op| op.id("mailActive")))
+    .api_route(
+      "/groups",
+      get_with(list_groups_simple, |op| op.id("listGroupsSimple")),
+    )
+    .api_route(
+      "/caches",
+      get_with(list_caches_simple, |op| op.id("listCachesSimple")),
+    )
+    .api_route(
+      "/avatar",
+      delete_with(reset_user_avatar, |op| op.id("resetUserAvatar")),
+    )
+    .api_route(
+      "/password",
+      put_with(reset_user_password, |op| op.id("resetUserPassword")),
+    )
 }
 
 async fn list_users(_auth: JwtAuth<UserView>, db: Connection) -> Result<Json<Vec<UserInfo>>> {
@@ -52,8 +63,7 @@ async fn list_users(_auth: JwtAuth<UserView>, db: Connection) -> Result<Json<Vec
   Ok(Json(users))
 }
 
-#[derive(Deserialize, FromRequestParts)]
-#[from_request(via(Path))]
+#[derive(Deserialize, JsonSchema)]
 struct UserViewPath {
   uuid: Uuid,
 }
@@ -61,7 +71,7 @@ struct UserViewPath {
 async fn user_info(
   _auth: JwtAuth<UserView>,
   db: Connection,
-  path: UserViewPath,
+  Path(path): Path<UserViewPath>,
 ) -> Result<Json<DetailUserInfo>> {
   let info = db.user().user_info(path.uuid).await?;
   let Some(info) = info else {
@@ -70,7 +80,7 @@ async fn user_info(
   Ok(Json(info))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct MailActiveResponse {
   active: bool,
 }
@@ -80,15 +90,14 @@ async fn mail_active(_auth: JwtAuth<UserView>, mailer: Mailer) -> Result<Json<Ma
   Ok(Json(MailActiveResponse { active }))
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct CreateUser {
   name: String,
   email: String,
   password: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct CreateUserResponse {
   uuid: Uuid,
 }
@@ -100,7 +109,7 @@ async fn create_user(
   mailer: Mailer,
   state: PasswordState,
   config: Config,
-  req: CreateUser,
+  Json(req): Json<CreateUser>,
 ) -> Result<Json<CreateUserResponse>> {
   if req.name.trim().is_empty() {
     bail!(BAD_REQUEST, "Name cannot be empty");
@@ -158,8 +167,7 @@ async fn create_user(
   Ok(Json(CreateUserResponse { uuid: user_id }))
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct DeleteUserRequest {
   uuid: Uuid,
 }
@@ -168,7 +176,7 @@ async fn delete_user(
   auth: JwtAuth<UserEdit>,
   db: Connection,
   updater: Updater,
-  data: DeleteUserRequest,
+  Json(data): Json<DeleteUserRequest>,
 ) -> Result<()> {
   let Some(admin_group) = db.setup().get_admin_group_id().await? else {
     bail!(INTERNAL_SERVER_ERROR, "Admin group is not set up");
@@ -211,8 +219,7 @@ async fn list_caches_simple(
   Ok(Json(users))
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct UserEditReq {
   uuid: Uuid,
   name: String,
@@ -224,7 +231,7 @@ async fn edit_user(
   auth: JwtAuth<UserEdit>,
   db: Connection,
   updater: Updater,
-  req: UserEditReq,
+  Json(req): Json<UserEditReq>,
 ) -> Result<()> {
   if req.name.trim().is_empty() {
     bail!(BAD_REQUEST, "Name cannot be empty");
@@ -281,8 +288,7 @@ async fn edit_user(
   Ok(())
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct UserAvatarResetRequest {
   uuid: Uuid,
 }
@@ -291,7 +297,7 @@ async fn reset_user_avatar(
   _auth: JwtAuth<UserEdit>,
   db: Connection,
   updater: Updater,
-  req: UserAvatarResetRequest,
+  Json(req): Json<UserAvatarResetRequest>,
 ) -> Result<()> {
   db.user().reset_avatar(req.uuid).await?;
   updater
@@ -301,8 +307,7 @@ async fn reset_user_avatar(
   Ok(())
 }
 
-#[derive(Deserialize, FromRequest)]
-#[from_request(via(Json))]
+#[derive(Deserialize, JsonSchema)]
 struct ResetUserPassword {
   uuid: Uuid,
   new_password: String,
@@ -313,7 +318,7 @@ async fn reset_user_password(
   db: Connection,
   state: PasswordState,
   mailer: Mailer,
-  req: ResetUserPassword,
+  Json(req): Json<ResetUserPassword>,
 ) -> Result<()> {
   if mailer.is_active().await {
     bail!(

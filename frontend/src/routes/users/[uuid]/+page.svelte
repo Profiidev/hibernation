@@ -21,16 +21,17 @@
   import Save from '@lucide/svelte/icons/save';
   import { Spinner } from 'positron-components/components/ui/spinner';
   import FormSelect from 'positron-components/components/form/form-select.svelte';
+  import SimpleAvatar from 'positron-components/components/util/simple-avatar.svelte';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+  import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
+  import CacheAccess from '../../groups/[uuid]/CacheAccess.svelte';
   import {
     deleteUser,
     editUser,
     resetUserAvatar,
     resetUserPassword
-  } from '$lib/backend/user.svelte.js';
-  import SimpleAvatar from 'positron-components/components/util/simple-avatar.svelte';
-  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
-  import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
-  import CacheAccess from '../../groups/[uuid]/CacheAccess.svelte';
+  } from '$lib/client';
+  import { getEncrypt } from '$lib/backend/auth.svelte.js';
 
   const { data } = $props();
 
@@ -49,13 +50,17 @@
 
   const deleteItemConfirm = async () => {
     isLoading = true;
-    let ret = await deleteUser(data.userInfo.uuid);
+    let ret = await deleteUser({
+      body: {
+        uuid: data.userInfo.uuid
+      }
+    });
     isLoading = false;
 
-    if (ret) {
-      if (ret === RequestError.Conflict) {
+    if (ret.error) {
+      if (ret.response.status === 409) {
         return { error: 'Cannot delete the last user from the admin group' };
-      } else if (ret === RequestError.Forbidden) {
+      } else if (ret.response.status === 403) {
         return { error: 'You do not have permission to delete this user' };
       } else {
         return { error: 'Failed to delete user' };
@@ -70,12 +75,14 @@
 
   const onsubmit = async (form: FormValue<typeof userSettings>) => {
     let user = reformatData(form, data.userInfo.uuid, mappings);
-    let res = await editUser(user);
+    let res = await editUser({
+      body: user
+    });
 
-    if (res) {
-      if (res === RequestError.Conflict) {
+    if (res.error) {
+      if (res.response.status === 409) {
         return { error: 'Cannot remove the last user from the admin group' };
-      } else if (res === RequestError.Forbidden) {
+      } else if (res.response.status === 403) {
         return { error: 'Cannot assign permissions that you do not have' };
       } else {
         return { error: 'Failed to update user' };
@@ -88,13 +95,20 @@
   };
 
   const resetPasswordSubmit = async (form: FormValue<typeof resetPassword>) => {
+    let encrypt = getEncrypt();
+    if (!encrypt) {
+      return { error: 'Encryption function not available' };
+    }
+
     let res = await resetUserPassword({
-      uuid: data.userInfo.uuid,
-      new_password: form.new_password
+      body: {
+        uuid: data.userInfo.uuid,
+        new_password: encrypt.encrypt(form.new_password) || ''
+      }
     });
 
-    if (res) {
-      if (res === RequestError.Forbidden) {
+    if (res.error) {
+      if (res.response.status === 403) {
         return { error: 'You do not have permission to reset this password' };
       } else {
         return { error: 'Failed to reset password' };
@@ -159,7 +173,13 @@
                   class="ml-auto cursor-pointer"
                   disabled={readonly}
                   onclick={async () => {
-                    if (await resetUserAvatar(data.userInfo.uuid)) {
+                    if (
+                      (
+                        await resetUserAvatar({
+                          body: { uuid: data.userInfo.uuid }
+                        })
+                      ).error
+                    ) {
                       toast.error('Failed to reset avatar');
                     } else {
                       toast.success('Avatar reset successfully');

@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use aide::OperationIo;
 use axum::extract::{FromRequestParts, OptionalFromRequestParts};
 use centaurus::{
   auth::jwt::jwt_from_request, bail, db::init::Connection, error::ErrorReport,
@@ -14,7 +15,7 @@ use crate::{
   permissions::{NoPerm, Permission},
 };
 
-#[derive(Debug)]
+#[derive(Debug, OperationIo)]
 pub struct JwtAuth<P: Permission = NoPerm> {
   pub user_id: Uuid,
   pub exp: i64,

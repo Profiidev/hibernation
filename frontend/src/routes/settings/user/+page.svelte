@@ -5,17 +5,16 @@
   import { Button } from 'positron-components/components/ui/button';
   import { Spinner } from 'positron-components/components/ui/spinner';
   import Save from '@lucide/svelte/icons/save';
-  import { saveUserSettings } from '$lib/backend/settings.svelte';
   import { toast } from 'positron-components/components/util/general';
   import FormInputTooltip from '$lib/components/form/FormInputTooltip.svelte';
   import FormSwitch from 'positron-components/components/form/form-switch.svelte';
   import FormInput from 'positron-components/components/form/form-input.svelte';
-  import { RequestError } from 'positron-components/backend';
   import { Label } from 'positron-components/components/ui/label';
   import { Input } from 'positron-components/components/ui/input';
   import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
   import { Permission } from '$lib/permissions.svelte';
   import { Separator } from 'positron-components/components/ui/separator';
+  import { saveUserSettings } from '$lib/client';
 
   let { data } = $props();
 
@@ -30,10 +29,10 @@
 
   const onsubmit = async (form: FormValue<typeof userSettings>) => {
     let data = reformat(form);
-    let ret = await saveUserSettings(data);
+    let ret = await saveUserSettings({ body: data });
 
-    if (ret) {
-      if (ret === RequestError.NotAcceptable) {
+    if (ret.error) {
+      if (ret.response.status === 406) {
         return {
           field: 'oidc_issuer',
           error:

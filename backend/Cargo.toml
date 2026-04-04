@@ -6,9 +6,7 @@ edition = "2024"
 [dependencies]
 harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
 shared = { path = "../shared" }
-centaurus = { version = "0.4.13", features = [
-  "axum",
-  "logging",
+centaurus = { features = [
   "sea-orm",
   "uuid",
   "hmac",
@@ -21,7 +19,7 @@ centaurus = { version = "0.4.13", features = [
   "lettre",
   "url",
   "image",
-] }
+], version = "0.5.0" }
 uuid = { version = "1.23.0", features = ["v4"] }
 entity = { path = "entity" }
 migration = { path = "migration" }
@@ -76,6 +74,18 @@ aws-sdk-s3 = { version = "1.128.0", features = ["behavior-version-latest"] }
 regex = "1.12.3"
 addr = "0.15.6"
 tower-service = "0.3.3"
+aide = { version = "0.16.0-alpha.3", features = [
+  "axum",
+  "axum-json",
+  "axum-tokio",
+  "axum-query",
+  "axum-ws",
+  "axum-extra",
+  "axum-extra-cookie",
+  "axum-extra-headers",
+  "macros",
+] }
+schemars = { version = "1.2.1", features = ["uuid1", "chrono04", "url2"] }
 
 [[bin]]
 name = "backend"

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use aide::OperationIo;
 use axum::{Extension, extract::FromRequestParts};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
@@ -11,7 +12,7 @@ use tokio::{
 use tracing::debug;
 use uuid::Uuid;
 
-#[derive(Clone, FromRequestParts)]
+#[derive(Clone, FromRequestParts, OperationIo)]
 #[from_request(via(Extension))]
 pub struct UpdateState {
   sessions: Arc<DashMap<Uuid, DashMap<Uuid, Sender<UpdateMessage>>>>,
@@ -19,7 +20,7 @@ pub struct UpdateState {
   update_proxy: Arc<JoinHandle<()>>,
 }
 
-#[derive(Clone, FromRequestParts)]
+#[derive(Clone, FromRequestParts, OperationIo)]
 #[from_request(via(Extension))]
 pub struct Updater(Sender<UpdateTrigger>);
 

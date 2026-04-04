@@ -1,17 +1,22 @@
+use aide::axum::routing::{post_with, put_with};
 use std::{
   sync::Arc,
   time::{Duration, Instant},
 };
 
+use aide::{OperationIo, axum::ApiRouter};
 use axum::{
-  Extension, Json, Router,
+  Extension, Json,
   extract::{FromRequestParts, Query},
-  routing::{post, put},
 };
-use centaurus::{auth::pw::PasswordState, bail, db::init::Connection, error::Result};
+use centaurus::{
+  auth::pw::PasswordState, backend::rate_limiter::RateLimiter, bail, db::init::Connection,
+  error::Result,
+};
 use chrono::Utc;
 use dashmap::DashMap;
 use rand::{RngExt, distr::Alphanumeric};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tokio::{spawn, time::sleep};
 use tower_governor::GovernorLayer;
@@ -20,18 +25,17 @@ use uuid::Uuid;
 use crate::{
   auth::{cli_auth::CLI_TOKEN_LEN, jwt_auth::JwtAuth, jwt_state::JwtState},
   db::DBTrait,
-  rate_limit::RateLimiter,
   ws::state::{UpdateMessage, Updater},
 };
 
-pub fn router(rate_limiter: &mut RateLimiter) -> Router {
-  Router::new()
-    .route("/", put(get_token))
+pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
+  ApiRouter::new()
+    .api_route("/", put_with(get_token, |op| op.id("getToken")))
     .layer(GovernorLayer::new(rate_limiter.create_limiter()))
-    .route("/", post(new_code))
+    .api_route("/", post_with(new_code, |op| op.id("newCode")))
 }
 
-pub fn state(router: Router) -> Router {
+pub fn state(router: ApiRouter) -> ApiRouter {
   let cli_state = CliState {
     codes: Arc::new(DashMap::new()),
   };
@@ -51,13 +55,13 @@ pub fn state(router: Router) -> Router {
   router.layer(Extension(cli_state))
 }
 
-#[derive(FromRequestParts, Clone)]
+#[derive(FromRequestParts, Clone, OperationIo)]
 #[from_request(via(Extension))]
 struct CliState {
   codes: Arc<DashMap<Uuid, (Instant, Uuid)>>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct CodeResponse {
   code: String,
 }
@@ -70,14 +74,13 @@ async fn new_code(auth: JwtAuth, state: CliState) -> Json<CodeResponse> {
   })
 }
 
-#[derive(FromRequestParts, Clone, Deserialize)]
-#[from_request(via(Query))]
+#[derive(Clone, Deserialize, JsonSchema)]
 struct TokenReq {
   code: Uuid,
 }
 
 async fn get_token(
-  token_req: TokenReq,
+  Query(token_req): Query<TokenReq>,
   state: CliState,
   db: Connection,
   jwt: JwtState,

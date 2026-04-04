@@ -1,4 +1,4 @@
-import type { HandleFetch } from '@sveltejs/kit';
+import type { Handle, HandleFetch } from '@sveltejs/kit';
 import { BACKEND_URL } from '$env/static/private';
 
 const backendUrl = new URL(BACKEND_URL);
@@ -16,4 +16,10 @@ export const handleFetch: HandleFetch = async ({ event, request, fetch }) => {
     if (cookie) request.headers.set('cookie', cookie);
   }
   return fetch(request);
+};
+
+export const handle: Handle = async ({ event, resolve }) => {
+  return resolve(event, {
+    filterSerializedResponseHeaders: () => true
+  });
 };

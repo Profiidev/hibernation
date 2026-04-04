@@ -8,7 +8,7 @@
   import { toast } from 'positron-components/components/util/general';
   import { invalidate } from '$app/navigation';
   import { Permission } from '$lib/permissions.svelte';
-  import { deleteGroup, type GroupInfo } from '$lib/backend/groups.svelte';
+  import { deleteGroup, type GroupInfo } from '$lib/client';
 
   const { data } = $props();
 
@@ -34,10 +34,10 @@
     if (!selected) return;
 
     isLoading = true;
-    let ret = await deleteGroup({ uuid: selected.id });
+    let ret = await deleteGroup({ body: { uuid: selected.id } });
     isLoading = false;
 
-    if (ret) {
+    if (ret.error) {
       return { error: 'Failed to delete group' };
     } else {
       toast.success(`Group ${selected.name} deleted successfully`);
@@ -70,7 +70,7 @@
     columnData={{
       deleteGroup: startDeleteGroup,
       user: data.user,
-      admin_group: data.admin_group
+      admin_group: data.admin_group ?? undefined
     }}
   />
 </div>

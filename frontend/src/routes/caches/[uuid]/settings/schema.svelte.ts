@@ -1,4 +1,4 @@
-import { EvictionPolicy } from '$lib/backend/cache.svelte';
+import { EvictionPolicy } from '$lib/client';
 import { z } from 'zod';
 
 export const cacheSchema = z.object({
@@ -18,7 +18,7 @@ export const cacheSchema = z.object({
   allow_force_push: z.boolean().default(false),
   eviction_policy: z
     .array(z.enum(EvictionPolicy))
-    .default([EvictionPolicy.LeastRecentlyUsed])
+    .default([EvictionPolicy.LEAST_RECENTLY_USED])
 });
 
 export const quotaSchema = z.object({

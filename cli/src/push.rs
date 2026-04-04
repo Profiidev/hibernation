@@ -54,7 +54,12 @@ pub async fn push_paths(
     .iter()
     .map(|s| s.trim())
     .filter(|s| !s.is_empty())
-    .flat_map(|s| store_dir.parse(s).ok())
+    .flat_map(|s| {
+      store_dir.parse(s).ok().or_else(|| {
+        error!("Invalid store path: {}, skipping.", s);
+        None
+      })
+    })
     .collect::<Vec<StorePath>>();
 
   let mut visited = HashSet::new();
@@ -62,7 +67,10 @@ pub async fn push_paths(
 
   while let Some(path) = queue.pop() {
     if visited.insert(path.clone()) {
-      let info = conn.query_path_info(&path).await.unwrap().unwrap();
+      let Some(info) = conn.query_path_info(&path).await.unwrap() else {
+        error!("Path {} not found in local store, skipping.", path);
+        continue;
+      };
 
       path_infos.push(PathInfo {
         store_path: path,
@@ -104,7 +112,7 @@ pub async fn push_paths(
 
   let path_infos = path_infos
     .into_iter()
-    .filter(|info| res.paths.contains(&info.store_path))
+    .filter(|info| res.paths.contains(&info.store_path.to_string()))
     .collect::<Vec<_>>();
 
   let to_push = path_infos.len();
@@ -210,11 +218,11 @@ async fn upload_path(
     .upload_path(&UploadPathRequest {
       cache,
       force,
-      store_path: info.store_path.clone(),
-      deriver: info.deriver.clone(),
+      store_path: info.store_path.to_string(),
+      deriver: info.deriver.as_ref().map(|d| d.to_string()),
       nar_size: info.nar_size,
       nar_hash,
-      references: info.references.clone(),
+      references: info.references.iter().map(|r| r.to_string()).collect(),
       signature,
     })
     .await?

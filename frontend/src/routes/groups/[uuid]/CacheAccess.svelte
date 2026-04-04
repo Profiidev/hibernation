@@ -1,14 +1,14 @@
 <script lang="ts">
-  import {
-    AccessType,
-    type CacheMapping,
-    type SimpleCacheInfo
-  } from '$lib/backend/groups.svelte';
   import Multiselect from 'positron-components/components/table/multiselect.svelte';
   import { Button } from 'positron-components/components/ui/form';
   import * as Select from 'positron-components/components/ui/select';
   import Trash from '@lucide/svelte/icons/trash';
   import Plus from '@lucide/svelte/icons/plus';
+  import {
+    AccessType,
+    type CacheMapping,
+    type SimpleCacheInfo
+  } from '$lib/client';
 
   interface Props {
     caches: SimpleCacheInfo[];
@@ -59,8 +59,8 @@
         >
           <Select.Trigger class="w-full">{mapping.access_type}</Select.Trigger>
           <Select.Content>
-            <Select.Item value={AccessType.View} label={AccessType.View} />
-            <Select.Item value={AccessType.Edit} label={AccessType.Edit} />
+            <Select.Item value={AccessType.VIEW} label={AccessType.VIEW} />
+            <Select.Item value={AccessType.EDIT} label={AccessType.EDIT} />
           </Select.Content>
         </Select.Root>
         <Button
@@ -90,7 +90,7 @@
           {
             uuid: remainingCaches[0].uuid,
             name: remainingCaches[0].name,
-            access_type: AccessType.View
+            access_type: AccessType.VIEW
           }
         ];
       }}

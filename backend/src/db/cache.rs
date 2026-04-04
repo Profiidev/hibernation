@@ -5,6 +5,7 @@ use entity::{
 };
 use http::StatusCode;
 use migration::{ExprTrait, Func, NullOrdering, Query, WindowStatement};
+use schemars::JsonSchema;
 use sea_orm::{
   ActiveValue::Set, Condition, FromQueryResult, IntoActiveModel, Iterable, JoinType, QuerySelect,
   QueryTrait, TransactionTrait, prelude::*,
@@ -17,7 +18,7 @@ use crate::{
   permissions::{CacheEdit, CacheView, Permission},
 };
 
-#[derive(Serialize, FromQueryResult)]
+#[derive(Serialize, FromQueryResult, JsonSchema)]
 pub struct CacheInfo {
   #[serde(rename = "uuid")]
   id: Uuid,
@@ -43,7 +44,7 @@ pub struct CacheDetailsQuery {
   has_write_access: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct CacheDetails {
   #[serde(rename = "uuid")]
   id: Uuid,
@@ -62,7 +63,7 @@ pub struct CacheDetails {
   downstream_caches: Vec<Url>,
 }
 
-#[derive(Serialize, FromQueryResult)]
+#[derive(Serialize, FromQueryResult, JsonSchema)]
 pub struct SimpleCacheInfo {
   #[serde(rename = "uuid")]
   id: Uuid,

@@ -4,8 +4,8 @@
   import SidebarContent from './SidebarContent.svelte';
   import SidebarUser from './SidebarUser.svelte';
   import type { Snippet } from 'svelte';
-  import type { UserInfo } from '$lib/backend/user.svelte';
   import { items } from './items.svelte';
+  import type { UserInfo } from '$lib/client';
 
   interface Props {
     user: UserInfo;

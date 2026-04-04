@@ -3,6 +3,7 @@ use std::{io::IsTerminal, path::PathBuf};
 use bytes::Bytes;
 use centaurus::{error::Result, eyre::Context};
 use reqwest::{Body, Client, Method, RequestBuilder, Response};
+use serde::Deserialize;
 use shared::{
   HIBERNATION_VERSION_HEADER,
   api::push::{UploadFinishRequest, UploadInfoResponse, UploadPathRequest, UploadPathResponse},
@@ -25,6 +26,11 @@ pub enum PushInfoResult {
   ForcePushNotAllowed,
   AllPathsExist,
   Success(UploadInfoResponse),
+}
+
+#[derive(Deserialize)]
+struct ValidationResponse {
+  valid: bool,
 }
 
 impl ApiClient {
@@ -110,13 +116,9 @@ impl ApiClient {
 
     check_server_version(&res);
 
-    let valid = res
-      .text()
-      .await?
-      .parse()
-      .context("Failed to parse bool res")?;
+    let valid = res.json::<ValidationResponse>().await.unwrap();
 
-    Ok(valid)
+    Ok(valid.valid)
   }
 
   pub async fn push_info(

@@ -3,6 +3,7 @@ use std::io::Cursor;
 use base64::prelude::*;
 use entity::{cache, cache_access, group, group_user, user};
 use image::{ImageFormat, imageops::FilterType};
+use schemars::JsonSchema;
 use sea_orm::{IntoActiveModel, JoinType, QuerySelect, Set, prelude::*};
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +13,7 @@ pub struct UserTable<'db> {
   db: &'db DatabaseConnection,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct UserInfo {
   pub uuid: Uuid,
   pub name: String,
@@ -21,7 +22,7 @@ pub struct UserInfo {
   pub groups: Vec<SimpleGroupInfo>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct DetailUserInfo {
   pub uuid: Uuid,
   pub name: String,
@@ -32,7 +33,7 @@ pub struct DetailUserInfo {
   pub caches: Vec<CacheMapping>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct SimpleGroupInfo {
   pub uuid: Uuid,
   pub name: String,

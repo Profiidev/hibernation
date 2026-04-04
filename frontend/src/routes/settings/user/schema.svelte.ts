@@ -1,4 +1,4 @@
-import type { UserSettings } from '$lib/backend/settings.svelte';
+import type { UserSettings } from '$lib/client';
 import type { FormValue } from 'positron-components/components/form/types';
 import { z } from 'zod';
 

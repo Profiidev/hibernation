@@ -1,5 +1,5 @@
+use aide::axum::ApiRouter;
 use axum::{
-  Router,
   extract::Request,
   middleware::{Next, from_fn},
   response::Response,
@@ -10,7 +10,7 @@ use shared::HIBERNATION_VERSION_HEADER;
 pub const HIBERNATION_SERVER_VERSION: HeaderValue =
   HeaderValue::from_static(env!("CARGO_PKG_VERSION"));
 
-pub fn middleware(router: Router) -> Router {
+pub fn middleware(router: ApiRouter) -> ApiRouter {
   router.layer(from_fn(version_middleware))
 }
 

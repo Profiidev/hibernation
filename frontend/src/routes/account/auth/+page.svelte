@@ -6,19 +6,29 @@
   import { Spinner } from 'positron-components/components/ui/spinner';
   import Save from '@lucide/svelte/icons/save';
   import { toast } from 'positron-components/components/util/general';
-  import { updatePassword } from '$lib/backend/user.svelte';
-  import { RequestError } from 'positron-components/backend';
   import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
-
-  let { data } = $props();
+  import { updatePassword } from '$lib/client';
+  import { getEncrypt } from '$lib/backend/auth.svelte';
 
   const onsubmit = async (form: FormValue<typeof authSettings>) => {
-    let ret = await updatePassword(form);
+    let encrypt = getEncrypt();
+    if (!encrypt) {
+      return {
+        error: 'Encryption function not available.'
+      };
+    }
 
-    if (ret) {
-      if (ret === RequestError.Forbidden) {
-        return { error: 'Old password is incorrect' };
-      } else if (ret === RequestError.TooManyRequests) {
+    let ret = await updatePassword({
+      body: {
+        old_password: encrypt.encrypt(form.old_password || '') || '',
+        new_password: encrypt.encrypt(form.new_password || '') || ''
+      }
+    });
+
+    if (ret.error) {
+      if (ret.response.status === 403) {
+        return { error: 'Old password is incorrect', field: 'old_password' };
+      } else if (ret.response.status === 429) {
         return { error: 'Rate limit exceeded. Please try again later.' };
       } else {
         return { error: 'An unknown error occurred' };

@@ -1,4 +1,5 @@
-use axum::{Router, routing::get};
+use aide::axum::ApiRouter;
+use aide::axum::routing::get_with;
 use centaurus::{db::init::Connection, error::Result};
 
 use crate::{
@@ -16,14 +17,14 @@ mod push;
 mod state;
 pub mod storage;
 
-pub fn router() -> Router {
-  Router::new()
+pub fn router() -> ApiRouter {
+  ApiRouter::new()
     .nest("/management", management::router())
     .nest("/push", push::router())
-    .route("/test", get(test))
+    .api_route("/test", get_with(test, |op| op.id("test")))
 }
 
-pub async fn state(router: Router, db: Connection, config: &Config) -> Router {
+pub async fn state(router: ApiRouter, db: Connection, config: &Config) -> ApiRouter {
   let storage = FileStorage::init(&config.storage)
     .await
     .expect("Failed to init FileStorage");
