@@ -1,7 +1,5 @@
-use aide::axum::{
-  ApiRouter,
-  routing::{get, post},
-};
+use aide::axum::ApiRouter;
+use aide::axum::routing::{get_with, post_with};
 use axum::Json;
 use axum_extra::extract::CookieJar;
 use centaurus::{
@@ -21,9 +19,9 @@ use crate::{
 
 pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
   ApiRouter::new()
-    .api_route("/", post(authenticate))
+    .api_route("/", post_with(authenticate, |op| op.id("authenticate")))
     .layer(GovernorLayer::new(rate_limiter.create_limiter()))
-    .api_route("/", get(key))
+    .api_route("/", get_with(key, |op| op.id("key")))
 }
 
 #[derive(Serialize, JsonSchema)]

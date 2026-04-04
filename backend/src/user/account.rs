@@ -1,6 +1,7 @@
+use aide::axum::routing::post_with;
 use std::io::Cursor;
 
-use aide::axum::{ApiRouter, routing::post};
+use aide::axum::ApiRouter;
 use axum::Json;
 use base64::prelude::*;
 use centaurus::{
@@ -20,10 +21,19 @@ use crate::{
 
 pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
   ApiRouter::new()
-    .api_route("/avatar", post(update_avatar))
-    .api_route("/password", post(update_password))
+    .api_route(
+      "/avatar",
+      post_with(update_avatar, |op| op.id("updateAvatar")),
+    )
+    .api_route(
+      "/password",
+      post_with(update_password, |op| op.id("updatePassword")),
+    )
     .layer(GovernorLayer::new(rate_limiter.create_limiter()))
-    .api_route("/update", post(update_account))
+    .api_route(
+      "/update",
+      post_with(update_account, |op| op.id("updateAccount")),
+    )
 }
 
 #[derive(Deserialize, JsonSchema)]

@@ -1,7 +1,5 @@
-use aide::axum::{
-  ApiRouter,
-  routing::{get, post},
-};
+use aide::axum::ApiRouter;
+use aide::axum::routing::{get_with, post_with};
 use argon2::password_hash::SaltString;
 use axum::Json;
 use axum_extra::extract::CookieJar;
@@ -17,8 +15,8 @@ use crate::{auth::jwt_state::JwtState, cache::storage::FileStorage, db::DBTrait}
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
-    .api_route("/", post(complete_setup))
-    .api_route("/", get(is_setup))
+    .api_route("/", post_with(complete_setup, |op| op.id("completeSetup")))
+    .api_route("/", get_with(is_setup, |op| op.id("isSetup")))
 }
 
 pub async fn create_admin_group(db: &Connection) -> Result<()> {

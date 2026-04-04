@@ -1,4 +1,5 @@
-use aide::axum::{ApiRouter, routing::get};
+use aide::axum::ApiRouter;
+use aide::axum::routing::get_with;
 use axum::Json;
 use axum_extra::extract::CookieJar;
 
@@ -8,7 +9,7 @@ use crate::auth::{
 };
 
 pub fn router() -> ApiRouter {
-  ApiRouter::new().api_route("/", get(test_token))
+  ApiRouter::new().api_route("/", get_with(test_token, |op| op.id("testToken")))
 }
 
 async fn test_token(

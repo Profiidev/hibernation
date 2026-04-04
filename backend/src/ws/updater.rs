@@ -1,4 +1,5 @@
-use aide::axum::{ApiRouter, IntoApiResponse, routing::get};
+use aide::axum::routing::get_with;
+use aide::axum::{ApiRouter, IntoApiResponse};
 use axum::extract::{
   WebSocketUpgrade,
   ws::{Message, WebSocket},
@@ -13,7 +14,7 @@ use crate::{
 };
 
 pub fn router() -> ApiRouter {
-  ApiRouter::new().api_route("/updater", get(update))
+  ApiRouter::new().route("/updater", get_with(update, |op| op.id("update")))
 }
 
 async fn update(auth: JwtAuth, ws: WebSocketUpgrade, state: UpdateState) -> impl IntoApiResponse {

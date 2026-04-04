@@ -1,7 +1,5 @@
-use aide::axum::{
-  ApiRouter,
-  routing::{get, post},
-};
+use aide::axum::ApiRouter;
+use aide::axum::routing::{get_with, post_with};
 use axum::Json;
 use centaurus::{
   db::init::Connection,
@@ -26,11 +24,26 @@ use crate::{
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
-    .api_route("/general", get(general_settings))
-    .api_route("/user", get(get_settings::<UserSettings>))
-    .api_route("/user", post(save_user_settings))
-    .api_route("/mail", get(get_settings::<MailSettings>))
-    .api_route("/mail", post(save_mail_settings))
+    .api_route(
+      "/general",
+      get_with(general_settings, |op| op.id("generalSettings")),
+    )
+    .api_route(
+      "/user",
+      get_with(get_settings::<UserSettings>, |op| op.id("getSettings")),
+    )
+    .api_route(
+      "/user",
+      post_with(save_user_settings, |op| op.id("saveUserSettings")),
+    )
+    .api_route(
+      "/mail",
+      get_with(get_settings::<MailSettings>, |op| op.id("getSettings")),
+    )
+    .api_route(
+      "/mail",
+      post_with(save_mail_settings, |op| op.id("saveMailSettings")),
+    )
 }
 
 #[derive(Serialize, JsonSchema)]

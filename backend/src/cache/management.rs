@@ -1,12 +1,7 @@
+use aide::axum::routing::{delete_with, get_with, post_with};
 use std::ops::Deref;
 
-use aide::{
-  OperationIo,
-  axum::{
-    ApiRouter,
-    routing::{delete, get, post},
-  },
-};
+use aide::{OperationIo, axum::ApiRouter};
 use axum::{
   Extension, Json,
   extract::{FromRequestParts, Path},
@@ -35,14 +30,26 @@ use crate::{
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
-    .api_route("/", get(list_caches))
-    .api_route("/", post(create_cache))
-    .api_route("/", delete(delete_cache))
-    .api_route("/{uuid}", get(cache_details))
-    .api_route("/{uuid}/search", post(search_store_paths))
-    .api_route("/{uuid}", post(edit_cache))
-    .api_route("/{uuid}", delete(clear_cache))
-    .api_route("/{uuid}/path", delete(delete_path))
+    .api_route("/", get_with(list_caches, |op| op.id("listCaches")))
+    .api_route("/", post_with(create_cache, |op| op.id("createCache")))
+    .api_route("/", delete_with(delete_cache, |op| op.id("deleteCache")))
+    .api_route(
+      "/{uuid}",
+      get_with(cache_details, |op| op.id("cacheDetails")),
+    )
+    .api_route(
+      "/{uuid}/search",
+      post_with(search_store_paths, |op| op.id("searchStorePaths")),
+    )
+    .api_route("/{uuid}", post_with(edit_cache, |op| op.id("editCache")))
+    .api_route(
+      "/{uuid}",
+      delete_with(clear_cache, |op| op.id("clearCache")),
+    )
+    .api_route(
+      "/{uuid}/path",
+      delete_with(delete_path, |op| op.id("deletePath")),
+    )
 }
 
 #[derive(FromRequestParts, Clone, OperationIo)]

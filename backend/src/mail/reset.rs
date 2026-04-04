@@ -1,4 +1,5 @@
-use aide::axum::{ApiRouter, routing::post};
+use aide::axum::ApiRouter;
+use aide::axum::routing::post_with;
 use axum::Json;
 use centaurus::{auth::pw::PasswordState, db::init::Connection};
 use schemars::JsonSchema;
@@ -17,8 +18,14 @@ use crate::{
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
-    .api_route("/send", post(send_reset_link))
-    .api_route("/confirm", post(reset_password))
+    .api_route(
+      "/send",
+      post_with(send_reset_link, |op| op.id("sendResetLink")),
+    )
+    .api_route(
+      "/confirm",
+      post_with(reset_password, |op| op.id("resetPassword")),
+    )
 }
 
 #[derive(JsonSchema, Deserialize)]

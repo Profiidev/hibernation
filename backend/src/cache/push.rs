@@ -1,15 +1,10 @@
+use aide::axum::routing::{post_with, put_with};
 use std::{
   sync::Arc,
   time::{Duration, Instant},
 };
 
-use aide::{
-  OperationIo,
-  axum::{
-    ApiRouter,
-    routing::{post, put},
-  },
-};
+use aide::{OperationIo, axum::ApiRouter};
 use async_compression::tokio::bufread::ZstdDecoder;
 use axum::{
   Extension, Json,
@@ -55,13 +50,16 @@ use crate::{
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
-    .api_route("/info", post(upload_info))
-    .api_route("/", post(upload_path))
+    .api_route("/info", post_with(upload_info, |op| op.id("uploadInfo")))
+    .api_route("/", post_with(upload_path, |op| op.id("uploadPath")))
     .api_route(
       "/{uuid}",
-      post(upload_nar).layer(DefaultBodyLimit::disable()),
+      post_with(upload_nar, |op| op.id("uploadNar")).layer(DefaultBodyLimit::disable()),
     )
-    .api_route("/{uuid}", put(upload_finish))
+    .api_route(
+      "/{uuid}",
+      put_with(upload_finish, |op| op.id("uploadFinish")),
+    )
 }
 
 struct UploadFinishData {

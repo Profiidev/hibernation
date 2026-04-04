@@ -1,13 +1,11 @@
+use aide::axum::routing::get_with;
 use std::{
   collections::HashMap,
   sync::Arc,
   time::{Duration, Instant},
 };
 
-use aide::{
-  OperationIo,
-  axum::{ApiRouter, routing::get},
-};
+use aide::{OperationIo, axum::ApiRouter};
 use argon2::password_hash::SaltString;
 use axum::{
   Extension, Json,
@@ -49,9 +47,12 @@ pub const OIDC_STATE: &str = "oidc_state";
 
 pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
   ApiRouter::new()
-    .api_route("/url", get(oidc_url))
+    .api_route("/url", get_with(oidc_url, |op| op.id("oidcUrl")))
     .layer(GovernorLayer::new(rate_limiter.create_limiter()))
-    .api_route("/callback", get(oidc_callback))
+    .api_route(
+      "/callback",
+      get_with(oidc_callback, |op| op.id("oidcCallback")),
+    )
 }
 
 #[derive(Clone, FromRequestParts, Debug, OperationIo)]

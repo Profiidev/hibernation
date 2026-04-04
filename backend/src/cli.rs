@@ -1,15 +1,10 @@
+use aide::axum::routing::{post_with, put_with};
 use std::{
   sync::Arc,
   time::{Duration, Instant},
 };
 
-use aide::{
-  OperationIo,
-  axum::{
-    ApiRouter,
-    routing::{post, put},
-  },
-};
+use aide::{OperationIo, axum::ApiRouter};
 use axum::{
   Extension, Json,
   extract::{FromRequestParts, Query},
@@ -35,9 +30,9 @@ use crate::{
 
 pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
   ApiRouter::new()
-    .api_route("/", put(get_token))
+    .api_route("/", put_with(get_token, |op| op.id("getToken")))
     .layer(GovernorLayer::new(rate_limiter.create_limiter()))
-    .api_route("/", post(new_code))
+    .api_route("/", post_with(new_code, |op| op.id("newCode")))
 }
 
 pub fn state(router: ApiRouter) -> ApiRouter {

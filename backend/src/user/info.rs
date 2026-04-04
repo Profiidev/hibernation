@@ -1,4 +1,5 @@
-use aide::axum::{ApiRouter, routing::get};
+use aide::axum::ApiRouter;
+use aide::axum::routing::get_with;
 use axum::Json;
 use centaurus::{db::init::Connection, error::Result};
 use schemars::JsonSchema;
@@ -8,7 +9,7 @@ use uuid::Uuid;
 use crate::{auth::jwt_auth::JwtAuth, db::DBTrait};
 
 pub fn router() -> ApiRouter {
-  ApiRouter::new().api_route("/", get(info))
+  ApiRouter::new().api_route("/", get_with(info, |op| op.id("info")))
 }
 
 #[derive(Serialize, JsonSchema)]

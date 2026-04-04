@@ -1,7 +1,5 @@
-use aide::axum::{
-  ApiRouter,
-  routing::{delete, get, post, put},
-};
+use aide::axum::ApiRouter;
+use aide::axum::routing::{delete_with, get_with, post_with, put_with};
 use axum::{Json, extract::Path};
 use centaurus::{bail, db::init::Connection, error::Result};
 use schemars::JsonSchema;
@@ -21,13 +19,19 @@ use crate::{
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
-    .api_route("/", get(list_groups))
-    .api_route("/", post(create_group))
-    .api_route("/", delete(delete_group))
-    .api_route("/", put(edit_group))
-    .api_route("/{uuid}", get(group_info))
-    .api_route("/users", get(list_users_simple))
-    .api_route("/caches", get(list_caches_simple))
+    .api_route("/", get_with(list_groups, |op| op.id("listGroups")))
+    .api_route("/", post_with(create_group, |op| op.id("createGroup")))
+    .api_route("/", delete_with(delete_group, |op| op.id("deleteGroup")))
+    .api_route("/", put_with(edit_group, |op| op.id("editGroup")))
+    .api_route("/{uuid}", get_with(group_info, |op| op.id("groupInfo")))
+    .api_route(
+      "/users",
+      get_with(list_users_simple, |op| op.id("listUsersSimple")),
+    )
+    .api_route(
+      "/caches",
+      get_with(list_caches_simple, |op| op.id("listCachesSimple")),
+    )
 }
 
 #[derive(Serialize, JsonSchema)]

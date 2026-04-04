@@ -1,7 +1,5 @@
-use aide::axum::{
-  ApiRouter,
-  routing::{delete, get, post, put},
-};
+use aide::axum::ApiRouter;
+use aide::axum::routing::{delete_with, get_with, post_with, put_with};
 use argon2::password_hash::SaltString;
 use axum::{Json, extract::Path};
 use base64::prelude::*;
@@ -36,16 +34,28 @@ const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
-    .api_route("/", get(list_users))
-    .api_route("/", post(create_user))
-    .api_route("/", delete(delete_user))
-    .api_route("/", put(edit_user))
-    .api_route("/{uuid}", get(user_info))
-    .api_route("/mail", get(mail_active))
-    .api_route("/groups", get(list_groups_simple))
-    .api_route("/caches", get(list_caches_simple))
-    .api_route("/avatar", delete(reset_user_avatar))
-    .api_route("/password", put(reset_user_password))
+    .api_route("/", get_with(list_users, |op| op.id("listUsers")))
+    .api_route("/", post_with(create_user, |op| op.id("createUser")))
+    .api_route("/", delete_with(delete_user, |op| op.id("deleteUser")))
+    .api_route("/", put_with(edit_user, |op| op.id("editUser")))
+    .api_route("/{uuid}", get_with(user_info, |op| op.id("userInfo")))
+    .api_route("/mail", get_with(mail_active, |op| op.id("mailActive")))
+    .api_route(
+      "/groups",
+      get_with(list_groups_simple, |op| op.id("listGroupsSimple")),
+    )
+    .api_route(
+      "/caches",
+      get_with(list_caches_simple, |op| op.id("listCachesSimple")),
+    )
+    .api_route(
+      "/avatar",
+      delete_with(reset_user_avatar, |op| op.id("resetUserAvatar")),
+    )
+    .api_route(
+      "/password",
+      put_with(reset_user_password, |op| op.id("resetUserPassword")),
+    )
 }
 
 async fn list_users(_auth: JwtAuth<UserView>, db: Connection) -> Result<Json<Vec<UserInfo>>> {

@@ -1,7 +1,5 @@
-use aide::axum::{
-  ApiRouter,
-  routing::{delete, get, post, put},
-};
+use aide::axum::ApiRouter;
+use aide::axum::routing::{delete_with, get_with, post_with, put_with};
 use axum::{Json, extract::Path};
 use centaurus::{auth::pw::PasswordState, bail, db::init::Connection, error::Result};
 use chrono::{DateTime, Utc};
@@ -18,12 +16,15 @@ use crate::{
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
-    .api_route("/", get(list_tokens))
-    .api_route("/", post(create_token))
-    .api_route("/", delete(delete_token))
-    .api_route("/", put(edit_token))
-    .api_route("/{uuid}", get(token_info))
-    .api_route("/{uuid}", post(token_regenerate))
+    .api_route("/", get_with(list_tokens, |op| op.id("listTokens")))
+    .api_route("/", post_with(create_token, |op| op.id("createToken")))
+    .api_route("/", delete_with(delete_token, |op| op.id("deleteToken")))
+    .api_route("/", put_with(edit_token, |op| op.id("editToken")))
+    .api_route("/{uuid}", get_with(token_info, |op| op.id("tokenInfo")))
+    .api_route(
+      "/{uuid}",
+      post_with(token_regenerate, |op| op.id("tokenRegenerate")),
+    )
 }
 
 #[derive(Serialize, JsonSchema)]
