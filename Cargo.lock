@@ -935,7 +935,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "base64",
- "centaurus 0.4.13 (git+https://github.com/Profiidev/centaurus?rev=c2dc876c050f2cfd581f4a6d55f1d35ed7f6402a)",
+ "centaurus 0.4.13 (git+https://github.com/Profiidev/centaurus?rev=e286c157fecabc8af2650d75f07746a5a2fefd56)",
  "chrono",
  "dashmap",
  "dotenvy",
@@ -1227,7 +1227,7 @@ dependencies = [
 [[package]]
 name = "centaurus"
 version = "0.4.13"
-source = "git+https://github.com/Profiidev/centaurus?rev=c2dc876c050f2cfd581f4a6d55f1d35ed7f6402a#c2dc876c050f2cfd581f4a6d55f1d35ed7f6402a"
+source = "git+https://github.com/Profiidev/centaurus?rev=e286c157fecabc8af2650d75f07746a5a2fefd56#e286c157fecabc8af2650d75f07746a5a2fefd56"
 dependencies = [
  "aide",
  "argon2",
@@ -1235,7 +1235,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "base64",
- "centaurus-derive 0.1.0 (git+https://github.com/Profiidev/centaurus?rev=c2dc876c050f2cfd581f4a6d55f1d35ed7f6402a)",
+ "centaurus-derive 0.1.0 (git+https://github.com/Profiidev/centaurus?rev=e286c157fecabc8af2650d75f07746a5a2fefd56)",
  "color-eyre",
  "dashmap",
  "eyre",
@@ -1280,7 +1280,7 @@ dependencies = [
 [[package]]
 name = "centaurus-derive"
 version = "0.1.0"
-source = "git+https://github.com/Profiidev/centaurus?rev=c2dc876c050f2cfd581f4a6d55f1d35ed7f6402a#c2dc876c050f2cfd581f4a6d55f1d35ed7f6402a"
+source = "git+https://github.com/Profiidev/centaurus?rev=e286c157fecabc8af2650d75f07746a5a2fefd56#e286c157fecabc8af2650d75f07746a5a2fefd56"
 dependencies = [
  "quote",
  "syn 2.0.117",

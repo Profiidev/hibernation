@@ -1,6 +1,7 @@
 use aide::OperationIo;
 use axum::{Extension, extract::FromRequestParts};
 use centaurus::{
+  Config,
   backend::config::{BaseConfig, MetricsConfig},
   db::config::DBConfig,
 };
@@ -12,13 +13,15 @@ use serde::{Deserialize, Serialize};
 use tracing::{instrument, warn};
 use url::Url;
 
-#[derive(Deserialize, Serialize, Clone, FromRequestParts, OperationIo)]
+#[derive(Deserialize, Serialize, Clone, FromRequestParts, OperationIo, Config)]
 #[from_request(via(Extension))]
 pub struct Config {
+  #[base]
   #[serde(flatten)]
   pub base: BaseConfig,
   #[serde(flatten)]
   pub db: DBConfig,
+  #[metrics]
   #[serde(flatten)]
   pub metrics: MetricsConfig,
   #[serde(flatten)]
@@ -31,16 +34,6 @@ pub struct Config {
   pub auth_pepper: String,
   pub auth_issuer: String,
   pub auth_jwt_expiration: i64,
-}
-
-impl centaurus::backend::config::Config for Config {
-  fn base(&self) -> &BaseConfig {
-    &self.base
-  }
-
-  fn metrics(&self) -> &MetricsConfig {
-    &self.metrics
-  }
 }
 
 impl Default for Config {
