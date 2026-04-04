@@ -48,10 +48,8 @@ impl Mailer {
 
   pub async fn try_init(&self, smtp_config: &SmtpSettings) -> Result<()> {
     let mut guard = self.0.lock().await;
-    if guard.is_none() {
-      let config = MailConfig::new(smtp_config)?;
-      *guard = Some(config);
-    }
+    let config = MailConfig::new(smtp_config)?;
+    *guard = Some(config);
     Ok(())
   }
 
