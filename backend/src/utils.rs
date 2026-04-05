@@ -1,4 +1,5 @@
 use centaurus::{
+  UpdateMessage,
   backend::{
     auth::permission::{self, Permission},
     websocket,
@@ -10,33 +11,27 @@ use uuid::Uuid;
 
 pub type Updater = websocket::state::Updater<UpdateMessage>;
 
-impl websocket::state::UpdateMessage for UpdateMessage {
-  fn settings() -> Self {
-    Self::Settings
-  }
-
-  fn user(uuid: Uuid) -> Self {
-    Self::User { uuid }
-  }
-
-  fn group(uuid: Uuid) -> Self {
-    Self::Group { uuid }
-  }
-
-  fn user_permissions() -> Self {
-    Self::UserPermissions
-  }
-}
-
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, UpdateMessage)]
 #[serde(tag = "type")]
 pub enum UpdateMessage {
+  #[update_message(settings)]
   Settings,
-  User { uuid: Uuid },
+  #[update_message(user)]
+  User {
+    uuid: Uuid,
+  },
+  #[update_message(user_permissions)]
   UserPermissions,
-  Group { uuid: Uuid },
-  Token { uuid: Uuid },
-  Cache { uuid: Uuid },
+  #[update_message(group)]
+  Group {
+    uuid: Uuid,
+  },
+  Token {
+    uuid: Uuid,
+  },
+  Cache {
+    uuid: Uuid,
+  },
 }
 
 pub fn permissions() -> Vec<&'static str> {

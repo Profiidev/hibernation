@@ -1,7 +1,7 @@
 use std::{io::IsTerminal, path::PathBuf};
 
 use bytes::Bytes;
-use centaurus::{backend::middleware::version::HEADER_NAME, error::Result, eyre::Context};
+use centaurus::{VERSION_HEADER_NAME, error::Result, eyre::Context};
 use reqwest::{Body, Client, Method, RequestBuilder, Response};
 use serde::Deserialize;
 use shared::api::push::{
@@ -202,7 +202,11 @@ impl ApiClient {
 }
 
 fn check_server_version(res: &Response) {
-  if let Some(version) = res.headers().get(HEADER_NAME).and_then(|v| v.to_str().ok()) {
+  if let Some(version) = res
+    .headers()
+    .get(VERSION_HEADER_NAME)
+    .and_then(|v| v.to_str().ok())
+  {
     if version != env!("CARGO_PKG_VERSION") {
       warn!(
         "Warning: Server version ({version}) does not match client version ({}). Consider updating your CLI.",
