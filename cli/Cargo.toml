@@ -11,19 +11,24 @@ harmonia-store-remote = { git = "https://github.com/nix-community/harmonia", rev
 harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
 harmonia-protocol = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
 shared = { path = "../shared" }
-tokio = { version = "1.51.0", features = ["macros", "rt-multi-thread", "fs", "io-std"] }
+tokio = { version = "1.51.0", features = [
+  "macros",
+  "rt-multi-thread",
+  "fs",
+  "io-std",
+] }
 tracing = "0.1.44"
 async-compression = { version = "0.4.41", features = ["tokio", "zstd"] }
 serde = { version = "1.0.228", features = ["derive"] }
 url = { version = "2.5.8", features = ["serde"] }
-centaurus = { features = [
+centaurus = { version = "0.6.0", default-features = false, features = [
   "serde",
   "error",
   "url",
   "logging",
   "serde_json",
   "reqwest",
-], git = "https://github.com/ProfiiDev/centaurus", rev = "71d378e8f4b317d379cd26fabcc152bf7eb3afc3", default-features = false }
+] }
 dirs = "6.0.0"
 serde_json = "1.0.149"
 clap = { version = "4.6.0", features = ["derive"] }

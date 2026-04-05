@@ -1208,8 +1208,9 @@ dependencies = [
 
 [[package]]
 name = "centaurus"
-version = "0.5.0"
-source = "git+https://github.com/ProfiiDev/centaurus?rev=71d378e8f4b317d379cd26fabcc152bf7eb3afc3#71d378e8f4b317d379cd26fabcc152bf7eb3afc3"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea85a9febcbb2f0552ad462512d70dcc7dfebcdda98ae3313b2fe18e0fc52b89"
 dependencies = [
  "addr",
  "aide",
@@ -1259,8 +1260,9 @@ dependencies = [
 
 [[package]]
 name = "centaurus-derive"
-version = "0.1.1"
-source = "git+https://github.com/ProfiiDev/centaurus?rev=71d378e8f4b317d379cd26fabcc152bf7eb3afc3#71d378e8f4b317d379cd26fabcc152bf7eb3afc3"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fa5ac9de537a1ad8f171f92b6f68970ba31f3770e36f96a8803b4a5aab23e03"
 dependencies = [
  "centaurus-macro-utils",
  "quote",
@@ -1270,7 +1272,8 @@ dependencies = [
 [[package]]
 name = "centaurus-macro-utils"
 version = "0.1.0"
-source = "git+https://github.com/ProfiiDev/centaurus?rev=71d378e8f4b317d379cd26fabcc152bf7eb3afc3#71d378e8f4b317d379cd26fabcc152bf7eb3afc3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f599620b1783cf4fbba8e0f9f3951b780a181061ac5a4826732637a394f0d3c"
 dependencies = [
  "syn 2.0.117",
  "toml_edit",
