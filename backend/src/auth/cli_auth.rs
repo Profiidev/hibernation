@@ -1,14 +1,7 @@
 use std::marker::PhantomData;
 
 use aide::OperationIo;
-use axum::{
-  RequestPartsExt,
-  extract::{FromRequestParts, OptionalFromRequestParts},
-};
-use axum_extra::{
-  TypedHeader,
-  headers::{Authorization, authorization::Basic},
-};
+use axum::extract::{FromRequestParts, OptionalFromRequestParts};
 use centaurus::{
   backend::auth::{
     jwt::jwt_from_request,
@@ -43,21 +36,7 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for CliAuth<P> {
   type Rejection = ErrorReport;
 
   async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-    let token = match jwt_from_request(parts, JWT_COOKIE_NAME).await {
-      Ok(token) => token,
-      Err(e) => {
-        let Some(token) = parts
-          .extract::<TypedHeader<Authorization<Basic>>>()
-          .await
-          .ok()
-          .map(|TypedHeader(Authorization(basic))| basic.password().to_string())
-        else {
-          return Err(e);
-        };
-
-        token
-      }
-    };
+    let token = jwt_from_request(parts, JWT_COOKIE_NAME).await?;
 
     let db = parts.extract_state::<Connection>().await;
     let user = if token.len() == CLI_TOKEN_LEN {

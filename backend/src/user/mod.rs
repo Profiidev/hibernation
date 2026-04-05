@@ -4,6 +4,7 @@ use centaurus::backend::middleware::rate_limiter::RateLimiter;
 mod account;
 mod info;
 mod management;
+mod template;
 
 pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
   ApiRouter::new()

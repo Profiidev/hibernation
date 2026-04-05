@@ -1,6 +1,8 @@
 use aide::axum::ApiRouter;
 use centaurus::backend::{auth, middleware::rate_limiter::RateLimiter};
 
+pub use auth::state;
+
 pub mod cli_auth;
 mod test_token;
 

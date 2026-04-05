@@ -23,6 +23,7 @@ use uuid::Uuid;
 
 use crate::permissions::CacheEdit;
 use crate::updater::{UpdateMessage, Updater};
+use crate::user::template;
 use crate::{
   config::Config,
   db::{
@@ -31,7 +32,6 @@ use crate::{
     group::CacheMapping,
     user::{DetailUserInfo, UserInfo},
   },
-  mail::templates,
 };
 
 const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789)(*&^%$#@!~";
@@ -160,7 +160,7 @@ async fn create_user(
         req.name,
         req.email,
         subject.to_string(),
-        templates::init_password(config.site_url.as_str(), &password),
+        template::init_password(config.site_url.as_str(), &password),
       )
       .await?;
   }

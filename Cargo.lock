@@ -935,7 +935,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "base64",
- "centaurus 0.5.0 (git+https://github.com/ProfiiDev/centaurus?rev=f562c1d868ce96f37072c115d2aff76e41f15211)",
+ "centaurus 0.5.0 (git+https://github.com/ProfiiDev/centaurus?rev=b931613ce56e418da854bd6c34a2f02774de3534)",
  "chrono",
  "dashmap",
  "dotenvy",
@@ -1256,7 +1256,7 @@ dependencies = [
 [[package]]
 name = "centaurus"
 version = "0.5.0"
-source = "git+https://github.com/ProfiiDev/centaurus?rev=f562c1d868ce96f37072c115d2aff76e41f15211#f562c1d868ce96f37072c115d2aff76e41f15211"
+source = "git+https://github.com/ProfiiDev/centaurus?rev=b931613ce56e418da854bd6c34a2f02774de3534#b931613ce56e418da854bd6c34a2f02774de3534"
 dependencies = [
  "addr",
  "aide",
@@ -1265,7 +1265,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "base64",
- "centaurus-derive 0.1.1 (git+https://github.com/ProfiiDev/centaurus?rev=f562c1d868ce96f37072c115d2aff76e41f15211)",
+ "centaurus-derive 0.1.1 (git+https://github.com/ProfiiDev/centaurus?rev=b931613ce56e418da854bd6c34a2f02774de3534)",
  "chrono",
  "color-eyre",
  "dashmap",
@@ -1316,9 +1316,9 @@ dependencies = [
 [[package]]
 name = "centaurus-derive"
 version = "0.1.1"
-source = "git+https://github.com/ProfiiDev/centaurus?rev=f562c1d868ce96f37072c115d2aff76e41f15211#f562c1d868ce96f37072c115d2aff76e41f15211"
+source = "git+https://github.com/ProfiiDev/centaurus?rev=b931613ce56e418da854bd6c34a2f02774de3534#b931613ce56e418da854bd6c34a2f02774de3534"
 dependencies = [
- "centaurus-macro-utils 0.1.0 (git+https://github.com/ProfiiDev/centaurus?rev=f562c1d868ce96f37072c115d2aff76e41f15211)",
+ "centaurus-macro-utils 0.1.0 (git+https://github.com/ProfiiDev/centaurus?rev=b931613ce56e418da854bd6c34a2f02774de3534)",
  "quote",
  "syn 2.0.117",
 ]
@@ -1335,7 +1335,7 @@ dependencies = [
 [[package]]
 name = "centaurus-macro-utils"
 version = "0.1.0"
-source = "git+https://github.com/ProfiiDev/centaurus?rev=f562c1d868ce96f37072c115d2aff76e41f15211#f562c1d868ce96f37072c115d2aff76e41f15211"
+source = "git+https://github.com/ProfiiDev/centaurus?rev=b931613ce56e418da854bd6c34a2f02774de3534#b931613ce56e418da854bd6c34a2f02774de3534"
 dependencies = [
  "syn 2.0.117",
  "toml_edit",

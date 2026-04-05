@@ -20,7 +20,7 @@ centaurus = { features = [
   "url",
   "image",
   "gravatar",
-], git = "https://github.com/ProfiiDev/centaurus", rev = "f562c1d868ce96f37072c115d2aff76e41f15211" }
+], git = "https://github.com/ProfiiDev/centaurus", rev = "b931613ce56e418da854bd6c34a2f02774de3534" }
 uuid = { version = "1.23.0", features = ["v4"] }
 entity = { path = "entity" }
 migration = { path = "migration" }
