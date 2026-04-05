@@ -5,7 +5,12 @@ use aide::axum::ApiRouter;
 use axum::Json;
 use base64::prelude::*;
 use centaurus::{
-  auth::pw::PasswordState, backend::rate_limiter::RateLimiter, bail, db::init::Connection,
+  backend::{
+    auth::{jwt_auth::JwtAuth, pw_state::PasswordState},
+    middleware::rate_limiter::RateLimiter,
+  },
+  bail,
+  db::{init::Connection, tables::ConnectionExt},
   error::Result,
 };
 use image::{ImageFormat, imageops::FilterType};
@@ -14,9 +19,8 @@ use serde::Deserialize;
 use tower_governor::GovernorLayer;
 
 use crate::{
-  auth::jwt_auth::JwtAuth,
   db::DBTrait,
-  ws::state::{UpdateMessage, Updater},
+  updater::{UpdateMessage, Updater},
 };
 
 pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
@@ -83,7 +87,9 @@ async fn update_avatar(
   img.write_to(&mut buf, ImageFormat::WebP)?;
   let avatar = BASE64_STANDARD.encode(buf.into_inner());
 
-  db.user().update_user_avatar(auth.user_id, avatar).await?;
+  db.user_ext()
+    .update_user_avatar(auth.user_id, avatar)
+    .await?;
   updater
     .broadcast(UpdateMessage::User { uuid: auth.user_id })
     .await;

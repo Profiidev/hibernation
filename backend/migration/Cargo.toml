@@ -12,7 +12,7 @@ path = "src/lib.rs"
 async-std = { version = "1", features = ["attributes", "tokio1"] }
 centaurus = { features = [
   "sea-orm",
-], git = "https://github.com/ProfiiDev/centaurus", rev = "e505ff4808f777a46f82a347b1eaa0139d07fb1a" }
+], git = "https://github.com/ProfiiDev/centaurus", rev = "38ebef8b0a15d40ef8c1cb7f6e359e90ea99d65c" }
 
 [dependencies.sea-orm-migration]
 version = "1.1.20"

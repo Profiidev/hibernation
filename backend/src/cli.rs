@@ -10,7 +10,12 @@ use axum::{
   extract::{FromRequestParts, Query},
 };
 use centaurus::{
-  auth::pw::PasswordState, backend::rate_limiter::RateLimiter, bail, db::init::Connection,
+  backend::{
+    auth::{jwt_auth::JwtAuth, jwt_state::JwtState, pw_state::PasswordState},
+    middleware::rate_limiter::RateLimiter,
+  },
+  bail,
+  db::init::Connection,
   error::Result,
 };
 use chrono::Utc;
@@ -23,9 +28,9 @@ use tower_governor::GovernorLayer;
 use uuid::Uuid;
 
 use crate::{
-  auth::{cli_auth::CLI_TOKEN_LEN, jwt_auth::JwtAuth, jwt_state::JwtState},
+  auth::cli_auth::CLI_TOKEN_LEN,
   db::DBTrait,
-  ws::state::{UpdateMessage, Updater},
+  updater::{UpdateMessage, Updater},
 };
 
 pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {

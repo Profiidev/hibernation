@@ -1,15 +1,19 @@
 use std::io::Cursor;
 
 use base64::prelude::*;
+use centaurus::db::tables::{
+  group::GroupTable,
+  user::{SimpleGroupInfo, UserTable},
+};
 use entity::{cache, cache_access, group, group_user, user};
 use image::{ImageFormat, imageops::FilterType};
 use schemars::JsonSchema;
 use sea_orm::{IntoActiveModel, JoinType, QuerySelect, Set, prelude::*};
 use serde::{Deserialize, Serialize};
 
-use crate::db::group::{CacheMapping, GroupTable, SimpleUserInfo};
+use crate::db::group::CacheMapping;
 
-pub struct UserTable<'db> {
+pub struct UserTableExt<'db> {
   db: &'db DatabaseConnection,
 }
 
@@ -33,13 +37,7 @@ pub struct DetailUserInfo {
   pub caches: Vec<CacheMapping>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct SimpleGroupInfo {
-  pub uuid: Uuid,
-  pub name: String,
-}
-
-impl<'db> UserTable<'db> {
+impl<'db> UserTableExt<'db> {
   pub fn new(db: &'db DatabaseConnection) -> Self {
     Self { db }
   }
@@ -89,23 +87,6 @@ impl<'db> UserTable<'db> {
     Ok(ret.id)
   }
 
-  pub async fn try_get_user_by_email(&self, email: &str) -> Result<Option<user::Model>, DbErr> {
-    user::Entity::find()
-      .filter(user::Column::Email.eq(email.to_string()))
-      .one(self.db)
-      .await
-  }
-
-  pub async fn get_user_by_email(&self, email: &str) -> Result<user::Model, DbErr> {
-    self
-      .try_get_user_by_email(email)
-      .await?
-      .ok_or(DbErr::RecordNotFound(format!(
-        "User with email {} not found",
-        email
-      )))
-  }
-
   pub async fn get_user_by_id(&self, id: Uuid) -> Result<user::Model, DbErr> {
     user::Entity::find_by_id(id)
       .one(self.db)
@@ -116,26 +97,6 @@ impl<'db> UserTable<'db> {
       )))
   }
 
-  pub async fn update_user_password(&self, id: Uuid, new_password: String) -> Result<(), DbErr> {
-    let mut user: user::ActiveModel = self.get_user_by_id(id).await?.into();
-
-    user.password = Set(new_password);
-
-    user.update(self.db).await?;
-
-    Ok(())
-  }
-
-  pub async fn update_user_name(&self, id: Uuid, new_name: String) -> Result<(), DbErr> {
-    let mut user: user::ActiveModel = self.get_user_by_id(id).await?.into();
-
-    user.name = Set(new_name);
-
-    user.update(self.db).await?;
-
-    Ok(())
-  }
-
   pub async fn update_user_avatar(&self, id: Uuid, new_avatar: String) -> Result<(), DbErr> {
     let mut user: user::ActiveModel = self.get_user_by_id(id).await?.into();
 
@@ -144,20 +105,6 @@ impl<'db> UserTable<'db> {
     user.update(self.db).await?;
 
     Ok(())
-  }
-
-  pub async fn list_users_simple(&self) -> Result<Vec<SimpleUserInfo>, DbErr> {
-    let users = user::Entity::find().all(self.db).await?;
-
-    Ok(
-      users
-        .into_iter()
-        .map(|u| SimpleUserInfo {
-          id: u.id,
-          name: u.name,
-        })
-        .collect(),
-    )
   }
 
   pub async fn list_users(&self) -> Result<Vec<UserInfo>, DbErr> {
@@ -187,24 +134,6 @@ impl<'db> UserTable<'db> {
     Ok(result)
   }
 
-  pub async fn get_user_groups(&self, user_id: Uuid) -> Result<Vec<SimpleGroupInfo>, DbErr> {
-    let groups = group_user::Entity::find()
-      .filter(group_user::Column::UserId.eq(user_id))
-      .find_also_related(group::Entity)
-      .all(self.db)
-      .await?
-      .into_iter()
-      .filter_map(|(_, group)| {
-        group.map(|g| SimpleGroupInfo {
-          uuid: g.id,
-          name: g.name,
-        })
-      })
-      .collect();
-
-    Ok(groups)
-  }
-
   async fn cache_access_for_group(&self, user: Uuid) -> Result<Vec<CacheMapping>, DbErr> {
     cache_access::Entity::find()
       .join(JoinType::InnerJoin, cache_access::Relation::Cache.def())
@@ -224,7 +153,8 @@ impl<'db> UserTable<'db> {
       return Ok(None);
     };
 
-    let groups = self.get_user_groups(user_id).await?;
+    let user_table = UserTable::new(self.db);
+    let groups = user_table.get_user_groups(user_id).await?;
     let permissions = GroupTable::new(self.db)
       .get_user_permissions(user_id)
       .await?;
@@ -240,38 +170,6 @@ impl<'db> UserTable<'db> {
       permissions,
       caches,
     }))
-  }
-
-  pub async fn delete_user(&self, user_id: Uuid) -> Result<(), DbErr> {
-    user::Entity::delete_by_id(user_id).exec(self.db).await?;
-    Ok(())
-  }
-
-  pub async fn edit_user(
-    &self,
-    user_id: Uuid,
-    new_name: String,
-    new_groups: Vec<Uuid>,
-  ) -> Result<(), DbErr> {
-    let mut user: user::ActiveModel = self.get_user_by_id(user_id).await?.into();
-
-    user.name = Set(new_name);
-
-    user.update(self.db).await?;
-
-    // Update groups
-    group_user::Entity::delete_many()
-      .filter(group_user::Column::UserId.eq(user_id))
-      .exec(self.db)
-      .await?;
-
-    if !new_groups.is_empty() {
-      GroupTable::new(self.db)
-        .add_user_to_groups(user_id, new_groups)
-        .await?;
-    }
-
-    Ok(())
   }
 
   pub async fn reset_avatar(&self, user_id: Uuid) -> Result<(), DbErr> {

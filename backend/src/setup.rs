@@ -3,7 +3,10 @@ use aide::axum::routing::{get_with, post_with};
 use argon2::password_hash::SaltString;
 use axum::Json;
 use axum_extra::extract::CookieJar;
-use centaurus::{auth::pw::PasswordState, bail, db::init::Connection, error::Result};
+use centaurus::backend::auth::jwt_state::JwtState;
+use centaurus::backend::auth::pw_state::PasswordState;
+use centaurus::db::tables::ConnectionExt;
+use centaurus::{bail, db::init::Connection, error::Result};
 use rsa::rand_core::OsRng;
 use schemars::JsonSchema;
 use sea_orm::ConnectionTrait;
@@ -11,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use tracing::info;
 use uuid::Uuid;
 
-use crate::{auth::jwt_state::JwtState, cache::storage::FileStorage, db::DBTrait};
+use crate::{cache::storage::FileStorage, db::DBTrait};
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
@@ -105,7 +108,7 @@ async fn complete_setup(
   let hash = state.pw_hash(&salt, &payload.admin_password)?;
 
   let admin = db
-    .user()
+    .user_ext()
     .create_user(payload.admin_username, payload.admin_email, hash, salt)
     .await?;
   db.group()

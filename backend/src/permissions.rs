@@ -1,47 +1,13 @@
+use centaurus::{
+  backend::auth::permission::{self, Permission},
+  permission,
+};
+
 pub fn permissions() -> Vec<&'static str> {
-  vec![
-    SettingsView::name(),
-    SettingsEdit::name(),
-    GroupView::name(),
-    GroupEdit::name(),
-    UserView::name(),
-    UserEdit::name(),
-    CacheCreate::name(),
-    CacheView::name(),
-    CacheEdit::name(),
-  ]
+  let mut perms = permission::permissions();
+  perms.extend_from_slice(&[CacheCreate::name(), CacheView::name(), CacheEdit::name()]);
+  perms
 }
-
-pub trait Permission {
-  fn name() -> &'static str;
-}
-
-macro_rules! permission {
-  ($type:ident, $name:literal) => {
-    pub struct $type;
-
-    impl Permission for $type {
-      fn name() -> &'static str {
-        $name
-      }
-    }
-  };
-}
-
-// No permissions required
-permission!(NoPerm, "");
-
-// Settings
-permission!(SettingsView, "settings:view");
-permission!(SettingsEdit, "settings:edit");
-
-// Groups
-permission!(GroupView, "group:view");
-permission!(GroupEdit, "group:edit");
-
-// Users
-permission!(UserView, "user:view");
-permission!(UserEdit, "user:edit");
 
 // Caches
 permission!(CacheCreate, "cache:create");

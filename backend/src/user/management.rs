@@ -3,9 +3,13 @@ use aide::axum::routing::{delete_with, get_with, post_with, put_with};
 use argon2::password_hash::SaltString;
 use axum::{Json, extract::Path};
 use base64::prelude::*;
+use centaurus::backend::auth::jwt_auth::JwtAuth;
+use centaurus::backend::auth::permission::{Permission, UserEdit, UserView};
+use centaurus::backend::auth::pw_state::PasswordState;
+use centaurus::db::tables::ConnectionExt;
+use centaurus::db::tables::user::SimpleGroupInfo;
 use centaurus::mail::Mailer;
 use centaurus::{
-  auth::pw::PasswordState,
   bail,
   db::init::Connection,
   error::{ErrorReportStatusExt, Result},
@@ -17,18 +21,17 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::permissions::CacheEdit;
+use crate::updater::{UpdateMessage, Updater};
 use crate::{
-  auth::jwt_auth::JwtAuth,
   config::Config,
   db::{
     DBTrait,
     cache::SimpleCacheInfo,
     group::CacheMapping,
-    user::{DetailUserInfo, SimpleGroupInfo, UserInfo},
+    user::{DetailUserInfo, UserInfo},
   },
   mail::templates,
-  permissions::{CacheEdit, Permission, UserEdit, UserView},
-  ws::state::{UpdateMessage, Updater},
 };
 
 const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789)(*&^%$#@!~";
@@ -60,7 +63,7 @@ pub fn router() -> ApiRouter {
 }
 
 async fn list_users(_auth: JwtAuth<UserView>, db: Connection) -> Result<Json<Vec<UserInfo>>> {
-  let users = db.user().list_users().await?;
+  let users = db.user_ext().list_users().await?;
   Ok(Json(users))
 }
 
@@ -74,7 +77,7 @@ async fn user_info(
   db: Connection,
   Path(path): Path<UserViewPath>,
 ) -> Result<Json<DetailUserInfo>> {
-  let info = db.user().user_info(path.uuid).await?;
+  let info = db.user_ext().user_info(path.uuid).await?;
   let Some(info) = info else {
     bail!(NOT_FOUND, "User not found");
   };
@@ -266,7 +269,7 @@ async fn edit_user(
     bail!(CONFLICT, "Cannot remove the last user from the admin group");
   }
 
-  let Some(user) = db.user().user_info(req.uuid).await? else {
+  let Some(user) = db.user_ext().user_info(req.uuid).await? else {
     bail!(NOT_FOUND, "User not found");
   };
 
@@ -279,7 +282,7 @@ async fn edit_user(
   }
 
   db.user().edit_user(req.uuid, req.name, req.groups).await?;
-  db.user()
+  db.user_ext()
     .update_cache_mappings(req.uuid, user.caches, req.caches)
     .await?;
   updater
@@ -300,7 +303,7 @@ async fn reset_user_avatar(
   updater: Updater,
   Json(req): Json<UserAvatarResetRequest>,
 ) -> Result<()> {
-  db.user().reset_avatar(req.uuid).await?;
+  db.user_ext().reset_avatar(req.uuid).await?;
   updater
     .broadcast(UpdateMessage::User { uuid: req.uuid })
     .await;

@@ -1,12 +1,11 @@
+use centaurus::db::migrations::{groups::Group, user::User};
 use sea_orm_migration::{
   prelude::{extension::postgres::Type, *},
   schema::*,
   sea_orm::DatabaseBackend,
 };
 
-use crate::{
-  m20260123_144752_user::User, m20260126_155842_group::Group, m20260319_192505_cache::Cache,
-};
+use crate::m20260319_192505_cache::Cache;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;

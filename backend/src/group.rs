@@ -1,20 +1,23 @@
 use aide::axum::ApiRouter;
 use aide::axum::routing::{delete_with, get_with, post_with, put_with};
 use axum::{Json, extract::Path};
+use centaurus::backend::auth::jwt_auth::JwtAuth;
+use centaurus::backend::auth::permission::{GroupEdit, GroupView, Permission};
+use centaurus::db::tables::ConnectionExt;
+use centaurus::db::tables::group::{GroupInfo, SimpleUserInfo};
 use centaurus::{bail, db::init::Connection, error::Result};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::updater::{UpdateMessage, Updater};
 use crate::{
-  auth::jwt_auth::JwtAuth,
   db::{
     DBTrait,
     cache::SimpleCacheInfo,
-    group::{CacheMapping, GroupDetails, GroupInfo, SimpleUserInfo},
+    group::{CacheMapping, GroupDetails},
   },
-  permissions::{CacheEdit, GroupEdit, GroupView, Permission},
-  ws::state::{UpdateMessage, Updater},
+  permissions::CacheEdit,
 };
 
 pub fn router() -> ApiRouter {
@@ -59,7 +62,7 @@ async fn group_info(
   db: Connection,
   Path(path): Path<GroupViewPath>,
 ) -> Result<Json<GroupDetails>> {
-  let info = db.group().group_info(path.uuid).await?;
+  let info = db.group_ext().group_info(path.uuid).await?;
   let Some(info) = info else {
     bail!(NOT_FOUND, "Group not found");
   };
@@ -161,7 +164,7 @@ async fn edit_group(
     bail!(CONFLICT, "A group with this name already exists");
   }
 
-  let Some(group) = db.group().group_info(data.uuid).await? else {
+  let Some(group) = db.group_ext().group_info(data.uuid).await? else {
     bail!(NOT_FOUND, "Group not found");
   };
 
@@ -205,7 +208,7 @@ async fn edit_group(
       data.users.clone(),
     )
     .await?;
-  db.group()
+  db.group_ext()
     .update_cache_mappings(data.uuid, group.caches, data.caches)
     .await?;
 

@@ -1,5 +1,5 @@
 use aide::axum::ApiRouter;
-use centaurus::backend::rate_limiter::RateLimiter;
+use centaurus::backend::middleware::rate_limiter::RateLimiter;
 
 mod account;
 mod info;

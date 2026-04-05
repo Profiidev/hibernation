@@ -3,9 +3,10 @@ use axum::Extension;
 use centaurus::{
   backend::{
     init::{listener_setup, run_app_connect_info},
-    rate_limiter::RateLimiter,
+    middleware::rate_limiter::RateLimiter,
+    rewrite::virtual_host::HostRouter,
     router::build_router,
-    virtual_host::HostRouter,
+    websocket,
   },
   db::init::init_db,
   logging::init_logging,
@@ -15,7 +16,7 @@ use centaurus::{
 use dotenvy::dotenv;
 use tracing::info;
 
-use crate::config::Config;
+use crate::{config::Config, updater::UpdateMessage};
 
 mod auth;
 mod cache;
@@ -29,8 +30,8 @@ mod permissions;
 mod settings;
 mod setup;
 mod token;
+mod updater;
 mod user;
-mod ws;
 
 #[tokio::main]
 async fn main() {
@@ -55,7 +56,7 @@ async fn main() {
 
 fn api_router(rate_limiter: &mut RateLimiter) -> ApiRouter {
   ApiRouter::new()
-    .nest("/ws", ws::router())
+    .nest("/ws", websocket::router::<UpdateMessage>())
     .nest("/setup", setup::router())
     .nest("/auth", auth::router(rate_limiter))
     .nest("/user", user::router(rate_limiter))
@@ -74,8 +75,8 @@ async fn state(router: ApiRouter, config: Config) -> ApiRouter {
     .await
     .expect("Failed to create admin group");
 
-  let (mut router, _) = ws::state(router).await;
-  router = auth::state(router, &config, &db).await;
+  let mut router = websocket::state::<UpdateMessage>(router).await;
+  router = centaurus::backend::auth::state(router, &config.auth, &db).await;
   router = mail::state(router, &db).await;
   router = cli::state(router);
   router = cache::state(router, db.clone(), &config).await;

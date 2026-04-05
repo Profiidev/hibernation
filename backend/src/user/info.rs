@@ -1,12 +1,16 @@
 use aide::axum::ApiRouter;
 use aide::axum::routing::get_with;
 use axum::Json;
-use centaurus::{db::init::Connection, error::Result};
+use centaurus::{
+  backend::auth::jwt_auth::JwtAuth,
+  db::{init::Connection, tables::ConnectionExt},
+  error::Result,
+};
 use schemars::JsonSchema;
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::{auth::jwt_auth::JwtAuth, db::DBTrait};
+use crate::db::DBTrait;
 
 pub fn router() -> ApiRouter {
   ApiRouter::new().api_route("/", get_with(info, |op| op.id("info")))
@@ -22,7 +26,7 @@ struct UserInfo {
 }
 
 async fn info(auth: JwtAuth, db: Connection) -> Result<Json<UserInfo>> {
-  let user = db.user().get_user_by_id(auth.user_id).await?;
+  let user = db.user_ext().get_user_by_id(auth.user_id).await?;
   let permissions = db.group().get_user_permissions(auth.user_id).await?;
 
   Ok(Json(UserInfo {

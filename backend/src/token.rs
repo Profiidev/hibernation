@@ -1,18 +1,16 @@
 use aide::axum::ApiRouter;
 use aide::axum::routing::{delete_with, get_with, post_with, put_with};
 use axum::{Json, extract::Path};
-use centaurus::{auth::pw::PasswordState, bail, db::init::Connection, error::Result};
+use centaurus::backend::auth::jwt_auth::JwtAuth;
+use centaurus::backend::auth::pw_state::PasswordState;
+use centaurus::{bail, db::init::Connection, error::Result};
 use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{
-  auth::jwt_auth::JwtAuth,
-  cli,
-  db::DBTrait,
-  ws::state::{UpdateMessage, Updater},
-};
+use crate::updater::{UpdateMessage, Updater};
+use crate::{cli, db::DBTrait};
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()

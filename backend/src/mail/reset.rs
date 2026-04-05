@@ -1,7 +1,11 @@
 use aide::axum::ApiRouter;
 use aide::axum::routing::post_with;
 use axum::Json;
-use centaurus::{auth::pw::PasswordState, db::init::Connection, mail::Mailer};
+use centaurus::{
+  backend::auth::pw_state::PasswordState,
+  db::{init::Connection, tables::ConnectionExt},
+  mail::Mailer,
+};
 use schemars::JsonSchema;
 use serde::Deserialize;
 use tokio::spawn;
@@ -9,7 +13,6 @@ use tracing::warn;
 
 use crate::{
   config::Config,
-  db::DBTrait,
   mail::{state::ResetPasswordState, templates},
 };
 

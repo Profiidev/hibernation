@@ -1,7 +1,7 @@
 use aide::axum::ApiRouter;
 use axum::Extension;
 use centaurus::{
-  backend::rate_limiter::RateLimiter,
+  backend::middleware::rate_limiter::RateLimiter,
   db::{init::Connection, tables::ConnectionExt},
   mail::{MailSettings, Mailer},
 };

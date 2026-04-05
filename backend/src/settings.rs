@@ -1,7 +1,10 @@
 use aide::axum::ApiRouter;
 use aide::axum::routing::{get_with, post_with};
 use axum::Json;
-use centaurus::auth::settings::UserSettings;
+use centaurus::backend::auth::jwt_auth::JwtAuth;
+use centaurus::backend::auth::oidc::OidcState;
+use centaurus::backend::auth::permission::{SettingsEdit, SettingsView};
+use centaurus::backend::auth::settings::UserSettings;
 use centaurus::db::settings::Settings;
 use centaurus::db::tables::ConnectionExt;
 use centaurus::mail::{MailSettings, Mailer};
@@ -14,12 +17,8 @@ use schemars::JsonSchema;
 use serde::Serialize;
 use url::Url;
 
-use crate::{
-  auth::{jwt_auth::JwtAuth, oidc::OidcState},
-  config::Config,
-  permissions::{SettingsEdit, SettingsView},
-  ws::state::{UpdateMessage, Updater},
-};
+use crate::config::Config;
+use crate::updater::{UpdateMessage, Updater};
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()

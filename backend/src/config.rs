@@ -2,7 +2,10 @@ use aide::OperationIo;
 use axum::{Extension, extract::FromRequestParts};
 use centaurus::{
   Config,
-  backend::config::{BaseConfig, MetricsConfig},
+  backend::{
+    auth::settings::AuthConfig,
+    config::{BaseConfig, MetricsConfig, SiteConfig},
+  },
   db::config::DBConfig,
 };
 use figment::{
@@ -26,14 +29,15 @@ pub struct Config {
   pub metrics: MetricsConfig,
   #[serde(flatten)]
   pub storage: StorageConfig,
+  #[site]
+  #[serde(flatten)]
+  pub site: SiteConfig,
+  #[serde(flatten)]
+  pub auth: AuthConfig,
 
   pub db_url: String,
   pub site_url: Url,
   pub virtual_host_routing: bool,
-
-  pub auth_pepper: String,
-  pub auth_issuer: String,
-  pub auth_jwt_expiration: i64,
 }
 
 impl Default for Config {
@@ -41,6 +45,7 @@ impl Default for Config {
     Self {
       base: BaseConfig::default(),
       db: DBConfig::default(),
+      site: SiteConfig::default(),
       db_url: "".to_string(),
       site_url: Url::parse("http://localhost:8000").unwrap(),
       virtual_host_routing: false,
@@ -49,9 +54,10 @@ impl Default for Config {
         ..Default::default()
       },
       storage: StorageConfig::default(),
-      auth_pepper: "__HIBERNATION_PEPPER__".to_string(),
-      auth_issuer: "hibernation_auth".to_string(),
-      auth_jwt_expiration: 60 * 60 * 24 * 7, // 7 days
+      auth: AuthConfig {
+        auth_pepper: "__HIBERNATION_PEPPER__".to_string(),
+        ..Default::default()
+      },
     }
   }
 }
@@ -70,23 +76,7 @@ impl Config {
     }
 
     if config.db_url.starts_with("sqlite") {
-      if config.db.database_max_connections > 1 {
-        config.db.database_max_connections = 1;
-        if config.db.database_max_connections != DBConfig::default().database_max_connections {
-          warn!(
-            "SQLite does not work properly with multiple connections. Setting DATABASE_MAX_CONNECTIONS to 1."
-          );
-        }
-      }
-
-      if config.db.database_min_connections > 1 {
-        config.db.database_min_connections = 1;
-        if config.db.database_min_connections != DBConfig::default().database_min_connections {
-          warn!(
-            "SQLite does not work properly with multiple connections. Setting DATABASE_MIN_CONNECTIONS to 1."
-          );
-        }
-      }
+      config.db.validate_sqlite();
     }
 
     config.storage.validate();

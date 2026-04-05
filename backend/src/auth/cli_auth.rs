@@ -10,7 +10,13 @@ use axum_extra::{
   headers::{Authorization, authorization::Basic},
 };
 use centaurus::{
-  auth::{jwt::jwt_from_request, pw::PasswordState},
+  backend::auth::{
+    jwt::jwt_from_request,
+    jwt_auth,
+    jwt_state::JWT_COOKIE_NAME,
+    permission::{NoPerm, Permission},
+    pw_state::PasswordState,
+  },
   bail,
   db::init::Connection,
   error::ErrorReport,
@@ -21,10 +27,8 @@ use http::request::Parts;
 use uuid::Uuid;
 
 use crate::{
-  auth::{jwt_auth, jwt_state::JWT_COOKIE_NAME},
   db::DBTrait,
-  permissions::{NoPerm, Permission},
-  ws::state::{UpdateMessage, Updater},
+  updater::{UpdateMessage, Updater},
 };
 
 pub const CLI_TOKEN_LEN: usize = 32;
