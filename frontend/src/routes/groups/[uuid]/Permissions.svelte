@@ -1,5 +1,5 @@
 <script lang="ts">
-  import FormCheckbox from '$lib/components/form/FormCheckbox.svelte';
+  import FormCheckbox from 'positron-components/components/form/form-checkbox.svelte';
   import { Permission } from '$lib/permissions.svelte';
   import type {
     FormValue,

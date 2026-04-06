@@ -13,7 +13,7 @@
   import FormInput from 'positron-components/components/form/form-input.svelte';
   import Save from '@lucide/svelte/icons/save';
   import { Spinner } from 'positron-components/components/ui/spinner';
-  import FormDateInput from '$lib/components/form/FormDateInput.svelte';
+  import FormDateInput from 'positron-components/components/form/form-date-input.svelte';
   import { Input } from 'positron-components/components/ui/input';
   import { Label } from 'positron-components/components/ui/label';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';

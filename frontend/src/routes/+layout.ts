@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutLoad } from './$types';
-import { noSidebarPaths } from '$lib/components/navigation/sidebar/items.svelte';
+import { noSidebarPaths } from '$lib/components/nav.svelte';
 import { info, isSetup } from '$lib/client';
 
 export const load: LayoutLoad = async ({ fetch, url }) => {

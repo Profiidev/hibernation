@@ -9,7 +9,7 @@
   import { goto, invalidate } from '$app/navigation';
   import { connectWebsocket } from '$lib/backend/updater.svelte';
   import { toast } from 'positron-components/components/util/general';
-  import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
+  import FormInputPassword from 'positron-components/components/form/form-input-password.svelte';
   import { authenticate, SsoType } from '$lib/client';
   import { getEncrypt } from '$lib/backend/auth.svelte';
 

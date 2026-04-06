@@ -1,9 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { RequestError } from 'positron-components/backend';
   import { toast } from 'positron-components/components/util/general';
-  import type { Stage } from '$lib/components/form/types.svelte';
-  import MultiStepForm from '$lib/components/form/MultiStepForm.svelte';
+  import type { Stage } from 'positron-components/components/form/types';
+  import MultiStepForm from 'positron-components/components/form/multistep-form.svelte';
   import Information from './Information.svelte';
   import { createUser } from '$lib/client';
   import { getEncrypt } from '$lib/backend/auth.svelte';

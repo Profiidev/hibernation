@@ -2,8 +2,8 @@
   import BaseForm from 'positron-components/components/form/base-form.svelte';
   import { information } from './schema.svelte';
   import FormInput from 'positron-components/components/form/form-input.svelte';
-  import type { StageProps } from '$lib/components/form/types.svelte';
-  import FormDateInput from '$lib/components/form/FormDateInput.svelte';
+  import type { StageProps } from 'positron-components/components/form/types';
+  import FormDateInput from 'positron-components/components/form/form-date-input.svelte';
   import { today, getLocalTimeZone } from '@internationalized/date';
 
   let { initialValue, onsubmit, footer, isLoading }: StageProps = $props();

@@ -22,7 +22,7 @@
   import FormSelect from 'positron-components/components/form/form-select.svelte';
   import SimpleAvatar from 'positron-components/components/util/simple-avatar.svelte';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
-  import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
+  import FormInputPassword from 'positron-components/components/form/form-input-password.svelte';
   import CacheAccess from '../../groups/[uuid]/CacheAccess.svelte';
   import {
     deleteUser,

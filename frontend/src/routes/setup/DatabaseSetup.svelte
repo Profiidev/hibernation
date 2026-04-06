@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { StageProps } from '$lib/components/form/types.svelte';
+  import type { StageProps } from 'positron-components/components/form/types';
   import BaseForm from 'positron-components/components/form/base-form.svelte';
   import { databaseSetupSchema } from './schema.svelte';
-  import FormCheckbox from '$lib/components/form/FormCheckbox.svelte';
+  import FormCheckbox from 'positron-components/components/form/form-checkbox.svelte';
   import * as Alert from 'positron-components/components/ui/alert';
   import AlertCircle from '@lucide/svelte/icons/alert-circle';
 

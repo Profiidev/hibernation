@@ -1,6 +1,8 @@
-import { browser } from '$app/environment';
 import { invalidate } from '$app/navigation';
-import { sleep } from 'positron-components/util/interval.svelte';
+import {
+  connectWebsocket as connect,
+  disconnectWebsocket as disconnect
+} from 'positron-components/backend';
 
 export enum UpdateType {
   Settings = 'Settings',
@@ -24,51 +26,8 @@ export type UpdateMessage =
       type: UpdateType.Settings | UpdateType.UserPermissions;
     };
 
-let updater: WebSocket | undefined | false = $state(browser && undefined);
-let interval: number;
-let disconnect = false;
-
-export const connectWebsocket = (user: string) => {
-  if (updater === false || updater) return;
-  createWebsocket(user);
-};
-
-const createWebsocket = (user: string) => {
-  updater = new WebSocket('/api/ws/updater');
-
-  updater.onmessage = (event) => {
-    const msg: UpdateMessage = JSON.parse(event.data);
-    handleMessage(msg, user);
-  };
-
-  updater.onclose = async () => {
-    clearInterval(interval);
-    if (disconnect) return;
-    await sleep(1000);
-    createWebsocket(user);
-  };
-
-  interval = setInterval(() => {
-    if (
-      !updater ||
-      updater.readyState === updater.CLOSING ||
-      updater.readyState === updater.CLOSED
-    ) {
-      clearInterval(interval);
-      return;
-    }
-
-    updater.send('heartbeat');
-  }, 10000) as unknown as number;
-};
-
-export const disconnectWebsocket = () => {
-  if (updater) {
-    disconnect = true;
-    updater.close();
-    updater = undefined;
-  }
-};
+export const connectWebsocket = (user: string) => connect(user, handleMessage);
+export const disconnectWebsocket = () => disconnect();
 
 const handleMessage = (msg: UpdateMessage, user: string) => {
   switch (msg.type) {

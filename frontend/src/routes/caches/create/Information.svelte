@@ -2,7 +2,7 @@
   import BaseForm from 'positron-components/components/form/base-form.svelte';
   import { information } from './schema.svelte';
   import FormInput from 'positron-components/components/form/form-input.svelte';
-  import type { StageProps } from '$lib/components/form/types.svelte';
+  import type { StageProps } from 'positron-components/components/form/types';
   import FormSwitch from 'positron-components/components/form/form-switch.svelte';
 
   let { initialValue, onsubmit, footer, isLoading }: StageProps = $props();

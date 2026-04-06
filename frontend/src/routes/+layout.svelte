@@ -5,11 +5,14 @@
   import { connectWebsocket } from '$lib/backend/updater.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import Sidebar from '$lib/components/navigation/sidebar/Sidebar.svelte';
   import { page } from '$app/state';
-  import { noSidebarPaths } from '$lib/components/navigation/sidebar/items.svelte';
+  import { items, noSidebarPaths } from '$lib/components/nav.svelte';
   import { setMode } from 'mode-watcher';
-  import { testToken } from '$lib/client';
+  import { logout, testToken } from '$lib/client';
+  import Sidebar from 'positron-components/components/nav/sidebar/sidebar.svelte';
+
+  // @ts-ignore this is injected at build time via Vite's define option
+  let version = __version__;
 
   let { children, data } = $props();
 
@@ -38,11 +41,24 @@
   {@render children()}
 {:else}
   <Sidebar
-    user={data.user ?? {
-      email: '',
-      name: '',
-      permissions: [],
-      uuid: ''
+    user={data.user
+      ? {
+          ...data.user,
+          avatar: data.user.avatar || undefined
+        }
+      : {
+          email: '',
+          name: '',
+          permissions: []
+        }}
+    app_name="Hibernation"
+    {version}
+    {items}
+    logout={async () => {
+      let res = await logout();
+      return {
+        error: res.error ? 'err' : undefined
+      };
     }}
   >
     {@render children()}

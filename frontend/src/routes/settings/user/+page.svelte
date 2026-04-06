@@ -6,12 +6,12 @@
   import { Spinner } from 'positron-components/components/ui/spinner';
   import Save from '@lucide/svelte/icons/save';
   import { toast } from 'positron-components/components/util/general';
-  import FormInputTooltip from '$lib/components/form/FormInputTooltip.svelte';
+  import FormInputTooltip from 'positron-components/components/form/form-input-tooltip.svelte';
   import FormSwitch from 'positron-components/components/form/form-switch.svelte';
   import FormInput from 'positron-components/components/form/form-input.svelte';
   import { Label } from 'positron-components/components/ui/label';
   import { Input } from 'positron-components/components/ui/input';
-  import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
+  import FormInputPassword from 'positron-components/components/form/form-input-password.svelte';
   import { Permission } from '$lib/permissions.svelte';
   import { Separator } from 'positron-components/components/ui/separator';
   import { saveUserSettings } from '$lib/client';

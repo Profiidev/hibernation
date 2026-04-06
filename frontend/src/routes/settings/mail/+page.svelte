@@ -9,7 +9,7 @@
   import { Permission } from '$lib/permissions.svelte';
   import FormSwitch from 'positron-components/components/form/form-switch.svelte';
   import FormInput from 'positron-components/components/form/form-input.svelte';
-  import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
+  import FormInputPassword from 'positron-components/components/form/form-input-password.svelte';
   import Send from '@lucide/svelte/icons/send';
   import { saveMailSettings, testMail } from '$lib/client';
 

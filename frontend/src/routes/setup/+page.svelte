@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Stage } from '$lib/components/form/types.svelte';
-  import MultiStepForm from '$lib/components/form/MultiStepForm.svelte';
+  import type { Stage } from 'positron-components/components/form/types';
+  import MultiStepForm from 'positron-components/components/form/multistep-form.svelte';
   import AdminUser from './AdminUser.svelte';
   import DatabaseSetup from './DatabaseSetup.svelte';
   import CheckIcon from '@lucide/svelte/icons/check';

@@ -6,7 +6,7 @@
   import { Spinner } from 'positron-components/components/ui/spinner';
   import Save from '@lucide/svelte/icons/save';
   import { toast } from 'positron-components/components/util/general';
-  import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
+  import FormInputPassword from 'positron-components/components/form/form-input-password.svelte';
   import { updatePassword } from '$lib/client';
   import { getEncrypt } from '$lib/backend/auth.svelte';
 

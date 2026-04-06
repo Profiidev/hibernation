@@ -2,8 +2,8 @@
   import BaseForm from 'positron-components/components/form/base-form.svelte';
   import { information } from './schema.svelte';
   import FormInput from 'positron-components/components/form/form-input.svelte';
-  import type { StageProps } from '$lib/components/form/types.svelte';
-  import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
+  import type { StageProps } from 'positron-components/components/form/types';
+  import FormInputPassword from 'positron-components/components/form/form-input-password.svelte';
 
   let {
     initialValue,

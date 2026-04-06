@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { StageProps } from '$lib/components/form/types.svelte';
+  import type { StageProps } from 'positron-components/components/form/types';
   import BaseForm from 'positron-components/components/form/base-form.svelte';
   import { adminUser } from './schema.svelte';
   import FormInput from 'positron-components/components/form/form-input.svelte';
-  import FormInputPassword from '$lib/components/form/FormInputPassword.svelte';
+  import FormInputPassword from 'positron-components/components/form/form-input-password.svelte';
 
   let {
     initialValue,
