@@ -2556,7 +2556,7 @@ var L = class extends URL {
         ','
       ])),
       (e.STRICT_URL_CHAR = '!"$%&\'()*+,-./:;<=>@[\\]^_`{|}~'
-        .split/* @__PURE__ */ ('')
+        .split(/* @__PURE__ */ '')
         .concat(e.ALPHANUM)),
       (e.URL_CHAR = e.STRICT_URL_CHAR.concat(['	', '\f'])));
     for (let t = 128; t <= 255; t++) e.URL_CHAR.push(t);
