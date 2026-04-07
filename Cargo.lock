@@ -1197,9 +1197,9 @@ dependencies = [
 
 [[package]]
 name = "centaurus"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3070585469c9339168b4de1156b24e8adf95234771b86d41adc54cb13d5fb3f"
+checksum = "3d08ff981d3aeedf05c3f627e0140de364ee9bba39dd191e0f9a2cccba17e0fe"
 dependencies = [
  "addr",
  "aide",
@@ -2100,9 +2100,9 @@ dependencies = [
 
 [[package]]
 name = "fastrand"
-version = "2.3.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
+checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
 name = "ff"
