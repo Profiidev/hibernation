@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
 shared = { path = "../shared" }
-centaurus = { version = "0.7.0", features = [
+centaurus = { version = "0.8.0", features = [
   "sea-orm",
   "uuid",
   "hmac",

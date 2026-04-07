@@ -46,7 +46,9 @@ The critical configuration is done via environment variables everything else via
 | SITE_URL             | The URL where the app is hosted. Important for Email links and Oidc.       | http://localhost:8000                |
 | VIRTUAL_HOST_ROUTING | Whether to use virtual host routing for nix cache api                      | false                                |
 | LOG_LEVEL            | Log level for the backend (e.g., info, debug)                              | info                                 |
+| METRICS_ENABLED      | Whether to enable Prometheus metrics                                       | false                                |
 | METRICS_NAME         | The name to use as the app label in Prometheus metrics                     | hibernation                          |
+| METRICS_PORT         | Use different port for metrics                                             | -                                    |
 | PORT                 | Port for the backend server to listen on                                   | 8000                                 |
 
 See `backend/src/config.rs` for all non-standard configuration options.
