@@ -9,8 +9,8 @@ name = "migration"
 path = "src/lib.rs"
 
 [dependencies]
-async-std = { version = "1", features = ["attributes", "tokio1"] }
-centaurus = { version = "0.8.0", features = [
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+centaurus = { version = "0.9.1", features = [
   "sea-orm",
 ], default-features = false }
 
