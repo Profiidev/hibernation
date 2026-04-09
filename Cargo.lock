@@ -799,7 +799,7 @@ dependencies = [
 
 [[package]]
 name = "backend"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "aide",
  "async-compression",
@@ -2577,7 +2577,7 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hibernation"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "async-compression",
  "bytes",
