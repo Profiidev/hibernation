@@ -65,6 +65,12 @@ aide = { version = "0.16.0-alpha.3", features = [
   "macros",
 ] }
 schemars = { version = "1.2.1", features = ["uuid1", "chrono04", "url2"] }
+# Required to enable image formats
+image = { version = "0.25.10", default-features = false, features = [
+  "png",
+  "jpeg",
+  "webp",
+] }
 
 [[bin]]
 name = "backend"
