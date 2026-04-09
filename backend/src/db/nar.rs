@@ -153,16 +153,16 @@ impl<'db> NarTable<'db> {
     nar_hash: &str,
     nar_size: u64,
   ) -> Result<Option<nar::Model>, DbErr> {
-    if let Some(existing) = nar::Entity::update_many()
-      .col_expr(nar::Column::CreatedAt, Expr::value(Utc::now().naive_utc()))
+    if let Some(existing) = nar::Entity::find()
       .filter(nar::Column::NarHash.eq(nar_hash))
       .filter(nar::Column::NarSize.eq(nar_size as i64))
-      .exec_with_returning(self.db)
+      .one(self.db)
       .await?
-      .into_iter()
-      .next()
     {
-      return Ok(Some(existing));
+      let mut active = existing.into_active_model();
+      active.created_at = Set(Utc::now().naive_utc());
+      let model = active.update(self.db).await?;
+      return Ok(Some(model));
     }
 
     let nar = nar::ActiveModel {

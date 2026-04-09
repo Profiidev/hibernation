@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
 shared = { path = "../shared" }
-centaurus = { version = "0.8.0", features = [
+centaurus = { version = "0.9.1", features = [
   "sea-orm",
   "uuid",
   "hmac",
@@ -32,7 +32,7 @@ sea-orm = { version = "1.1.20", features = [
 axum = { version = "0.8.8", features = ["macros", "ws", "tracing"] }
 axum-extra = { version = "0.12.5", features = ["cookie", "typed-header"] }
 tracing = "0.1.44"
-tokio = { version = "1.51.0", features = ["signal"] }
+tokio = { version = "1.51.1", features = ["signal"] }
 http = "1.4.0"
 dotenvy = "0.15.7"
 serde = { version = "1.0.228", features = ["derive"] }
@@ -51,7 +51,7 @@ async-compression = { version = "0.4.41", features = ["tokio", "zstd"] }
 sha2 = "0.11.0"
 tokio-util = { version = "0.7.18", features = ["io"] }
 aws-config = { version = "1.8.15", features = ["behavior-version-latest"] }
-aws-sdk-s3 = { version = "1.128.0", features = ["behavior-version-latest"] }
+aws-sdk-s3 = { version = "1.129.0", features = ["behavior-version-latest"] }
 regex = "1.12.3"
 aide = { version = "0.16.0-alpha.3", features = [
   "axum",
