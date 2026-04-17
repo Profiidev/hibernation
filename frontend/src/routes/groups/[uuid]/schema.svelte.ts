@@ -56,6 +56,7 @@ export const formatData = (
   };
 
   for (const permission of group.permissions) {
+    // oxlint-disable-next-line no-unsafe-type-assertion
     const key = permission.replace(':', '_') as keyof FormValue<
       typeof groupSettings
     >;

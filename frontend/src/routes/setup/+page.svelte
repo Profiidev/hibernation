@@ -27,7 +27,7 @@
   ];
 
   const submit = async (rawData: object) => {
-    let data: FormValue<typeof adminUser> = rawData as any;
+    let formData: FormValue<typeof adminUser> = rawData as any;
     let encrypt = getEncrypt();
     if (!encrypt) {
       return {
@@ -37,9 +37,9 @@
 
     let ret = await completeSetup({
       body: {
-        admin_email: data.email,
-        admin_password: encrypt.encrypt(data.password) || '',
-        admin_username: data.username
+        admin_email: formData.email,
+        admin_password: encrypt.encrypt(formData.password) || '',
+        admin_username: formData.username
       }
     });
 

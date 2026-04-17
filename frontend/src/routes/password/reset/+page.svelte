@@ -12,7 +12,7 @@
 
   let { data } = $props();
 
-  const onsubmit = async (data: FormValue<typeof resetPassword>) => {
+  const onsubmit = async (formData: FormValue<typeof resetPassword>) => {
     let encrypt = getEncrypt();
     if (!encrypt) {
       return {
@@ -22,8 +22,8 @@
 
     let ret = await sendResetPassword({
       body: {
-        token: data.token,
-        new_password: encrypt.encrypt(data.new_password) || ''
+        token: formData.token,
+        new_password: encrypt.encrypt(formData.new_password) || ''
       }
     });
 

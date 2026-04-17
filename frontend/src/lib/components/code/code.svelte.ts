@@ -36,7 +36,7 @@ class CodeRootState {
     readonly opts: CodeRootStateProps,
     readonly overflow?: CodeOverflowState
   ) {
-    highlighter.then((hl) => (this.highlighter = hl));
+    let _ = highlighter.then((hl) => (this.highlighter = hl));
   }
 
   highlight(code: string) {
@@ -80,24 +80,24 @@ class CodeRootState {
 function within(num: number, range: CodeRootProps['highlight']) {
   if (!range) return false;
 
-  let within = false;
+  let isWithin = false;
 
   for (const r of range) {
     if (typeof r === 'number') {
       if (num === r) {
-        within = true;
+        isWithin = true;
         break;
       }
       continue;
     }
 
     if (r[0] <= num && num <= r[1]) {
-      within = true;
+      isWithin = true;
       break;
     }
   }
 
-  return within;
+  return isWithin;
 }
 
 class CodeCopyButtonState {

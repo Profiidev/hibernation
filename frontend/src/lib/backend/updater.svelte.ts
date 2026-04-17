@@ -32,38 +32,38 @@ export const disconnectWebsocket = () => disconnect();
 const handleMessage = (msg: UpdateMessage, user: string) => {
   switch (msg.type) {
     case UpdateType.Settings: {
-      invalidate((url) => url.pathname.startsWith('/api/settings'));
+      let _ = invalidate((url) => url.pathname.startsWith('/api/settings'));
       break;
     }
     case UpdateType.User: {
-      invalidate('/api/user/management');
-      invalidate(`/api/user/management/${msg.uuid}`);
-      invalidate('/api/group/users');
+      let _ = invalidate('/api/user/management');
+      let _u = invalidate(`/api/user/management/${msg.uuid}`);
+      let _g = invalidate('/api/group/users');
       // Same as current user
       if (msg.uuid === user) {
-        invalidate('/api/user/info');
+        let _i = invalidate('/api/user/info');
       }
       break;
     }
     case UpdateType.UserPermissions: {
-      invalidate('/api/user/info');
+      let _ = invalidate('/api/user/info');
       break;
     }
     case UpdateType.Group: {
-      invalidate('/api/group');
-      invalidate(`/api/group/${msg.uuid}`);
-      invalidate('/api/user/management/groups');
+      let _ = invalidate('/api/group');
+      let _g = invalidate(`/api/group/${msg.uuid}`);
+      let _u = invalidate('/api/user/management/groups');
       break;
     }
     case UpdateType.Token: {
-      invalidate('/api/token');
-      invalidate(`/api/token/${msg.uuid}`);
+      let _ = invalidate('/api/token');
+      let _t = invalidate(`/api/token/${msg.uuid}`);
       break;
     }
     case UpdateType.Cache: {
-      invalidate('/api/cache/management');
-      invalidate(`/api/cache/management/${msg.uuid}`);
-      invalidate('/api/group/caches');
+      let _ = invalidate('/api/cache/management');
+      let _c = invalidate(`/api/cache/management/${msg.uuid}`);
+      let _g = invalidate('/api/group/caches');
       break;
     }
   }

@@ -16,15 +16,16 @@ export const fetchKey = async () => {
 
   let { data: keyData } = await getKey();
   if (!keyData) {
-    return;
+    return undefined;
   }
 
   const JSEncrypt = (await import('jsencrypt')).JSEncrypt;
 
   encrypt = new JSEncrypt({ default_key_size: '4096' });
   encrypt.setPublicKey(keyData.key);
+  return undefined;
 };
-fetchKey();
+let _ = fetchKey();
 
 export const getOidcUrl = async () => {
   let res = await get<{ url: string }>('/api/auth/oidc/url', {
@@ -34,4 +35,6 @@ export const getOidcUrl = async () => {
   if (typeof res === 'object') {
     return res.url;
   }
+
+  return undefined;
 };

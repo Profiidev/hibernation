@@ -12,9 +12,9 @@ export const load: PageLoad = async ({ fetch, url }) => {
 
   let { data: config } = await authConfig({ fetch });
   if (config?.sso_type !== SsoType.NONE) {
-    let url = await getOidcUrl();
-    if (url && config?.instant_redirect && !skip) {
-      redirect(302, url);
+    let oidcUrl = await getOidcUrl();
+    if (oidcUrl && config?.instant_redirect && !skip) {
+      redirect(302, oidcUrl);
     }
     return { oidc_url: url, config, skip };
   }

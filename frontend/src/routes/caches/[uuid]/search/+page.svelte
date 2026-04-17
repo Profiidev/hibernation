@@ -21,7 +21,7 @@
   let searchTrigger = $state(0);
 
   $effect(() => {
-    searchTrigger;
+    let _ = searchTrigger;
     if (!input) return;
     searchStorePaths({
       path: { uuid: data.cacheInfo.uuid },

@@ -8,7 +8,7 @@ const execCmd = (command: string): boolean => {
       encoding: 'utf-8'
     });
     return true;
-  } catch (error) {
+  } catch {
     core.error(`Command failed: ${command}`);
     return false;
   }
@@ -82,7 +82,7 @@ const run = async () => {
 };
 
 try {
-  run();
+  let _ = run();
 } catch (error: any) {
   core.setFailed(error.message);
 }

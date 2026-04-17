@@ -28,8 +28,8 @@
   );
 
   const onsubmit = async (form: FormValue<typeof userSettings>) => {
-    let data = reformat(form);
-    let ret = await saveUserSettings({ body: data });
+    let formData = reformat(form);
+    let ret = await saveUserSettings({ body: formData });
 
     if (ret.error) {
       if (ret.response.status === 406) {

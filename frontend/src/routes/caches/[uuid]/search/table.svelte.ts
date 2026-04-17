@@ -6,15 +6,15 @@ import * as DataTable from 'positron-components/components/ui/data-table';
 import Actions from './Actions.svelte';
 import type { SearchResult } from '$lib/client';
 
-const createColumn = <T, C>(
+const createColumn = <C>(
   key: string,
   title: string,
-  formatter?: (value: T) => string
+  formatter?: (value: any) => string
 ): ColumnDef<C> => {
   return {
     accessorKey: key,
     ...createColumnCell(key, formatter),
-    header: ({ column }) =>
+    header: () =>
       renderComponent(TableHead, {
         title
       })

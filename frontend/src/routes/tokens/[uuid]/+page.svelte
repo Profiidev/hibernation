@@ -68,8 +68,8 @@
   };
 
   const onsubmit = async (form: FormValue<typeof tokenSettings>) => {
-    let token = reformatData(form, data.tokenInfo.uuid);
-    let res = await editToken({ body: token });
+    let newToken = reformatData(form, data.tokenInfo.uuid);
+    let res = await editToken({ body: newToken });
 
     if (res.error) {
       if (res.response.status === 409) {

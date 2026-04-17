@@ -48,7 +48,7 @@
     }
   });
 
-  const onsubmit = async (data: FormValue<typeof login>) => {
+  const onsubmit = async (formData: FormValue<typeof login>) => {
     let encrypt = getEncrypt();
     if (!encrypt) {
       return {
@@ -58,8 +58,8 @@
 
     let ret = await authenticate({
       body: {
-        email: data.email,
-        password: encrypt.encrypt(data.password) || ''
+        email: formData.email,
+        password: encrypt.encrypt(formData.password) || ''
       }
     });
 

@@ -26,8 +26,8 @@
   let isLoading = $state(false);
 
   const onsubmit = async (form: FormValue<typeof mailSettings>) => {
-    let data = reformat(form);
-    let ret = await saveMailSettings({ body: data });
+    let formData = reformat(form);
+    let ret = await saveMailSettings({ body: formData });
 
     if (ret.error) {
       if (ret.response.status === 406) {

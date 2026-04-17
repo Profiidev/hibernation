@@ -11,13 +11,13 @@
   let usage_percent = $derived((size_gib / quota_gib) * 100);
 
   const url = $derived.by(() => {
-    let url = new URL(data.generalSettings?.site_url || 'localhost:5173');
+    let siteUrl = new URL(data.generalSettings?.site_url || 'localhost:5173');
     if (data.generalSettings?.virtual_host_routing) {
-      url.host = `${data.cacheInfo.name}.${url.host}`;
-      return url.origin;
+      siteUrl.host = `${data.cacheInfo.name}.${siteUrl.host}`;
+      return siteUrl.origin;
     } else {
-      url.pathname = `/api/nix/${data.cacheInfo.name}`;
-      return url.href;
+      siteUrl.pathname = `/api/nix/${data.cacheInfo.name}`;
+      return siteUrl.href;
     }
   });
   const nixConfig = $derived(`{

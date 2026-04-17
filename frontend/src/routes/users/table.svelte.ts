@@ -18,7 +18,7 @@ export const columns = ({
     header: () => {},
     cell: ({ row }) => {
       return DataTable.renderComponent(SimpleAvatar, {
-        src: row.getValue('avatar') as string,
+        src: row.getValue('avatar') as string, // oxlint-disable-line no-unnecessary-type-assertion
         class: 'size-8'
       });
     },

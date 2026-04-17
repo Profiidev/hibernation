@@ -45,7 +45,7 @@ export const reformat = (form: FormValue<typeof mailSettings>) => {
       username: form.smtp_user!,
       password: form.smtp_password!,
       from_address: form.smtp_from_address!,
-      from_name: form.smtp_from_name!,
+      from_name: form.smtp_from_name,
       use_tls: form.use_tls
     };
   }

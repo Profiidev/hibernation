@@ -35,7 +35,7 @@ export const columns = ({
         !user?.permissions.includes(Permission.GROUP_EDIT) ||
         row.original.id === admin_group ||
         row.original.permissions.some(
-          (p) => !user?.permissions.includes(p as Permission)
+          (p) => !user?.permissions.includes(p as Permission) // oxlint-disable-line no-unsafe-type-assertion
         );
 
       return DataTable.renderComponent(Actions, {

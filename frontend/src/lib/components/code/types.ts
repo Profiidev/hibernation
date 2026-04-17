@@ -9,7 +9,7 @@ export type CopyButtonPropsWithoutHTML = WithChildren<
   Pick<ButtonPropsWithoutHTML, 'size' | 'variant'> & {
     ref?: HTMLButtonElement | null;
     text: string;
-    icon?: Snippet<[]>;
+    icon?: Snippet;
     animationDuration?: number;
     onCopy?: (status: UseClipboard['status']) => void;
   }
