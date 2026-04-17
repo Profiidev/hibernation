@@ -10,16 +10,14 @@ const createColumn = <C>(
   key: string,
   title: string,
   formatter?: (value: any) => string
-): ColumnDef<C> => {
-  return {
-    accessorKey: key,
-    ...createColumnCell(key, formatter),
-    header: () =>
-      renderComponent(TableHead, {
-        title
-      })
-  };
-};
+): ColumnDef<C> => ({
+  accessorKey: key,
+  ...createColumnCell(key, formatter),
+  header: () =>
+    renderComponent(TableHead, {
+      title
+    })
+});
 
 export const columns = ({
   write_access,
@@ -50,13 +48,12 @@ export const columns = ({
   createColumn('accessed', 'Access Count'),
   {
     accessorKey: 'actions',
-    header: () => {},
-    cell: ({ row }) => {
-      return DataTable.renderComponent(Actions, {
+    cell: ({ row }) =>
+      DataTable.renderComponent(Actions, {
         delete_disabled: !write_access,
         remove: () => delete_path(row.original.store_path)
-      });
-    },
-    enableHiding: false
+      }),
+    enableHiding: false,
+    header: () => {}
   }
 ];

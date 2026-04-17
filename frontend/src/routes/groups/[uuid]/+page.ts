@@ -3,14 +3,14 @@ import { redirect } from '@sveltejs/kit';
 import { groupInfo, listCachesSimpleGroup, listUsersSimple } from '$lib/client';
 
 export const load: PageLoad = async ({ params, fetch }) => {
-  let resPromise = groupInfo({
-    path: { uuid: params.uuid },
-    fetch
+  const resPromise = groupInfo({
+    fetch,
+    path: { uuid: params.uuid }
   });
-  let usersPromise = listUsersSimple({ fetch });
-  let cachesPromise = listCachesSimpleGroup({ fetch });
+  const usersPromise = listUsersSimple({ fetch });
+  const cachesPromise = listCachesSimpleGroup({ fetch });
 
-  let [res, users, caches] = await Promise.all([
+  const [res, users, caches] = await Promise.all([
     resPromise,
     usersPromise,
     cachesPromise
@@ -25,9 +25,9 @@ export const load: PageLoad = async ({ params, fetch }) => {
   }
 
   return {
-    uuid: params.uuid,
+    caches: caches.data,
     group: res.data,
     users: users.data,
-    caches: caches.data
+    uuid: params.uuid
   };
 };

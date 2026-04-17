@@ -2,6 +2,10 @@ import { EvictionPolicy } from '$lib/client';
 import { z } from 'zod';
 
 export const cacheSchema = z.object({
+  allow_force_push: z.boolean().default(false),
+  eviction_policy: z
+    .array(z.enum(EvictionPolicy))
+    .default([EvictionPolicy.LEAST_RECENTLY_USED]),
   name: z
     .string()
     .min(1, 'Cache name cannot be empty')
@@ -14,11 +18,7 @@ export const cacheSchema = z.object({
   priority: z
     .number()
     .int()
-    .min(0, { message: 'Priority must be a non-negative integer' }),
-  allow_force_push: z.boolean().default(false),
-  eviction_policy: z
-    .array(z.enum(EvictionPolicy))
-    .default([EvictionPolicy.LEAST_RECENTLY_USED])
+    .min(0, { message: 'Priority must be a non-negative integer' })
 });
 
 export const quotaSchema = z.object({

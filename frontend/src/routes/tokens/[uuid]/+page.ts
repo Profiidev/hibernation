@@ -3,9 +3,9 @@ import { redirect } from '@sveltejs/kit';
 import { tokenInfo } from '$lib/client';
 
 export const load: PageLoad = async ({ params, fetch }) => {
-  let res = await tokenInfo({
-    path: { uuid: params.uuid },
-    fetch
+  const res = await tokenInfo({
+    fetch,
+    path: { uuid: params.uuid }
   });
 
   if (!res.data) {
@@ -17,7 +17,7 @@ export const load: PageLoad = async ({ params, fetch }) => {
   }
 
   return {
-    uuid: params.uuid,
-    tokenInfo: res.data
+    tokenInfo: res.data,
+    uuid: params.uuid
   };
 };

@@ -1,11 +1,11 @@
 import * as core from '@actions/core';
 import * as tc from '@actions/tool-cache';
-import { execSync } from 'child_process';
+import { execSync } from 'node:child_process';
 
 const execCmd = (command: string): boolean => {
   try {
     execSync(command, {
-      encoding: 'utf-8'
+      encoding: 'utf8'
     });
     return true;
   } catch {
@@ -21,31 +21,37 @@ const run = async () => {
   const signingKey = core.getInput('signing-key');
   const repo = 'ProfiiDev/hibernation';
 
-  const platform = process.platform;
-  const arch = process.arch;
+  const { platform } = process;
+  const { arch } = process;
 
   let osPart = '';
   switch (platform) {
-    case 'darwin':
+    case 'darwin': {
       osPart = 'macos';
       break;
-    case 'linux':
+    }
+    case 'linux': {
       osPart = 'linux';
       break;
-    default:
+    }
+    default: {
       throw new Error(`Unsupported platform: ${platform}`);
+    }
   }
 
   let archPart = '';
   switch (arch) {
-    case 'x64':
+    case 'x64': {
       archPart = 'x86-64';
       break;
-    case 'arm64':
+    }
+    case 'arm64': {
       archPart = 'arm64';
       break;
-    default:
+    }
+    default: {
       throw new Error(`Unsupported architecture: ${arch}`);
+    }
   }
 
   const suffix = platform === 'linux' ? '-gnu' : '';
@@ -82,7 +88,7 @@ const run = async () => {
 };
 
 try {
-  let _ = run();
+  const _ = run();
 } catch (error: any) {
   core.setFailed(error.message);
 }

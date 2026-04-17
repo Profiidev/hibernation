@@ -32,38 +32,41 @@ export const disconnectWebsocket = () => disconnect();
 const handleMessage = (msg: UpdateMessage, user: string) => {
   switch (msg.type) {
     case UpdateType.Settings: {
-      let _ = invalidate((url) => url.pathname.startsWith('/api/settings'));
+      const _ = invalidate((url) => url.pathname.startsWith('/api/settings'));
       break;
     }
     case UpdateType.User: {
-      let _ = invalidate('/api/user/management');
-      let _u = invalidate(`/api/user/management/${msg.uuid}`);
-      let _g = invalidate('/api/group/users');
+      const _ = invalidate('/api/user/management');
+      const _u = invalidate(`/api/user/management/${msg.uuid}`);
+      const _g = invalidate('/api/group/users');
       // Same as current user
       if (msg.uuid === user) {
-        let _i = invalidate('/api/user/info');
+        const _i = invalidate('/api/user/info');
       }
       break;
     }
     case UpdateType.UserPermissions: {
-      let _ = invalidate('/api/user/info');
+      const _ = invalidate('/api/user/info');
       break;
     }
     case UpdateType.Group: {
-      let _ = invalidate('/api/group');
-      let _g = invalidate(`/api/group/${msg.uuid}`);
-      let _u = invalidate('/api/user/management/groups');
+      const _ = invalidate('/api/group');
+      const _g = invalidate(`/api/group/${msg.uuid}`);
+      const _u = invalidate('/api/user/management/groups');
       break;
     }
     case UpdateType.Token: {
-      let _ = invalidate('/api/token');
-      let _t = invalidate(`/api/token/${msg.uuid}`);
+      const _ = invalidate('/api/token');
+      const _t = invalidate(`/api/token/${msg.uuid}`);
       break;
     }
     case UpdateType.Cache: {
-      let _ = invalidate('/api/cache/management');
-      let _c = invalidate(`/api/cache/management/${msg.uuid}`);
-      let _g = invalidate('/api/group/caches');
+      const _ = invalidate('/api/cache/management');
+      const _c = invalidate(`/api/cache/management/${msg.uuid}`);
+      const _g = invalidate('/api/group/caches');
+      break;
+    }
+    default: {
       break;
     }
   }

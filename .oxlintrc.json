@@ -4,9 +4,36 @@
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
-    "perf": "warn"
+    "perf": "warn",
+    "style": "warn",
+    "restriction": "warn"
   },
-  "rules": {},
+  "rules": {
+    "eslint/id-length": "off",
+    "eslint/max-statements": "off",
+    "eslint/no-continue": "off",
+    "eslint/no-ternary": "off",
+    "eslint/no-undefined": "off",
+    "eslint/no-magic-numbers": "off",
+    "oxc/no-async-await": "off",
+    "oxc/no-optional-chaining": "off",
+    "oxc/no-rest-spread-properties": "off",
+    "typescript/explicit-function-return-type": "off",
+    "typescript/no-non-null-assertion": "off",
+    "typescript/no-explicit-any": "off",
+    "typescript/explicit-module-boundary-types": "off",
+    "typescript/parameter-properties": "off",
+    "eslint-plugin-unicorn/prefer-global-this": "off",
+    "eslint-plugin-unicorn/prefer-ternary": "off",
+    "eslint/no-use-before-define": "off",
+    "eslint/no-empty-function": "off",
+    "sort-imports": [
+      "warn",
+      {
+        "ignoreDeclarationSort": true
+      }
+    ]
+  },
   "env": {
     "builtin": true
   },
@@ -14,5 +41,5 @@
     "typeAware": true,
     "typeCheck": true
   },
-  "ignorePatterns": ["action/dist/**", "frontend/src/lib/client/**"]
+  "ignorePatterns": ["action/dist/**", "frontend/src/lib/client/**", "*.svelte"]
 }

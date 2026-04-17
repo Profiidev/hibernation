@@ -23,15 +23,14 @@ export const columns = ({
   createColumn('uuid', 'UUID'),
   {
     accessorKey: 'actions',
-    header: () => {},
-    cell: ({ row }) => {
-      return DataTable.renderComponent(Actions, {
-        edit_disabled: false,
+    cell: ({ row }) =>
+      DataTable.renderComponent(Actions, {
         delete_disabled: false,
         edit: `/tokens/${row.original.uuid}`,
+        edit_disabled: false,
         remove: () => deleteToken(row.original)
-      });
-    },
-    enableHiding: false
+      }),
+    enableHiding: false,
+    header: () => {}
   }
 ];
