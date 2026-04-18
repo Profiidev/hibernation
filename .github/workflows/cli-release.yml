@@ -36,15 +36,15 @@ jobs:
     name: Build Cli for ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Cache cargo and rust files
         id: rust_cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           cache-on-failure: true
           shared-key: 'cli_release_cache-${{ matrix.name }}'
       - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
         with:
           target: ${{ matrix.target }}
           toolchain: stable
@@ -53,7 +53,7 @@ jobs:
       - name: Compress artifact
         run: tar -czvf hibernation-${{ matrix.name }}.tar.gz -C target/${{ matrix.target }}/release hibernation
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: ${{ github.event_name == 'push' }}
         with:
           name: hibernation-${{ matrix.name }}
@@ -70,13 +70,13 @@ jobs:
           client-id: ${{ secrets.COMMIT_BOT_CLIENT_ID }}
           private-key: ${{ secrets.COMMIT_BOT_PRIVATE_KEY }}
       - name: Download artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: hibernation-*
           merge-multiple: true
           path: ./release-assets
       - name: Upload release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: ./release-assets/*
           tag_name: ${{ github.ref_name }}
