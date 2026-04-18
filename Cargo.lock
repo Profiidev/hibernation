@@ -2435,10 +2435,11 @@ dependencies = [
 [[package]]
 name = "harmonia-store-remote"
 version = "3.0.0"
-source = "git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0#f0672e5b502c14d506ea5e6acca7729a16f14436"
+source = "git+https://github.com/nix-community/harmonia?rev=fdf0e22a6577d714c1c7e67d68cbac9fd259be90#fdf0e22a6577d714c1c7e67d68cbac9fd259be90"
 dependencies = [
  "async-stream",
- "futures",
+ "futures-core",
+ "futures-util",
  "harmonia-nar",
  "harmonia-protocol",
  "harmonia-store-core",
@@ -7039,3 +7040,8 @@ checksum = "27bc9d5b815bc103f142aa054f561d9187d191692ec7c2d1e2b4737f8dbd7296"
 dependencies = [
  "zune-core",
 ]
+
+[[patch.unused]]
+name = "harmonia-store-remote"
+version = "3.0.0"
+source = "git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0#f0672e5b502c14d506ea5e6acca7729a16f14436"
