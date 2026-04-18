@@ -1,6 +1,6 @@
 <script lang="ts">
   import Trash from '@lucide/svelte/icons/trash';
-  import { Button } from 'positron-components/components/ui/button';
+  import { Button } from '@profidev/pleiades/components/ui/button';
 
   interface Props {
     delete_disabled: boolean;

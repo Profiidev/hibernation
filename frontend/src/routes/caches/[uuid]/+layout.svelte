@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Separator } from 'positron-components/components/ui/separator';
-  import SimpleSidebar from 'positron-components/components/nav/simple-sidebar.svelte';
-  import { Button } from 'positron-components/components/ui/button';
+  import { Separator } from '@profidev/pleiades/components/ui/separator';
+  import SimpleSidebar from '@profidev/pleiades/components/nav/simple-sidebar.svelte';
+  import { Button } from '@profidev/pleiades/components/ui/button';
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 
   const { children, data } = $props();

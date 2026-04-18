@@ -1,8 +1,8 @@
 <script lang="ts">
-  import * as Card from 'positron-components/components/ui/card';
+  import * as Card from '@profidev/pleiades/components/ui/card';
   import { onMount } from 'svelte';
-  import { Input } from 'positron-components/components/ui/input';
-  import { Button } from 'positron-components/components/ui/button';
+  import { Input } from '@profidev/pleiades/components/ui/input';
+  import { Button } from '@profidev/pleiades/components/ui/button';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import { newCode } from '$lib/client';
   import { sendCliCode } from '$lib/backend/util.svelte.js';

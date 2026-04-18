@@ -1,5 +1,5 @@
 import type JSEncrypt from 'jsencrypt';
-import { RequestError, ResponseType, get } from 'positron-components/backend';
+import { RequestError, ResponseType, get } from '@profidev/pleiades/backend';
 import { browser } from '$app/environment';
 import { key as getKey } from '$lib/client';
 

@@ -1,8 +1,8 @@
 import type { ColumnDef } from '@tanstack/table-core';
-import { createColumnCell } from 'positron-components/components/table/helpers.svelte';
-import { renderComponent } from 'positron-components/components/ui/data-table';
+import { createColumnCell } from '@profidev/pleiades/components/table/helpers.svelte';
+import { renderComponent } from '@profidev/pleiades/components/ui/data-table';
 import TableHead from './TableHead.svelte';
-import * as DataTable from 'positron-components/components/ui/data-table';
+import * as DataTable from '@profidev/pleiades/components/ui/data-table';
 import Actions from './Actions.svelte';
 import type { SearchResult } from '$lib/client';
 

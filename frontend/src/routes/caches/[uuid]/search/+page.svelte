@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Input } from 'positron-components/components/ui/input';
-  import { toast } from 'positron-components/components/util/general';
-  import * as Select from 'positron-components/components/ui/select';
+  import { Input } from '@profidev/pleiades/components/ui/input';
+  import { toast } from '@profidev/pleiades/components/util/general';
+  import * as Select from '@profidev/pleiades/components/ui/select';
   import Table from '$lib/components/table/Table.svelte';
   import { columns } from './table.svelte';
   import {

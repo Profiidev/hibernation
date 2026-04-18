@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { Button } from 'positron-components/components/ui/button';
-  import BaseForm from 'positron-components/components/form/base-form.svelte';
+  import { Button } from '@profidev/pleiades/components/ui/button';
+  import BaseForm from '@profidev/pleiades/components/form/base-form.svelte';
   import { cacheSchema, keySchema, quotaSchema } from './schema.svelte.js';
-  import FormInput from 'positron-components/components/form/form-input.svelte';
-  import { Spinner } from 'positron-components/components/ui/spinner';
+  import FormInput from '@profidev/pleiades/components/form/form-input.svelte';
+  import { Spinner } from '@profidev/pleiades/components/ui/spinner';
   import Save from '@lucide/svelte/icons/save';
-  import FormSwitch from 'positron-components/components/form/form-switch.svelte';
-  import type { FormValue } from 'positron-components/components/form/types';
-  import { toast } from 'positron-components/components/util/general';
-  import FormDialog from 'positron-components/components/form/form-dialog.svelte';
+  import FormSwitch from '@profidev/pleiades/components/form/form-switch.svelte';
+  import type { FormValue } from '@profidev/pleiades/components/form/types';
+  import { toast } from '@profidev/pleiades/components/util/general';
+  import FormDialog from '@profidev/pleiades/components/form/form-dialog.svelte';
   import { z } from 'zod';
   import Trash from '@lucide/svelte/icons/trash';
   import Ban from '@lucide/svelte/icons/ban';
@@ -17,9 +17,9 @@
   import Lock from '@lucide/svelte/icons/lock';
   import LockOpen from '@lucide/svelte/icons/lock-open';
   import { goto } from '$app/navigation';
-  import FormSelect from 'positron-components/components/form/form-select.svelte';
-  import { TagsInput } from 'positron-components/components/ui-extra/tags-input';
-  import { Label } from 'positron-components/components/ui/label';
+  import FormSelect from '@profidev/pleiades/components/form/form-select.svelte';
+  import { TagsInput } from '@profidev/pleiades/components/ui-extra/tags-input';
+  import { Label } from '@profidev/pleiades/components/ui/label';
   import { clearCache, deleteCache, editCache } from '$lib/client';
   import { EvictionPolicy } from '$lib/client/types.gen.js';
 

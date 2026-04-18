@@ -5,7 +5,7 @@ import Users from '@lucide/svelte/icons/users';
 import User from '@lucide/svelte/icons/user';
 import KeyRound from '@lucide/svelte/icons/key-round';
 import DatabaseZap from '@lucide/svelte/icons/database-zap';
-import type { NavGroup } from 'positron-components/components/nav/sidebar/types';
+import type { NavGroup } from '@profidev/pleiades/components/nav/sidebar/types';
 
 export const items: NavGroup[] = [
   {

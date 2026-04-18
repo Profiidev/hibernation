@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Progress } from 'positron-components/components/ui/progress';
+  import { Progress } from '@profidev/pleiades/components/ui/progress';
   import * as Code from '$lib/components/code';
-  import { ScrollArea } from 'positron-components/components/ui/scroll-area';
+  import { ScrollArea } from '@profidev/pleiades/components/ui/scroll-area';
   import { size_to_gib } from '$lib/backend/util.svelte.js';
 
   let { data } = $props();

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Multiselect from 'positron-components/components/table/multiselect.svelte';
-  import { Button } from 'positron-components/components/ui/form';
-  import * as Select from 'positron-components/components/ui/select';
+  import Multiselect from '@profidev/pleiades/components/table/multiselect.svelte';
+  import { Button } from '@profidev/pleiades/components/ui/form';
+  import * as Select from '@profidev/pleiades/components/ui/select';
   import Trash from '@lucide/svelte/icons/trash';
   import Plus from '@lucide/svelte/icons/plus';
   import {
