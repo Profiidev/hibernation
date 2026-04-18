@@ -814,7 +814,7 @@ dependencies = [
  "entity",
  "figment",
  "futures-util",
- "harmonia-store-core",
+ "harmonia-store-core 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=fdf0e22a6577d714c1c7e67d68cbac9fd259be90)",
  "http 1.4.0",
  "image",
  "migration",
@@ -2386,7 +2386,7 @@ dependencies = [
  "futures",
  "harmonia-nar",
  "harmonia-protocol-derive",
- "harmonia-store-core",
+ "harmonia-store-core 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0)",
  "harmonia-utils-hash",
  "harmonia-utils-io",
  "libc",
@@ -2409,6 +2409,25 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "harmonia-store-core"
+version = "0.0.0-alpha.0"
+source = "git+https://github.com/nix-community/harmonia?rev=fdf0e22a6577d714c1c7e67d68cbac9fd259be90#fdf0e22a6577d714c1c7e67d68cbac9fd259be90"
+dependencies = [
+ "bytes",
+ "data-encoding",
+ "derive_more",
+ "ed25519-dalek",
+ "getrandom 0.3.4",
+ "harmonia-utils-base-encoding",
+ "harmonia-utils-hash",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
+ "zerocopy",
 ]
 
 [[package]]
@@ -2441,7 +2460,7 @@ dependencies = [
  "futures",
  "harmonia-nar",
  "harmonia-protocol",
- "harmonia-store-core",
+ "harmonia-store-core 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0)",
  "harmonia-utils-io",
  "prometheus",
  "tokio",
@@ -2587,7 +2606,7 @@ dependencies = [
  "dirs",
  "futures-core",
  "harmonia-protocol",
- "harmonia-store-core",
+ "harmonia-store-core 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=fdf0e22a6577d714c1c7e67d68cbac9fd259be90)",
  "harmonia-store-remote",
  "indicatif",
  "opener",
@@ -5133,7 +5152,7 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "ed25519-compact",
- "harmonia-store-core",
+ "harmonia-store-core 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=fdf0e22a6577d714c1c7e67d68cbac9fd259be90)",
  "itoa",
  "schemars 1.2.1",
  "serde",
