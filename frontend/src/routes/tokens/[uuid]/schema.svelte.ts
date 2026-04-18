@@ -1,30 +1,26 @@
 import type { EditTokenRequest, TokenInfo } from '$lib/client';
-import type { FormValue } from 'positron-components/components/form/types';
+import type { FormValue } from '@profidev/pleiades/components/form/types';
 import { z } from 'zod';
 
 export const tokenSettings = z.object({
-  name: z.string().min(1, 'Token name is required'),
   exp: z
     .date('Invalid date')
-    .default(new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000)) // Default to 30 days
+    .default(new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000)),
+  name: z.string().min(1, 'Token name is required') // Default to 30 days
 });
 
 export const reformatData = (
   data: FormValue<typeof tokenSettings>,
   uuid: string
-): EditTokenRequest => {
-  return {
-    uuid,
-    name: data.name,
-    exp: data.exp
-  };
-};
+): EditTokenRequest => ({
+  exp: data.exp,
+  name: data.name,
+  uuid
+});
 
 export const formatData = (
   user: TokenInfo
-): FormValue<typeof tokenSettings> => {
-  return {
-    name: user.name,
-    exp: new Date(user.exp)
-  };
-};
+): FormValue<typeof tokenSettings> => ({
+  exp: new Date(user.exp),
+  name: user.name
+});

@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { Button } from 'positron-components/components/ui/button';
+  import { Button } from '@profidev/pleiades/components/ui/button';
   import Plus from '@lucide/svelte/icons/plus';
-  import { toast } from 'positron-components/components/util/general';
+  import { toast } from '@profidev/pleiades/components/util/general';
   import { Permission } from '$lib/permissions.svelte.js';
-  import { ScrollArea } from 'positron-components/components/ui/scroll-area';
+  import { ScrollArea } from '@profidev/pleiades/components/ui/scroll-area';
   import Lock from '@lucide/svelte/icons/lock';
   import LockOpen from '@lucide/svelte/icons/lock-open';
-  import { Badge } from 'positron-components/components/ui/badge';
-  import { Progress } from 'positron-components/components/ui/progress';
+  import { Badge } from '@profidev/pleiades/components/ui/badge';
+  import { Progress } from '@profidev/pleiades/components/ui/progress';
   import { size_to_gib } from '$lib/backend/util.svelte.js';
 
   const { data } = $props();

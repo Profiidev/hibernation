@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { Stage } from 'positron-components/components/form/types';
-  import MultiStepForm from 'positron-components/components/form/multistep-form.svelte';
+  import type { Stage } from '@profidev/pleiades/components/form/types';
+  import MultiStepForm from '@profidev/pleiades/components/form/multistep-form.svelte';
   import AdminUser from './AdminUser.svelte';
   import DatabaseSetup from './DatabaseSetup.svelte';
   import CheckIcon from '@lucide/svelte/icons/check';
-  import type { FormValue } from 'positron-components/components/form/types';
+  import type { FormValue } from '@profidev/pleiades/components/form/types';
   import type { adminUser } from './schema.svelte';
   import { goto } from '$app/navigation';
   import { connectWebsocket } from '$lib/backend/updater.svelte';
@@ -27,7 +27,7 @@
   ];
 
   const submit = async (rawData: object) => {
-    let data: FormValue<typeof adminUser> = rawData as any;
+    let formData: FormValue<typeof adminUser> = rawData as any;
     let encrypt = getEncrypt();
     if (!encrypt) {
       return {
@@ -37,9 +37,9 @@
 
     let ret = await completeSetup({
       body: {
-        admin_email: data.email,
-        admin_password: encrypt.encrypt(data.password) || '',
-        admin_username: data.username
+        admin_email: formData.email,
+        admin_password: encrypt.encrypt(formData.password) || '',
+        admin_username: formData.username
       }
     });
 

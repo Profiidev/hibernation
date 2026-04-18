@@ -1,18 +1,18 @@
 <script lang="ts">
-  import BaseForm from 'positron-components/components/form/base-form.svelte';
-  import FormInput from 'positron-components/components/form/form-input.svelte';
-  import * as Card from 'positron-components/components/ui/card';
+  import BaseForm from '@profidev/pleiades/components/form/base-form.svelte';
+  import FormInput from '@profidev/pleiades/components/form/form-input.svelte';
+  import * as Card from '@profidev/pleiades/components/ui/card';
   import { resetPassword } from './schema.svelte';
-  import type { FormValue } from 'positron-components/components/form/types';
-  import { toast } from 'positron-components/components/util/general';
-  import FormInputPassword from 'positron-components/components/form/form-input-password.svelte';
+  import type { FormValue } from '@profidev/pleiades/components/form/types';
+  import { toast } from '@profidev/pleiades/components/util/general';
+  import FormInputPassword from '@profidev/pleiades/components/form/form-input-password.svelte';
   import { goto } from '$app/navigation';
   import { resetPassword as sendResetPassword } from '$lib/client';
   import { getEncrypt } from '$lib/backend/auth.svelte';
 
   let { data } = $props();
 
-  const onsubmit = async (data: FormValue<typeof resetPassword>) => {
+  const onsubmit = async (formData: FormValue<typeof resetPassword>) => {
     let encrypt = getEncrypt();
     if (!encrypt) {
       return {
@@ -22,8 +22,8 @@
 
     let ret = await sendResetPassword({
       body: {
-        token: data.token,
-        new_password: encrypt.encrypt(data.new_password) || ''
+        token: formData.token,
+        new_password: encrypt.encrypt(formData.new_password) || ''
       }
     });
 

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import BaseForm from 'positron-components/components/form/base-form.svelte';
+  import BaseForm from '@profidev/pleiades/components/form/base-form.svelte';
   import { information } from './schema.svelte';
-  import FormInput from 'positron-components/components/form/form-input.svelte';
-  import type { StageProps } from 'positron-components/components/form/types';
-  import FormSwitch from 'positron-components/components/form/form-switch.svelte';
+  import FormInput from '@profidev/pleiades/components/form/form-input.svelte';
+  import type { StageProps } from '@profidev/pleiades/components/form/types';
+  import FormSwitch from '@profidev/pleiades/components/form/form-switch.svelte';
 
   let { initialValue, onsubmit, footer, isLoading }: StageProps = $props();
 

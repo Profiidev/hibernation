@@ -3,9 +3,9 @@ import { redirect } from '@sveltejs/kit';
 import { cacheDetails } from '$lib/client';
 
 export const load: LayoutLoad = async ({ params, fetch }) => {
-  let { data, response } = await cacheDetails({
-    path: { uuid: params.uuid },
-    fetch
+  const { data, response } = await cacheDetails({
+    fetch,
+    path: { uuid: params.uuid }
   });
 
   if (!data) {
@@ -17,7 +17,7 @@ export const load: LayoutLoad = async ({ params, fetch }) => {
   }
 
   return {
-    uuid: params.uuid,
-    cacheInfo: data
+    cacheInfo: data,
+    uuid: params.uuid
   };
 };

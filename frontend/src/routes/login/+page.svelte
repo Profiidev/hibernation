@@ -1,15 +1,15 @@
 <script lang="ts">
-  import BaseForm from 'positron-components/components/form/base-form.svelte';
-  import FormInput from 'positron-components/components/form/form-input.svelte';
-  import { Button } from 'positron-components/components/ui/button';
-  import * as Card from 'positron-components/components/ui/card';
-  import { FieldSeparator } from 'positron-components/components/ui/field';
+  import BaseForm from '@profidev/pleiades/components/form/base-form.svelte';
+  import FormInput from '@profidev/pleiades/components/form/form-input.svelte';
+  import { Button } from '@profidev/pleiades/components/ui/button';
+  import * as Card from '@profidev/pleiades/components/ui/card';
+  import { FieldSeparator } from '@profidev/pleiades/components/ui/field';
   import { login } from './schema.svelte';
-  import type { FormValue } from 'positron-components/components/form/types';
+  import type { FormValue } from '@profidev/pleiades/components/form/types';
   import { goto, invalidate } from '$app/navigation';
   import { connectWebsocket } from '$lib/backend/updater.svelte';
-  import { toast } from 'positron-components/components/util/general';
-  import FormInputPassword from 'positron-components/components/form/form-input-password.svelte';
+  import { toast } from '@profidev/pleiades/components/util/general';
+  import FormInputPassword from '@profidev/pleiades/components/form/form-input-password.svelte';
   import { authenticate, SsoType } from '$lib/client';
   import { getEncrypt } from '$lib/backend/auth.svelte';
 
@@ -48,7 +48,7 @@
     }
   });
 
-  const onsubmit = async (data: FormValue<typeof login>) => {
+  const onsubmit = async (formData: FormValue<typeof login>) => {
     let encrypt = getEncrypt();
     if (!encrypt) {
       return {
@@ -58,8 +58,8 @@
 
     let ret = await authenticate({
       body: {
-        email: data.email,
-        password: encrypt.encrypt(data.password) || ''
+        email: formData.email,
+        password: encrypt.encrypt(formData.password) || ''
       }
     });
 
@@ -130,7 +130,7 @@
               toast.error('Failed to get OIDC URL.');
               return;
             }
-            window.location.href = data.oidc_url;
+            window.location.href = data.oidc_url.toString();
           }}>OIDC Provider</Button
         >
       {/if}

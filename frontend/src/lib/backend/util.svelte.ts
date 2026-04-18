@@ -1,9 +1,6 @@
-import { get } from 'positron-components/backend';
+import { get } from '@profidev/pleiades/backend';
 
-export const size_to_gib = (size: number) => {
-  return size / 1024 / 1024 / 1024;
-};
+export const size_to_gib = (size: number) => size / 1024 / 1024 / 1024;
 
-export const sendCliCode = async (code: string) => {
-  return await get('http://localhost:16401?code=' + code);
-};
+export const sendCliCode = async (code: string) =>
+  await get(`http://localhost:16401?code=${code}`);

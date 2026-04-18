@@ -34,7 +34,7 @@
     "@lucide/svelte": "^1.7.0",
     "@sveltejs/enhanced-img": "0.10.4",
     "jsencrypt": "^3.5.4",
-    "positron-components": "^1.15.1",
+    "@profidev/pleiades": "^1.7.1",
     "valibot": "^1.2.0"
   }
 }

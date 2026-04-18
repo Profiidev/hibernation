@@ -5,47 +5,47 @@ import Users from '@lucide/svelte/icons/users';
 import User from '@lucide/svelte/icons/user';
 import KeyRound from '@lucide/svelte/icons/key-round';
 import DatabaseZap from '@lucide/svelte/icons/database-zap';
-import type { NavGroup } from 'positron-components/components/nav/sidebar/types';
+import type { NavGroup } from '@profidev/pleiades/components/nav/sidebar/types';
 
 export const items: NavGroup[] = [
   {
-    label: 'Cache',
     items: [
-      { label: 'Overview', href: '/', icon: House },
+      { href: '/', icon: House, label: 'Overview' },
       {
-        label: 'Caches',
         href: '/caches',
-        icon: DatabaseZap
+        icon: DatabaseZap,
+        label: 'Caches'
       },
       {
-        label: 'Access Tokens',
         href: '/tokens',
-        icon: KeyRound
+        icon: KeyRound,
+        label: 'Access Tokens'
       }
-    ]
+    ],
+    label: 'Cache'
   },
   {
-    label: 'Administration',
     items: [
       {
-        label: 'Users',
         href: '/users',
         icon: User,
+        label: 'Users',
         requiredPermission: Permission.USER_VIEW
       },
       {
-        label: 'Groups',
         href: '/groups',
         icon: Users,
+        label: 'Groups',
         requiredPermission: Permission.GROUP_VIEW
       },
       {
-        label: 'Settings',
         href: '/settings',
         icon: Settings,
+        label: 'Settings',
         requiredPermission: Permission.SETTINGS_VIEW
       }
-    ]
+    ],
+    label: 'Administration'
   }
 ];
 

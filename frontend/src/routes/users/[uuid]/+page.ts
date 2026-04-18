@@ -8,17 +8,17 @@ import {
 } from '$lib/client';
 
 export const load: PageLoad = async ({ params, fetch }) => {
-  let resPromise = userInfoDetail({
-    path: { uuid: params.uuid },
+  const resPromise = userInfoDetail({
+    fetch,
+    path: { uuid: params.uuid }
+  });
+  const groupsPromise = listGroupsSimple({
     fetch
   });
-  let groupsPromise = listGroupsSimple({
-    fetch
-  });
-  let cachesPromise = listCachesSimple({ fetch });
-  let mailPromise = mailActive({ fetch });
+  const cachesPromise = listCachesSimple({ fetch });
+  const mailPromise = mailActive({ fetch });
 
-  let [res, groups, caches, mail] = await Promise.all([
+  const [res, groups, caches, mail] = await Promise.all([
     resPromise,
     groupsPromise,
     cachesPromise,
@@ -34,10 +34,10 @@ export const load: PageLoad = async ({ params, fetch }) => {
   }
 
   return {
-    uuid: params.uuid,
-    userInfo: res.data,
-    groups: groups.data,
     caches: caches.data,
-    mailActive: mail.data?.active ?? false
+    groups: groups.data,
+    mailActive: mail.data?.active ?? false,
+    userInfo: res.data,
+    uuid: params.uuid
   };
 };

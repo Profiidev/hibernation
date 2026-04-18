@@ -1,25 +1,23 @@
 import type { ColumnDef } from '@tanstack/table-core';
-import { createColumnCell } from 'positron-components/components/table/helpers.svelte';
-import { renderComponent } from 'positron-components/components/ui/data-table';
+import { createColumnCell } from '@profidev/pleiades/components/table/helpers.svelte';
+import { renderComponent } from '@profidev/pleiades/components/ui/data-table';
 import TableHead from './TableHead.svelte';
-import * as DataTable from 'positron-components/components/ui/data-table';
+import * as DataTable from '@profidev/pleiades/components/ui/data-table';
 import Actions from './Actions.svelte';
 import type { SearchResult } from '$lib/client';
 
-const createColumn = <T, C>(
+const createColumn = <C>(
   key: string,
   title: string,
-  formatter?: (value: T) => string
-): ColumnDef<C> => {
-  return {
-    accessorKey: key,
-    ...createColumnCell(key, formatter),
-    header: ({ column }) =>
-      renderComponent(TableHead, {
-        title
-      })
-  };
-};
+  formatter?: (value: any) => string
+): ColumnDef<C> => ({
+  accessorKey: key,
+  ...createColumnCell(key, formatter),
+  header: () =>
+    renderComponent(TableHead, {
+      title
+    })
+});
 
 export const columns = ({
   write_access,
@@ -50,13 +48,12 @@ export const columns = ({
   createColumn('accessed', 'Access Count'),
   {
     accessorKey: 'actions',
-    header: () => {},
-    cell: ({ row }) => {
-      return DataTable.renderComponent(Actions, {
+    cell: ({ row }) =>
+      DataTable.renderComponent(Actions, {
         delete_disabled: !write_access,
         remove: () => delete_path(row.original.store_path)
-      });
-    },
-    enableHiding: false
+      }),
+    enableHiding: false,
+    header: () => {}
   }
 ];
