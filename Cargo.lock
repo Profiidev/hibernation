@@ -2377,6 +2377,33 @@ dependencies = [
 [[package]]
 name = "harmonia-protocol"
 version = "3.0.0"
+source = "git+https://github.com/nix-community/harmonia?rev=fdf0e22a6577d714c1c7e67d68cbac9fd259be90#fdf0e22a6577d714c1c7e67d68cbac9fd259be90"
+dependencies = [
+ "async-stream",
+ "bstr",
+ "bytes",
+ "derive_more",
+ "futures-core",
+ "futures-util",
+ "harmonia-nar",
+ "harmonia-protocol-derive",
+ "harmonia-store-core",
+ "harmonia-utils-hash",
+ "harmonia-utils-io",
+ "libc",
+ "num_enum",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "harmonia-protocol"
+version = "3.0.0"
 source = "git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0#f0672e5b502c14d506ea5e6acca7729a16f14436"
 dependencies = [
  "async-stream",
@@ -2440,7 +2467,7 @@ dependencies = [
  "async-stream",
  "futures",
  "harmonia-nar",
- "harmonia-protocol",
+ "harmonia-protocol 3.0.0 (git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0)",
  "harmonia-store-core",
  "harmonia-utils-io",
  "prometheus",
@@ -2586,7 +2613,7 @@ dependencies = [
  "color-eyre",
  "dirs",
  "futures-core",
- "harmonia-protocol",
+ "harmonia-protocol 3.0.0 (git+https://github.com/nix-community/harmonia?rev=fdf0e22a6577d714c1c7e67d68cbac9fd259be90)",
  "harmonia-store-core",
  "harmonia-store-remote",
  "indicatif",
