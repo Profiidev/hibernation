@@ -130,7 +130,7 @@
               toast.error('Failed to get OIDC URL.');
               return;
             }
-            window.location.href = data.oidc_url;
+            window.location.href = data.oidc_url.toString();
           }}>OIDC Provider</Button
         >
       {/if}
