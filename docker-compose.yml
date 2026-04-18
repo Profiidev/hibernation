@@ -42,7 +42,7 @@ services:
     restart: unless-stopped
     user: '${HOST_UID:-0}:${HOST_GID:-0}'
     volumes:
-      - ./postgres:/var/lib/postgresql/data
+      - ./postgres:/var/lib/postgresql
     environment:
       - POSTGRES_PASSWORD=test
       - POSTGRES_USER=test
