@@ -1,4 +1,4 @@
-use centaurus::db::migrations::user::User;
+use centaurus::db::migrations::m3_user::User;
 use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveMigrationName)]

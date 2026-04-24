@@ -12,12 +12,12 @@ pub struct Migrator;
 impl MigratorTrait for Migrator {
   fn migrations() -> Vec<Box<dyn MigrationTrait>> {
     vec![
-      Box::new(centaurus::db::migrations::key::Migration),
-      Box::new(centaurus::db::migrations::invalid_jwt::Migration),
-      Box::new(centaurus::db::migrations::settings::Migration),
-      Box::new(centaurus::db::migrations::user::Migration),
-      Box::new(centaurus::db::migrations::groups::Migration),
-      Box::new(centaurus::db::migrations::setup::Migration),
+      Box::new(centaurus::db::migrations::m0_key::Migration),
+      Box::new(centaurus::db::migrations::m1_invalid_jwt::Migration),
+      Box::new(centaurus::db::migrations::m2_settings::Migration),
+      Box::new(centaurus::db::migrations::m3_user::Migration),
+      Box::new(centaurus::db::migrations::m4_groups::Migration),
+      Box::new(centaurus::db::migrations::m5_setup::Migration),
       Box::new(m20260317_135750_token::Migration),
       Box::new(m20260319_192505_cache::Migration),
       Box::new(m20260319_193259_nar::Migration),

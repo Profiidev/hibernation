@@ -1,4 +1,7 @@
-use centaurus::db::tables::group::{GroupTable, SimpleUserInfo};
+use centaurus::{
+  db::tables::group::{GroupTable, SimpleUserInfo},
+  error::Result,
+};
 use entity::{cache, cache_access, group, sea_orm_active_enums::AccessType};
 use schemars::JsonSchema;
 use sea_orm::{FromQueryResult, IntoActiveModel, JoinType, QuerySelect, Set, prelude::*};
@@ -29,20 +32,22 @@ impl<'db> GroupTableExt<'db> {
     Self { db }
   }
 
-  async fn cache_access_for_group(&self, group: Uuid) -> Result<Vec<CacheMapping>, DbErr> {
-    cache_access::Entity::find()
-      .join(JoinType::InnerJoin, cache_access::Relation::Cache.def())
-      .filter(cache_access::Column::GroupId.eq(group))
-      .select_only()
-      .column_as(cache_access::Column::CacheId, "uuid")
-      .column_as(cache::Column::Name, "name")
-      .column_as(cache_access::Column::AccessType, "access_type")
-      .into_model::<CacheMapping>()
-      .all(self.db)
-      .await
+  async fn cache_access_for_group(&self, group: Uuid) -> Result<Vec<CacheMapping>> {
+    Ok(
+      cache_access::Entity::find()
+        .join(JoinType::InnerJoin, cache_access::Relation::Cache.def())
+        .filter(cache_access::Column::GroupId.eq(group))
+        .select_only()
+        .column_as(cache_access::Column::CacheId, "uuid")
+        .column_as(cache::Column::Name, "name")
+        .column_as(cache_access::Column::AccessType, "access_type")
+        .into_model::<CacheMapping>()
+        .all(self.db)
+        .await?,
+    )
   }
 
-  pub async fn group_info(&self, group_id: Uuid) -> Result<Option<GroupDetails>, DbErr> {
+  pub async fn group_info(&self, group_id: Uuid) -> Result<Option<GroupDetails>> {
     let group = group::Entity::find_by_id(group_id).one(self.db).await?;
     let Some(group) = group else {
       return Ok(None);
@@ -67,7 +72,7 @@ impl<'db> GroupTableExt<'db> {
     group: Uuid,
     old_mappings: Vec<CacheMapping>,
     new_mappings: Vec<CacheMapping>,
-  ) -> Result<(), DbErr> {
+  ) -> Result<()> {
     // Delete old mappings
     let cache_ids_to_delete: Vec<Uuid> = old_mappings.iter().map(|m| m.uuid).collect();
     cache_access::Entity::delete_many()

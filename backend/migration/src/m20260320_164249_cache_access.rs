@@ -1,4 +1,4 @@
-use centaurus::db::migrations::{groups::Group, user::User};
+use centaurus::db::migrations::{m3_user::User, m4_groups::Group};
 use sea_orm_migration::{
   prelude::{extension::postgres::Type, *},
   schema::*,

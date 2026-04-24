@@ -3,17 +3,19 @@ use std::marker::PhantomData;
 use aide::OperationIo;
 use axum::extract::{FromRequestParts, OptionalFromRequestParts};
 use centaurus::{
-  backend::auth::{
-    jwt::jwt_from_request,
-    jwt_auth,
-    jwt_state::JWT_COOKIE_NAME,
-    permission::{NoPerm, Permission},
-    pw_state::PasswordState,
+  backend::{
+    auth::{
+      jwt::jwt_from_request,
+      jwt_auth,
+      jwt_state::JWT_COOKIE_NAME,
+      permission::{NoPerm, Permission},
+      pw_state::PasswordState,
+    },
+    request::extract::StateExtractExt,
   },
   bail,
   db::init::Connection,
   error::ErrorReport,
-  state::extract::StateExtractExt,
 };
 use chrono::Utc;
 use http::request::Parts;

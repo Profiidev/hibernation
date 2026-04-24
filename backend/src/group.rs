@@ -3,7 +3,7 @@ use aide::axum::routing::{get_with, put_with};
 use axum::{Json, extract::Path};
 use centaurus::backend::auth::jwt_auth::JwtAuth;
 use centaurus::backend::auth::permission::{GroupEdit, GroupView, Permission};
-use centaurus::backend::group::{
+use centaurus::backend::endpoints::group::{
   create_group_route, delete_group_route, list_groups_route, list_users_simple_route,
 };
 use centaurus::db::tables::ConnectionExt;
