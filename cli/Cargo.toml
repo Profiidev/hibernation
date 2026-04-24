@@ -10,7 +10,11 @@ license = "GPL-2.0-only"
 async-compression = { version = "0.4.41", features = ["tokio", "zstd"] }
 bytes = "1.11.1"
 centaurus = { version = "0.10.0", default-features = false, features = [
+  "error",
+  "logging",
   "reqwest",
+  "serde_json",
+  "url"
 ] }
 clap = { version = "4.6.0", features = ["derive"] }
 color-eyre = "0.6.5"
