@@ -1,5 +1,7 @@
 use centaurus::{
-  backend::auth::permission::Permission, db::tables::group::GroupTable, error::ErrorReportStatusExt,
+  backend::auth::permission::Permission,
+  db::tables::group::GroupTable,
+  error::{ErrorReportStatusExt, Result},
 };
 use entity::{
   cache, cache_access, downstream_cache, group_user, nar, nar_info,
@@ -83,7 +85,7 @@ impl<'db> CacheTable<'db> {
     Self { db }
   }
 
-  pub async fn list_caches(&self, user: Uuid) -> Result<Vec<CacheInfo>, DbErr> {
+  pub async fn list_caches(&self, user: Uuid) -> Result<Vec<CacheInfo>> {
     let mut query = cache::Entity::find()
       .join(JoinType::LeftJoin, cache::Relation::NarInfo.def())
       .join(JoinType::LeftJoin, nar_info::Relation::Nar.def())
@@ -91,32 +93,36 @@ impl<'db> CacheTable<'db> {
 
     query = apply_user_filter(query, self.db, user, AccessType::View).await?;
 
-    query
-      .group_by(cache::Column::Id)
-      .select_only()
-      .columns(cache::Column::iter())
-      .column_as(nar::Column::Size.sum().cast_as("BIGINT"), "size")
-      .into_model::<CacheInfo>()
-      .all(self.db)
-      .await
+    Ok(
+      query
+        .group_by(cache::Column::Id)
+        .select_only()
+        .columns(cache::Column::iter())
+        .column_as(nar::Column::Size.sum().cast_as("BIGINT"), "size")
+        .into_model::<CacheInfo>()
+        .all(self.db)
+        .await?,
+    )
   }
 
-  pub async fn list_caches_simple(&self, user: Uuid) -> Result<Vec<SimpleCacheInfo>, DbErr> {
+  pub async fn list_caches_simple(&self, user: Uuid) -> Result<Vec<SimpleCacheInfo>> {
     let mut query =
       cache::Entity::find().join(JoinType::LeftJoin, cache::Relation::CacheAccess.def());
 
     query = apply_user_filter(query, self.db, user, AccessType::View).await?;
 
-    query
-      .select_only()
-      .column(cache::Column::Id)
-      .column(cache::Column::Name)
-      .into_model::<SimpleCacheInfo>()
-      .all(self.db)
-      .await
+    Ok(
+      query
+        .select_only()
+        .column(cache::Column::Id)
+        .column(cache::Column::Name)
+        .into_model::<SimpleCacheInfo>()
+        .all(self.db)
+        .await?,
+    )
   }
 
-  pub async fn cache_details(&self, uuid: Uuid, user: Uuid) -> Result<Option<CacheDetails>, DbErr> {
+  pub async fn cache_details(&self, uuid: Uuid, user: Uuid) -> Result<Option<CacheDetails>> {
     let access = self.cache_user_access(user, uuid).await?;
 
     let mut query = cache::Entity::find_by_id(uuid)
@@ -165,11 +171,13 @@ impl<'db> CacheTable<'db> {
     }))
   }
 
-  pub async fn by_name(&self, name: String) -> Result<Option<cache::Model>, DbErr> {
-    cache::Entity::find()
-      .filter(Func::lower(Expr::col(cache::Column::Name)).eq(name.to_lowercase()))
-      .one(self.db)
-      .await
+  pub async fn by_name(&self, name: String) -> Result<Option<cache::Model>> {
+    Ok(
+      cache::Entity::find()
+        .filter(Func::lower(Expr::col(cache::Column::Name)).eq(name.to_lowercase()))
+        .one(self.db)
+        .await?,
+    )
   }
 
   pub async fn by_id_filtered(
@@ -177,17 +185,17 @@ impl<'db> CacheTable<'db> {
     uuid: Uuid,
     user: Uuid,
     access_type: AccessType,
-  ) -> Result<Option<cache::Model>, DbErr> {
+  ) -> Result<Option<cache::Model>> {
     let mut query =
       cache::Entity::find_by_id(uuid).join(JoinType::LeftJoin, cache::Relation::CacheAccess.def());
 
     query = apply_user_filter(query, self.db, user, access_type).await?;
 
-    query.one(self.db).await
+    Ok(query.one(self.db).await?)
   }
 
-  pub async fn by_id(&self, uuid: Uuid) -> Result<Option<cache::Model>, DbErr> {
-    cache::Entity::find_by_id(uuid).one(self.db).await
+  pub async fn by_id(&self, uuid: Uuid) -> Result<Option<cache::Model>> {
+    Ok(cache::Entity::find_by_id(uuid).one(self.db).await?)
   }
 
   pub async fn by_name_filtered(
@@ -195,14 +203,14 @@ impl<'db> CacheTable<'db> {
     name: String,
     user: Uuid,
     access_type: AccessType,
-  ) -> Result<Option<cache::Model>, DbErr> {
+  ) -> Result<Option<cache::Model>> {
     let mut query = cache::Entity::find()
       .filter(cache::Column::Name.eq(name))
       .join(JoinType::LeftJoin, cache::Relation::CacheAccess.def());
 
     query = apply_user_filter(query, self.db, user, access_type).await?;
 
-    query.one(self.db).await
+    Ok(query.one(self.db).await?)
   }
 
   pub async fn create_cache(
@@ -252,24 +260,22 @@ impl<'db> CacheTable<'db> {
       .status_context(StatusCode::INTERNAL_SERVER_ERROR, "DB Error")
   }
 
-  pub async fn delete_cache(&self, uuid: Uuid) -> Result<(), DbErr> {
+  pub async fn delete_cache(&self, uuid: Uuid) -> Result<()> {
     cache::Entity::delete_by_id(uuid).exec(self.db).await?;
 
     Ok(())
   }
 
-  pub async fn downstream_caches(&self, uuid: Uuid) -> Result<Vec<downstream_cache::Model>, DbErr> {
-    downstream_cache::Entity::find()
-      .filter(downstream_cache::Column::CacheId.eq(uuid))
-      .all(self.db)
-      .await
+  pub async fn downstream_caches(&self, uuid: Uuid) -> Result<Vec<downstream_cache::Model>> {
+    Ok(
+      downstream_cache::Entity::find()
+        .filter(downstream_cache::Column::CacheId.eq(uuid))
+        .all(self.db)
+        .await?,
+    )
   }
 
-  pub async fn cache_user_access(
-    &self,
-    user: Uuid,
-    cache: Uuid,
-  ) -> Result<Option<AccessType>, DbErr> {
+  pub async fn cache_user_access(&self, user: Uuid, cache: Uuid) -> Result<Option<AccessType>> {
     let user_permissions = GroupTable::new(self.db).get_user_permissions(user).await?;
     if user_permissions.contains(&CacheEdit::name().to_string()) {
       return Ok(Some(AccessType::Edit));
@@ -318,7 +324,7 @@ impl<'db> CacheTable<'db> {
     eviction_policy: EvictionPolicy,
     downstream_caches: Vec<Url>,
     cache_id: Uuid,
-  ) -> Result<(), DbErr> {
+  ) -> Result<()> {
     let mut cache = cache::Entity::find_by_id(cache_id)
       .one(self.db)
       .await?
@@ -358,7 +364,7 @@ impl<'db> CacheTable<'db> {
     Ok(())
   }
 
-  pub async fn clear_cache(&self, cache_id: Uuid) -> Result<(), DbErr> {
+  pub async fn clear_cache(&self, cache_id: Uuid) -> Result<()> {
     nar_info::Entity::delete_many()
       .filter(nar_info::Column::CacheId.eq(cache_id))
       .exec(self.db)
@@ -367,7 +373,7 @@ impl<'db> CacheTable<'db> {
     Ok(())
   }
 
-  pub async fn cache_size(&self, cache_id: Uuid) -> Result<Option<i64>, DbErr> {
+  pub async fn cache_size(&self, cache_id: Uuid) -> Result<Option<i64>> {
     Ok(
       nar::Entity::find()
         .join(JoinType::InnerJoin, nar::Relation::NarInfo.def())
@@ -386,7 +392,7 @@ impl<'db> CacheTable<'db> {
     cache: Uuid,
     to_evict: i64,
     eviction_policy: EvictionPolicy,
-  ) -> Result<(), DbErr> {
+  ) -> Result<()> {
     let cumulative_size = "cumulative_size";
     let mut window = WindowStatement::new();
 
@@ -461,7 +467,10 @@ impl<'db> CacheTable<'db> {
   }
 }
 
-fn serialize_i64_or_zero<S>(num: &Option<i64>, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_i64_or_zero<S>(
+  num: &Option<i64>,
+  serializer: S,
+) -> std::result::Result<S::Ok, S::Error>
 where
   S: serde::Serializer,
 {
@@ -474,7 +483,7 @@ async fn apply_user_filter<Q: QueryFilter>(
   db: &DatabaseConnection,
   user: Uuid,
   access_type: AccessType,
-) -> Result<Q, DbErr> {
+) -> Result<Q> {
   let permission = match access_type {
     AccessType::View => crate::utils::CacheView::name(),
     AccessType::Edit => crate::utils::CacheEdit::name(),

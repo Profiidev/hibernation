@@ -1,6 +1,9 @@
-use centaurus::db::tables::{
-  group::GroupTable,
-  user::{SimpleGroupInfo, UserTable},
+use centaurus::{
+  db::tables::{
+    group::GroupTable,
+    user::{SimpleGroupInfo, UserTable},
+  },
+  error::Result,
 };
 use entity::{cache, cache_access, user};
 use schemars::JsonSchema;
@@ -29,20 +32,22 @@ impl<'db> UserTableExt<'db> {
     Self { db }
   }
 
-  async fn cache_access_for_group(&self, user: Uuid) -> Result<Vec<CacheMapping>, DbErr> {
-    cache_access::Entity::find()
-      .join(JoinType::InnerJoin, cache_access::Relation::Cache.def())
-      .filter(cache_access::Column::UserId.eq(user))
-      .select_only()
-      .column_as(cache_access::Column::CacheId, "uuid")
-      .column_as(cache::Column::Name, "name")
-      .column_as(cache_access::Column::AccessType, "access_type")
-      .into_model::<CacheMapping>()
-      .all(self.db)
-      .await
+  async fn cache_access_for_group(&self, user: Uuid) -> Result<Vec<CacheMapping>> {
+    Ok(
+      cache_access::Entity::find()
+        .join(JoinType::InnerJoin, cache_access::Relation::Cache.def())
+        .filter(cache_access::Column::UserId.eq(user))
+        .select_only()
+        .column_as(cache_access::Column::CacheId, "uuid")
+        .column_as(cache::Column::Name, "name")
+        .column_as(cache_access::Column::AccessType, "access_type")
+        .into_model::<CacheMapping>()
+        .all(self.db)
+        .await?,
+    )
   }
 
-  pub async fn user_info(&self, user_id: Uuid) -> Result<Option<DetailUserInfo>, DbErr> {
+  pub async fn user_info(&self, user_id: Uuid) -> Result<Option<DetailUserInfo>> {
     let user = user::Entity::find_by_id(user_id).one(self.db).await?;
     let Some(user) = user else {
       return Ok(None);
@@ -72,7 +77,7 @@ impl<'db> UserTableExt<'db> {
     user: Uuid,
     old_mappings: Vec<CacheMapping>,
     new_mappings: Vec<CacheMapping>,
-  ) -> Result<(), DbErr> {
+  ) -> Result<()> {
     // Delete old mappings
     let cache_ids_to_delete: Vec<Uuid> = old_mappings.iter().map(|m| m.uuid).collect();
     cache_access::Entity::delete_many()

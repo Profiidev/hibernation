@@ -1,7 +1,7 @@
 use aide::axum::ApiRouter;
 use aide::axum::routing::get_with;
 use axum::Json;
-use centaurus::backend::setup::complete_setup_route;
+use centaurus::backend::endpoints::setup::complete_setup_route;
 use centaurus::db::tables::ConnectionExt;
 use centaurus::{db::init::Connection, error::Result};
 use schemars::JsonSchema;

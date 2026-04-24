@@ -2,7 +2,7 @@ use centaurus::{
   UpdateMessage,
   backend::{
     auth::permission::{self, Permission},
-    websocket,
+    endpoints::websocket,
   },
   permission,
 };
