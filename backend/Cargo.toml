@@ -24,7 +24,7 @@ aws-config = { version = "1.8.15", features = ["behavior-version-latest"] }
 aws-sdk-s3 = { version = "1.129.0", features = ["behavior-version-latest"] }
 axum = { version = "0.8.8", features = ["macros", "tracing", "ws"] }
 axum-extra = { version = "0.12.5", features = ["cookie", "typed-header"] }
-centaurus = { version = "0.10.0", features = [
+centaurus = { version = "0.11.1", features = [
   "uuid",
 ] }
 chrono = "0.4.44"
