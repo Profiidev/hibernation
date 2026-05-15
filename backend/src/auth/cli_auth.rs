@@ -47,7 +47,7 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for CliAuth<P> {
       jwt_auth::check_jwt(&db, parts, token).await?.sub
     };
 
-    jwt_auth::check_user::<P>(&db, user).await?;
+    P::check(&db, user, parts).await?;
 
     Ok(CliAuth {
       user_id: user,
