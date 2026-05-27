@@ -3,8 +3,8 @@
 import type {
   ListTokensResponse,
   SearchStorePathsResponse,
-  TokenInfoResponse,
-} from "./types.gen";
+  TokenInfoResponse
+} from './types.gen';
 
 const searchResultSchemaResponseTransformer = (data: any) => {
   data.created_at = new Date(data.created_at);
@@ -15,7 +15,7 @@ const searchResultSchemaResponseTransformer = (data: any) => {
 };
 
 export const searchStorePathsResponseTransformer = async (
-  data: any,
+  data: any
 ): Promise<SearchStorePathsResponse> => {
   data = data.map((item: any) => searchResultSchemaResponseTransformer(item));
   return data;
@@ -30,14 +30,14 @@ const tokenInfoSchemaResponseTransformer = (data: any) => {
 };
 
 export const listTokensResponseTransformer = async (
-  data: any,
+  data: any
 ): Promise<ListTokensResponse> => {
   data = data.map((item: any) => tokenInfoSchemaResponseTransformer(item));
   return data;
 };
 
 export const tokenInfoResponseTransformer = async (
-  data: any,
+  data: any
 ): Promise<TokenInfoResponse> => {
   data = tokenInfoSchemaResponseTransformer(data);
   return data;

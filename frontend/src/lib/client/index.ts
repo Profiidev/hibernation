@@ -62,8 +62,8 @@ export {
   uploadInfo,
   uploadNar,
   uploadPath,
-  userInfoDetail,
-} from "./sdk.gen";
+  userInfoDetail
+} from './sdk.gen';
 export {
   AccessType,
   type AccountUpdate,
@@ -376,5 +376,5 @@ export {
   type UserListInfo,
   type UserSettings,
   type UserSettingsResponse,
-  type UserViewPath,
-} from "./types.gen";
+  type UserViewPath
+} from './types.gen';
