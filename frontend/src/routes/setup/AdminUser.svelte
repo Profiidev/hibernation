@@ -12,7 +12,6 @@
     isLoading
   }: StageProps<{
     db_backend: string;
-    storage_backend: string;
   }> = $props();
 
   let form: BaseForm<typeof adminUser> | undefined = $state();
@@ -22,7 +21,14 @@
   };
 </script>
 
-<BaseForm {onsubmit} {initialValue} {footer} bind:isLoading schema={adminUser}>
+<BaseForm
+  {onsubmit}
+  {initialValue}
+  {footer}
+  bind:isLoading
+  schema={adminUser}
+  bind:this={form}
+>
   {#snippet children({ props })}
     <FormInput
       {...props}

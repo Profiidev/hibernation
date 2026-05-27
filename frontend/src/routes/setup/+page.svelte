@@ -6,14 +6,14 @@
   import CheckIcon from '@lucide/svelte/icons/check';
   import type { FormValue } from '@profidev/pleiades/components/form/types';
   import type { adminUser } from './schema.svelte';
-  import { goto } from '$app/navigation';
+  import { goto, invalidate } from '$app/navigation';
   import { connectWebsocket } from '$lib/backend/updater.svelte';
   import { completeSetup } from '$lib/client';
   import { getEncrypt } from '$lib/backend/auth.svelte';
 
   let { data } = $props();
 
-  let stages: Stage<{ db_backend: string; storage_backend: string }>[] = [
+  let stages: Stage<{ db_backend: string }>[] = [
     {
       title: 'Database Setup',
       content: DatabaseSetup,
@@ -44,17 +44,19 @@
     });
 
     if (!ret.data) {
-      if (ret.response.status === 409) {
+      if (ret.response?.status === 409) {
         return { error: 'The setup was already completed.' };
-      } else if (ret.response.status === 500) {
+      } else if (ret.response?.status === 500) {
         return { error: 'The server failed to find the admin group.' };
       } else {
         return { error: 'An unknown error occurred.' };
       }
     } else {
-      setTimeout(() => {
-        connectWebsocket((ret.data as { user: string }).user);
-        goto('/');
+      setTimeout(async () => {
+        let user = ((await ret.data) as { user?: string } | undefined)?.user;
+        connectWebsocket(user || '');
+        await invalidate('/api/user/info');
+        await goto('/');
       });
     }
   };
