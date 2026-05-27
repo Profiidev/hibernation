@@ -74,7 +74,7 @@
       allowSpecialEdit = detailUserInfo.permissions.every((perm) =>
         user.permissions.includes(perm)
       );
-      mappings = detailUserInfo.cache_mappings;
+      mappings = detailUserInfo.caches;
     });
   });
 
@@ -92,7 +92,7 @@
 
   $effect(() => {
     data.cachesPromise.then((res) => {
-      caches = res;
+      caches = res.data ?? [];
     });
   });
 
@@ -309,7 +309,7 @@
               <CacheAccess
                 {caches}
                 bind:mappings
-                disabled={!data.user?.permissions.includes(
+                disabled={!userInfo?.permissions.includes(
                   Permission.CACHE_EDIT
                 ) || isLoading}
               />

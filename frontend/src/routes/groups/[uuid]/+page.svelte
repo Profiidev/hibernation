@@ -22,7 +22,7 @@
     deleteGroup,
     editGroup,
     type CacheMapping,
-    type GroupInfo,
+    type GroupDetails,
     type SimpleCacheInfo,
     type SimpleUserInfo,
     type UserInfo
@@ -36,7 +36,7 @@
   let isLoading = $state(false);
   let user: UserInfo | undefined = $state();
   let adminGroup: string | undefined = $state();
-  let group: GroupInfo | undefined = $state();
+  let group: GroupDetails | undefined = $state();
   let form: BaseForm<typeof groupSettings> | undefined = $state();
   let users: SimpleUserInfo[] | undefined = $state();
   let mappings: CacheMapping[] = $state([]);
@@ -57,7 +57,7 @@
 
       group = res.data.group;
       adminGroup = res.data.admin_group;
-      mappings = res.data.mappings;
+      mappings = res.data.group.caches;
       form?.setValue(formatData(group));
     });
   });
@@ -76,7 +76,7 @@
 
   $effect(() => {
     data.cachesPromise.then(({ data }) => {
-      caches = data;
+      caches = data ?? [];
     });
   });
 
@@ -190,9 +190,8 @@
               <CacheAccess
                 {caches}
                 bind:mappings
-                disabled={!data.user?.permissions.includes(
-                  Permission.CACHE_EDIT
-                ) || isLoading}
+                disabled={!user?.permissions.includes(Permission.CACHE_EDIT) ||
+                  isLoading}
               />
             </div>
           </div>

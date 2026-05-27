@@ -10,7 +10,9 @@ use centaurus::{
       permission::{Permission, UserEdit, UserView},
     },
     endpoints::user::{
-      account, info,
+      account,
+      email::change_email_route,
+      info,
       management::{
         create_user_route, delete_user_route, list_groups_simple_route, list_users_route,
         mail_active_route, reset_user_avatar_route, reset_user_password_route,
@@ -47,6 +49,7 @@ fn management() -> ApiRouter {
     .api_route("/groups", list_groups_simple_route())
     .api_route("/avatar", reset_user_avatar_route::<UpdateMessage>())
     .api_route("/password", reset_user_password_route())
+    .api_route("/email", change_email_route::<UpdateMessage>())
     .api_route("/", put_with(edit_user, |op| op.id("editUser")))
     .api_route("/{uuid}", get_with(user_info, |op| op.id("userInfoDetail")))
     .api_route(

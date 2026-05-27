@@ -64,7 +64,7 @@
 {:else}
   <Sidebar
     {user}
-    app_name="my-app"
+    app_name="Hibernation"
     avatar={user ? `${avatarUrl}/${user.uuid}` : undefined}
     {version}
     {items}
