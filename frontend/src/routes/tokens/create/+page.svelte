@@ -20,7 +20,7 @@
     let res = await createToken({ body: anyData });
 
     if (!res.data) {
-      if (res.response.status === 409) {
+      if (res.response?.status === 409) {
         return {
           error: 'A token with this name already exists.',
           field: 'name'

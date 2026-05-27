@@ -17,9 +17,9 @@
 
   $effect(() => {
     if (data.error) {
-      if (data.error === 'token_not_found') {
+      if (data.error === 'not_found') {
         toast.error('Token not found');
-      } else if (data.error === 'token_other') {
+      } else if (data.error === 'other') {
         toast.error('Failed to load token');
       }
 

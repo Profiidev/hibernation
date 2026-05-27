@@ -20,7 +20,13 @@
   import { CopyButton } from '@profidev/pleiades/components/ui-extra/copy-button';
   import { onMount } from 'svelte';
   import { today, getLocalTimeZone } from '@internationalized/date';
-  import { deleteToken, editToken, tokenRegenerate } from '$lib/client';
+  import {
+    deleteToken,
+    editToken,
+    tokenRegenerate,
+    type TokenInfo
+  } from '$lib/client';
+  import { Skeleton } from '@profidev/pleiades/components/ui/skeleton';
 
   const { data } = $props();
 
@@ -28,6 +34,9 @@
   let regenerateOpen = $state(false);
   let isLoading = $state(false);
   let token = $state<string>();
+  let tokenInfo: TokenInfo | undefined = $state();
+  let form: BaseForm<typeof tokenSettings> | undefined = $state();
+  let readonly = $derived(!tokenInfo);
 
   onMount(() => {
     let newToken = sessionStorage.getItem('newToken');
@@ -37,15 +46,32 @@
     }
   });
 
+  $effect(() => {
+    data.tokenRes.then((res) => {
+      if (!res.data) {
+        if (res.response?.status === 404) {
+          goto('/tokens?error=not_found');
+        } else {
+          goto('/tokens?error=other');
+        }
+        return;
+      }
+
+      tokenInfo = res.data;
+      form?.setValue(formatData(tokenInfo));
+    });
+  });
+
   const deleteItemConfirm = async () => {
+    if (!tokenInfo) return;
     isLoading = true;
-    let ret = await deleteToken({ body: { uuid: data.tokenInfo.uuid } });
+    let ret = await deleteToken({ body: { uuid: tokenInfo.uuid } });
     isLoading = false;
 
     if (ret.error) {
       return { error: 'Failed to delete token' };
     } else {
-      toast.success(`Token ${data.tokenInfo.name} deleted successfully`);
+      toast.success(`Token ${tokenInfo.name} deleted successfully`);
       setTimeout(() => {
         goto('/tokens');
       });
@@ -53,32 +79,37 @@
   };
 
   const regenerateConfirm = async () => {
+    if (!tokenInfo) return;
     isLoading = true;
     let res = await tokenRegenerate({
-      path: { uuid: data.tokenInfo.uuid }
+      path: { uuid: tokenInfo.uuid }
     });
     isLoading = false;
 
     if (!res.data) {
       return { error: 'Failed to regenerate token' };
     } else {
-      toast.success(`Token ${data.tokenInfo.name} regenerated successfully`);
+      toast.success(`Token ${tokenInfo.name} regenerated successfully`);
       token = res.data.token;
     }
   };
 
   const onsubmit = async (form: FormValue<typeof tokenSettings>) => {
-    let newToken = reformatData(form, data.tokenInfo.uuid);
+    if (!tokenInfo) return;
+    let newToken = reformatData(form, tokenInfo.uuid);
     let res = await editToken({ body: newToken });
 
     if (res.error) {
-      if (res.response.status === 409) {
-        return { error: 'This token name is already in use', field: 'name' };
+      if (res.response?.status === 409) {
+        return {
+          error: 'This token name is already in use',
+          field: 'name'
+        } as const;
       } else {
         return { error: 'Failed to update token' };
       }
     } else {
-      toast.success(`Token ${data.tokenInfo.name} updated successfully`);
+      toast.success(`Token ${tokenInfo.name} updated successfully`);
       // do not trigger form reset
       return { error: '' };
     }
@@ -90,7 +121,13 @@
     <Button size="icon" variant="ghost" href="/tokens" class="mr-2">
       <ArrowLeft class="size-5" />
     </Button>
-    <h3 class="text-xl font-medium">Token: {data.tokenInfo.name}</h3>
+    <h3 class="flex text-xl font-medium">
+      Token: {#if !tokenInfo}
+        <Skeleton class="ml-2 h-7 w-20" />
+      {:else}
+        {tokenInfo.name}
+      {/if}
+    </h3>
     <Button
       class="ml-auto cursor-pointer"
       onclick={() => (deleteOpen = true)}
@@ -106,11 +143,7 @@
   >
     <div class="flex-1">
       <h4 class="mb-2">Settings</h4>
-      <BaseForm
-        schema={tokenSettings}
-        {onsubmit}
-        initialValue={formatData(data.tokenInfo)}
-      >
+      <BaseForm schema={tokenSettings} {onsubmit} bind:this={form}>
         {#snippet children({ props })}
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto_1fr]">
             <div>
@@ -119,6 +152,7 @@
                 key="name"
                 label="Token Name"
                 placeholder="Enter name"
+                disabled={readonly}
               />
               <FormDateInput
                 {...props}
@@ -126,6 +160,7 @@
                 label="Expiration Date"
                 placeholder="Enter date"
                 minValue={today(getLocalTimeZone())}
+                disabled={readonly}
               />
               <Label
                 >Token
@@ -155,6 +190,7 @@
                   variant="destructive"
                   class="cursor-pointer"
                   onclick={() => (regenerateOpen = true)}
+                  disabled={readonly}
                 >
                   <RotateCcw />
                   Regenerate
@@ -163,19 +199,28 @@
             </div>
           </div>
         {/snippet}
-        {#snippet footer({ isLoading }: { isLoading: boolean })}
+        {#snippet footer({
+          isLoading,
+          isError
+        }: {
+          isLoading: boolean;
+          isError: boolean;
+        })}
           <div class="mt-4 grid w-full grid-cols-1 gap-8 lg:grid-cols-2">
             <Button
               class="ml-auto cursor-pointer"
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || readonly}
+              variant={isError ? 'destructive' : undefined}
             >
               {#if isLoading}
                 <Spinner />
+              {:else if isError}
+                <RotateCcw />
               {:else}
                 <Save />
               {/if}
-              Save Changes</Button
+              {isError ? 'Retry' : 'Save Changes'}</Button
             >
           </div>
         {/snippet}
@@ -185,7 +230,7 @@
 </div>
 <FormDialog
   title={`Delete Token`}
-  description={`Do you really want to delete the token ${data.tokenInfo.name}?`}
+  description={`Do you really want to delete the token ${tokenInfo?.name}?`}
   confirm="Delete"
   confirmVariant="destructive"
   onsubmit={deleteItemConfirm}
@@ -195,7 +240,7 @@
 />
 <FormDialog
   title={`Regenerate Token`}
-  description={`Do you really want to regenerate the token ${data.tokenInfo.name}?`}
+  description={`Do you really want to regenerate the token ${tokenInfo?.name}?`}
   confirm="Regenerate"
   confirmVariant="destructive"
   onsubmit={regenerateConfirm}
