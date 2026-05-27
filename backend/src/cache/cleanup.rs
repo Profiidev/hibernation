@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use centaurus::db::init::Connection;
+use centaurus::{db::init::Connection, storage::FileStorage};
 use tokio::time::{MissedTickBehavior, interval};
 use tracing::{info, warn};
 
-use crate::{cache::storage::FileStorage, db::DBTrait};
+use crate::db::DBTrait;
 
 pub fn start(db: Connection, storage: FileStorage) {
   tokio::spawn(async move {
@@ -30,7 +30,8 @@ async fn run_cleanup(db: &Connection, storage: &FileStorage) {
 
   info!("Found {} orphan nars", orphan.len());
   for orphan in orphan {
-    if let Err(e) = storage.delete_file(orphan.id).await {
+    let nar_name = format!("{}.nar", orphan.id);
+    if let Err(e) = storage.delete_file(&nar_name).await {
       warn!("Failed to delete orphan nar {}: {e}", orphan.id);
     } else {
       if let Err(e) = db.nar().delete_nar(orphan.id).await {

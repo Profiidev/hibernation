@@ -1,12 +1,10 @@
 use aide::axum::ApiRouter;
 use aide::axum::routing::get_with;
-use centaurus::{db::init::Connection, error::Result};
+use centaurus::{db::init::Connection, error::Result, storage::FileStorage};
 
 use crate::{
   auth::cli_auth::CliAuth,
-  cache::{
-    management::CacheRegex, push::PushState, state::CacheEvictionState, storage::FileStorage,
-  },
+  cache::{management::CacheRegex, push::PushState, state::CacheEvictionState},
   config::Config,
 };
 
@@ -15,7 +13,6 @@ mod dedupe;
 mod management;
 mod push;
 mod state;
-pub mod storage;
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()

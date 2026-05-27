@@ -2,7 +2,7 @@ use aide::axum::ApiRouter;
 use axum::Extension;
 use centaurus::{
   backend::{
-    endpoints::{mail, websocket},
+    endpoints::{mail, setup, websocket},
     init::{listener_setup, run_app_connect_info},
     middleware::rate_limiter::RateLimiter,
     rewrite::virtual_host::HostRouter,
@@ -26,7 +26,6 @@ mod db;
 mod group;
 mod nix;
 mod settings;
-mod setup;
 mod token;
 mod user;
 mod utils;
@@ -71,17 +70,17 @@ fn api_router(rate_limiter: &mut RateLimiter) -> ApiRouter {
     .nest("/nix", nix::router())
 }
 
-async fn state(router: ApiRouter, config: Config) -> ApiRouter {
+async fn state(mut router: ApiRouter, config: Config) -> ApiRouter {
   let db = init_db::<migration::Migrator>(&config.db, &config.db_url).await;
   centaurus::backend::endpoints::setup::create_admin_group(&db, utils::permissions())
     .await
     .expect("Failed to create admin group");
 
-  let mut router = websocket::state::<UpdateMessage>(router).await;
-  router = auth::state(router, &config.auth, &db).await;
-  router = mail::state(router, &db).await;
+  router = auth::state(router, &config, &db).await;
+  router = mail::state(router, &db, &config).await;
   router = cli::state(router);
   router = cache::state(router, db.clone(), &config).await;
+  router = websocket::state::<UpdateMessage>(router).await;
 
   router.layer(Extension(db))
 }

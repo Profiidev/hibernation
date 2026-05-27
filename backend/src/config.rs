@@ -3,10 +3,12 @@ use axum::{Extension, extract::FromRequestParts};
 use centaurus::{
   Config,
   backend::{
-    auth::settings::AuthConfig,
+    auth::settings::{AuthConfig, UserSettings},
     config::{BaseConfig, MetricsConfig, SiteConfig},
   },
   db::config::DBConfig,
+  mail::MailSettings,
+  storage::StorageConfig,
 };
 use figment::{
   Figment,
@@ -31,8 +33,15 @@ pub struct Config {
   #[site]
   #[serde(flatten)]
   pub site: SiteConfig,
+  #[auth]
   #[serde(flatten)]
   pub auth: AuthConfig,
+  #[mail]
+  #[serde(flatten)]
+  pub mail: MailSettings,
+  #[oidc]
+  #[serde(flatten)]
+  pub oidc: UserSettings,
 
   pub db_url: String,
   pub virtual_host_routing: bool,
@@ -44,6 +53,8 @@ impl Default for Config {
       base: BaseConfig::default(),
       db: DBConfig::default(),
       site: SiteConfig::default(),
+      mail: MailSettings::default(),
+      oidc: UserSettings::default(),
       db_url: "".to_string(),
       virtual_host_routing: false,
       metrics: MetricsConfig {
@@ -79,49 +90,5 @@ impl Config {
     config.storage.validate();
 
     config
-  }
-}
-
-#[derive(Deserialize, Serialize, Clone, Default)]
-pub struct StorageConfig {
-  pub storage_path: String,
-  pub s3_bucket: Option<String>,
-  pub s3_region: Option<String>,
-  pub s3_host: Option<String>,
-  pub s3_access_key: Option<String>,
-  pub s3_secret_key: Option<String>,
-  pub s3_force_path_style: bool,
-}
-
-impl StorageConfig {
-  fn validate(&self) {
-    if (self.s3_bucket.is_some()
-      || self.s3_region.is_some()
-      || self.s3_access_key.is_some()
-      || self.s3_secret_key.is_some()
-      || self.s3_host.is_some())
-      && !self.use_s3()
-    {
-      warn!(
-        "Only some S3 config options are set: Bucket: {}, Region: {}, Host: {}, Access Key: {}, Secret Key: {}",
-        self.s3_bucket.is_some(),
-        self.s3_region.is_some(),
-        self.s3_host.is_some(),
-        self.s3_access_key.is_some(),
-        self.s3_secret_key.is_some()
-      );
-    }
-
-    if !self.use_s3() && self.storage_path.is_empty() {
-      panic!("STORAGE_PATH is not set and S3 config is incomplete");
-    }
-  }
-
-  pub fn use_s3(&self) -> bool {
-    self.s3_bucket.is_some()
-      && self.s3_region.is_some()
-      && self.s3_access_key.is_some()
-      && self.s3_secret_key.is_some()
-      && self.s3_host.is_some()
   }
 }
