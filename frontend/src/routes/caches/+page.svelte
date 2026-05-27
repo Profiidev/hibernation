@@ -9,14 +9,26 @@
   import { Badge } from '@profidev/pleiades/components/ui/badge';
   import { Progress } from '@profidev/pleiades/components/ui/progress';
   import { size_to_gib } from '$lib/backend/util.svelte.js';
+  import type { CacheInfo, UserInfo } from '$lib/client/types.gen.js';
 
   const { data } = $props();
 
+  let user: UserInfo | undefined = $state();
+  let caches: CacheInfo[] | undefined = $state();
+
+  $effect(() => {
+    data.user.then((u) => (user = u));
+  });
+
+  $effect(() => {
+    data.caches.then((c) => (caches = c));
+  });
+
   $effect(() => {
     if (data.error) {
-      if (data.error === 'cache_not_found') {
+      if (data.error === 'not_found') {
         toast.error('Cache not found');
-      } else if (data.error === 'cache_other') {
+      } else if (data.error === 'other') {
         toast.error('Failed to load cache');
       }
 
@@ -33,7 +45,7 @@
     <Button
       class="ml-auto cursor-pointer"
       href="/caches/create"
-      disabled={!data.user?.permissions.includes(Permission.CACHE_CREATE)}
+      disabled={!user?.permissions.includes(Permission.CACHE_CREATE)}
     >
       <Plus />
       Create
@@ -43,12 +55,14 @@
     <div
       class="grid size-full auto-rows-min grid-cols-[repeat(auto-fill,minmax(24rem,1fr))] gap-2"
     >
-      {#if (data.caches?.length ?? 0) === 0}
+      {#if !caches}
+        <p class="text-muted-foreground">Loading caches...</p>
+      {:else if (caches?.length ?? 0) === 0}
         <p class="text-muted-foreground">
           No caches found. Create one to get started.
         </p>
       {/if}
-      {#each data.caches as cache}
+      {#each caches as cache}
         {@const size_gib = size_to_gib(cache.size ?? 0)}
         {@const quota_gib = size_to_gib(cache.quota)}
         {@const usage_percent = (size_gib / quota_gib) * 100}

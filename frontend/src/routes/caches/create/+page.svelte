@@ -19,12 +19,12 @@
     let res = await createCache({ body: anyData });
 
     if (!res.data) {
-      if (res.response.status === 409) {
+      if (res.response?.status === 409) {
         return {
           error: 'A cache with this name already exists.',
           field: 'name'
         };
-      } else if (res.response.status === 406) {
+      } else if (res.response?.status === 406) {
         return {
           error: 'Invalid signature key format.',
           field: 'sig_key'

@@ -3,21 +3,41 @@
   import SimpleSidebar from '@profidev/pleiades/components/nav/simple-sidebar.svelte';
   import { Button } from '@profidev/pleiades/components/ui/button';
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import type { CacheDetails } from '$lib/client/types.gen.js';
+  import { goto } from '$app/navigation';
+  import { Skeleton } from '@profidev/pleiades/components/ui/skeleton';
 
   const { children, data } = $props();
+
+  let cacheInfo: CacheDetails | undefined = $state();
+
+  $effect(() => {
+    data.cacheRes.then((res) => {
+      if (!res.data) {
+        if (res.response?.status === 404) {
+          goto('/caches?error=not_found');
+        } else {
+          goto('/caches?error=other');
+        }
+        return;
+      }
+
+      cacheInfo = res.data;
+    });
+  });
 
   const routes = $derived([
     {
       title: 'Overview',
-      href: `/caches/${data.cacheInfo.uuid}`
+      href: `/caches/${data.uuid}`
     },
     {
       title: 'Search',
-      href: `/caches/${data.cacheInfo.uuid}/search`
+      href: `/caches/${data.uuid}/search`
     },
     {
       title: 'Settings',
-      href: `/caches/${data.cacheInfo.uuid}/settings`
+      href: `/caches/${data.uuid}/settings`
     }
   ]);
 </script>
@@ -27,7 +47,13 @@
     <Button size="icon" variant="ghost" href="/caches" class="mr-2">
       <ArrowLeft class="size-5" />
     </Button>
-    <h3 class="text-xl font-medium">Cache: {data.cacheInfo.name}</h3>
+    <h3 class="flex text-xl font-medium">
+      Cache: {#if !cacheInfo}
+        <Skeleton class="ml-2 h-7 w-20" />
+      {:else}
+        {cacheInfo.name}
+      {/if}
+    </h3>
   </div>
   <Separator class="my-4" />
   <div
