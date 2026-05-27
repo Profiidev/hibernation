@@ -1,5 +1,10 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "extends": ["./node_modules/@profidev/pleiades/.oxlintrc.base.json"],
-  "ignorePatterns": ["*.svelte", "frontend/src/lib/client/**", "action/dist/**"]
+  "ignorePatterns": [
+    "*.svelte",
+    "frontend/src/lib/client/**",
+    "action/dist/**",
+    "vite.config.ts"
+  ]
 }
