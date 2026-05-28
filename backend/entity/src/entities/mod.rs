@@ -18,3 +18,4 @@ pub mod settings;
 pub mod setup;
 pub mod token;
 pub mod user;
+pub mod user_avatar;

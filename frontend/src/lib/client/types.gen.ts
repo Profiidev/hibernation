@@ -129,6 +129,7 @@ export type DetailUserInfo = {
   email: string;
   groups: Array<SimpleGroupInfo>;
   name: string;
+  oidc_user: boolean;
   permissions: Array<string>;
   uuid: string;
 };

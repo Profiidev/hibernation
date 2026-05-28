@@ -25,6 +25,7 @@ pub struct DetailUserInfo {
   pub groups: Vec<SimpleGroupInfo>,
   pub permissions: Vec<String>,
   pub caches: Vec<CacheMapping>,
+  pub oidc_user: bool,
 }
 
 impl<'db> UserTableExt<'db> {
@@ -69,6 +70,7 @@ impl<'db> UserTableExt<'db> {
       groups,
       permissions,
       caches,
+      oidc_user: user.oidc_user,
     }))
   }
 
