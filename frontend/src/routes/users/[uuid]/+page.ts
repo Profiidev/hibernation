@@ -1,5 +1,4 @@
 import type { PageLoad } from './$types';
-import { redirect } from '@sveltejs/kit';
 import {
   listCachesSimple,
   listGroupsSimple,
@@ -14,30 +13,17 @@ export const load: PageLoad = async ({ params, fetch }) => {
   });
   const groupsPromise = listGroupsSimple({
     fetch
-  });
+  }).then((res) => res.data ?? []);
+  const mailPromise = mailActive({ fetch }).then(
+    (res) => res.data?.active ?? false
+  );
   const cachesPromise = listCachesSimple({ fetch });
-  const mailPromise = mailActive({ fetch });
-
-  const [res, groups, caches, mail] = await Promise.all([
-    resPromise,
-    groupsPromise,
-    cachesPromise,
-    mailPromise
-  ]);
-
-  if (!res.data) {
-    if (res.response.status === 404) {
-      redirect(307, '/users?error=user_not_found');
-    } else {
-      redirect(307, '/users?error=user_other');
-    }
-  }
 
   return {
-    caches: caches.data,
-    groups: groups.data,
-    mailActive: mail.data?.active ?? false,
-    userInfo: res.data,
+    cachesPromise,
+    groupsPromise,
+    mailActivePromise: mailPromise,
+    userInfoPromise: resPromise,
     uuid: params.uuid
   };
 };

@@ -2,10 +2,10 @@ import { listCaches } from '$lib/client';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ fetch, url }) => {
-  const caches = await listCaches({ fetch });
+  const caches = listCaches({ fetch }).then(({ data }) => data);
 
   return {
-    caches: caches.data,
+    caches,
     error: url.searchParams.get('error')
   };
 };

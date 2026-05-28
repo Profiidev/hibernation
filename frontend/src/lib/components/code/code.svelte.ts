@@ -9,14 +9,17 @@ type CodeOverflowStateProps = WritableBoxedValues<{
 }>;
 
 class CodeOverflowState {
+  // oxlint-disable-next-line explicit-member-accessibility
   constructor(readonly opts: CodeOverflowStateProps) {
     this.toggleCollapsed = this.toggleCollapsed.bind(this);
   }
 
+  // oxlint-disable-next-line explicit-member-accessibility
   toggleCollapsed() {
     this.opts.collapsed.current = !this.opts.collapsed.current;
   }
 
+  // oxlint-disable-next-line explicit-member-accessibility
   get collapsed() {
     return this.opts.collapsed.current;
   }
@@ -30,15 +33,20 @@ type CodeRootStateProps = ReadableBoxedValues<{
 }>;
 
 class CodeRootState {
+  // oxlint-disable-next-line explicit-member-accessibility
   highlighter: HighlighterCore | null = $state(null); // oxlint-disable-line no-null
 
+  // oxlint-disable-next-line explicit-member-accessibility
   constructor(
+    // oxlint-disable-next-line explicit-member-accessibility
     readonly opts: CodeRootStateProps,
+    // oxlint-disable-next-line explicit-member-accessibility
     readonly overflow?: CodeOverflowState
   ) {
     const _ = highlighter.then((hl) => (this.highlighter = hl));
   }
 
+  // oxlint-disable-next-line explicit-member-accessibility
   highlight(code: string) {
     return this.highlighter?.codeToHtml(code, {
       lang: this.opts.lang.current,
@@ -69,10 +77,12 @@ class CodeRootState {
     });
   }
 
+  // oxlint-disable-next-line explicit-member-accessibility
   get code() {
     return this.opts.code.current;
   }
 
+  // oxlint-disable-next-line explicit-member-accessibility
   highlighted = $derived(this.highlight(this.code) ?? '');
 }
 
@@ -102,8 +112,10 @@ const within = (num: number, range: CodeRootProps['highlight']) => {
 };
 
 class CodeCopyButtonState {
+  // oxlint-disable-next-line explicit-member-accessibility
   constructor(readonly root: CodeRootState) {}
 
+  // oxlint-disable-next-line explicit-member-accessibility
   get code() {
     return this.root.opts.code.current;
   }

@@ -30,15 +30,15 @@ export const columns = ({
   {
     accessorKey: 'actions',
     cell: ({ row }) => {
-      const disabled =
-        !user?.permissions.includes(Permission.GROUP_EDIT) ||
-        row.original.id === admin_group ||
-        row.original.permissions.some(
-          (p) => !user?.permissions.includes(p as Permission) // oxlint-disable-line no-unsafe-type-assertion
-        );
+      const disabled = !user
+        ? true
+        : !user?.permissions.includes(Permission.GROUP_EDIT) ||
+          row.original.permissions.some(
+            (p) => !user?.permissions.includes(p as Permission) // oxlint-disable-line no-unsafe-type-assertion
+          );
 
       return DataTable.renderComponent(Actions, {
-        delete_disabled: disabled,
+        delete_disabled: disabled || row.original.id === admin_group,
         edit: `/groups/${row.original.id}`,
         edit_disabled: disabled,
         remove: () => deleteGroup(row.original)

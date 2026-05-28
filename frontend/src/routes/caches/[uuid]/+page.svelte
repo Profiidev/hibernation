@@ -3,20 +3,36 @@
   import * as Code from '$lib/components/code';
   import { ScrollArea } from '@profidev/pleiades/components/ui/scroll-area';
   import { size_to_gib } from '$lib/backend/util.svelte.js';
+  import type { CacheDetails, GeneralSettings } from '$lib/client/types.gen.js';
 
   let { data } = $props();
 
-  let size_gib = $derived(size_to_gib(data.cacheInfo.size ?? 0));
-  let quota_gib = $derived(size_to_gib(data.cacheInfo.quota));
+  let cacheInfo: CacheDetails | undefined = $state();
+  let generalSettings: GeneralSettings | undefined = $state();
+
+  $effect(() => {
+    data.cacheRes.then((res) => {
+      cacheInfo = res.data;
+    });
+  });
+
+  $effect(() => {
+    data.generalSettings.then((res) => {
+      generalSettings = res;
+    });
+  });
+
+  let size_gib = $derived(size_to_gib(cacheInfo?.size ?? 0));
+  let quota_gib = $derived(size_to_gib(cacheInfo?.quota ?? 0));
   let usage_percent = $derived((size_gib / quota_gib) * 100);
 
   const url = $derived.by(() => {
-    let siteUrl = new URL(data.generalSettings?.site_url || 'localhost:5173');
-    if (data.generalSettings?.virtual_host_routing) {
-      siteUrl.host = `${data.cacheInfo.name}.${siteUrl.host}`;
+    let siteUrl = new URL(generalSettings?.site_url || 'localhost:5173');
+    if (generalSettings?.virtual_host_routing) {
+      siteUrl.host = `${cacheInfo?.name}.${siteUrl.host}`;
       return siteUrl.origin;
     } else {
-      siteUrl.pathname = `/api/nix/${data.cacheInfo.name}`;
+      siteUrl.pathname = `/api/nix/${cacheInfo?.name}`;
       return siteUrl.href;
     }
   });
@@ -26,7 +42,7 @@
       "${url}"
     ];
     extra-trusted-public-keys = [
-      "${data.cacheInfo.sig_key}"
+      "${cacheInfo?.sig_key}"
     ];
   };
 
@@ -41,7 +57,7 @@
       <div class="mt-2 mb-1 flex">
         <p>Number of paths:</p>
         <p class="text-muted-foreground ml-auto">
-          {data.cacheInfo.nar_count}
+          {cacheInfo?.nar_count}
         </p>
       </div>
       <div class="mb-1 flex">
@@ -64,7 +80,7 @@
       />
       <p class="mt-8 text-lg">Pushing paths:</p>
       <Code.Root
-        code={`hibernation push ${data.cacheInfo.name} /nix/store/...`}
+        code={`hibernation push ${cacheInfo?.name} /nix/store/...`}
         lang="bash"
         class="mt-2 h-auto"
         hideLines
@@ -78,7 +94,7 @@
       </Code.Root>
       <p class="text-md mt-2">Cache Public Key:</p>
       <Code.Root
-        code={data.cacheInfo.sig_key}
+        code={cacheInfo?.sig_key ?? 'Loading...'}
         lang="nix"
         hideLines
         class="mt-2 h-auto"

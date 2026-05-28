@@ -21,12 +21,29 @@
   import { TagsInput } from '@profidev/pleiades/components/ui-extra/tags-input';
   import { Label } from '@profidev/pleiades/components/ui/label';
   import { clearCache, deleteCache, editCache } from '$lib/client';
-  import { EvictionPolicy } from '$lib/client/types.gen.js';
+  import { EvictionPolicy, type CacheDetails } from '$lib/client/types.gen.js';
 
   const { data } = $props();
 
-  let downstreamCaches = $derived(data.cacheInfo.downstream_caches);
-  let readonly = $derived(!data.cacheInfo.has_write_access);
+  let cacheInfo: CacheDetails | undefined = $state();
+  let form: BaseForm<typeof cacheSchema> | undefined = $state();
+
+  $effect(() => {
+    data.cacheRes.then((res) => {
+      if (!res.data) return;
+
+      cacheInfo = res.data;
+      form?.setValue({
+        ...res.data,
+        eviction_policy: [
+          res.data?.eviction_policy ?? EvictionPolicy.OLDEST_FIRST
+        ]
+      });
+    });
+  });
+
+  let downstreamCaches = $derived(cacheInfo?.downstream_caches ?? []);
+  let readonly = $derived(!cacheInfo?.has_write_access || !cacheInfo);
   let deleteOpen = $state(false);
   let clearOpen = $state(false);
   let keyOpen = $state(false);
@@ -34,10 +51,11 @@
   let visibilityOpen = $state(false);
 
   const onsubmit = async (form: FormValue<typeof cacheSchema>) => {
+    if (!cacheInfo) return;
     let res = await editCache({
-      path: { uuid: data.cacheInfo.uuid },
+      path: { uuid: cacheInfo.uuid },
       body: {
-        ...data.cacheInfo,
+        ...cacheInfo,
         ...form,
         eviction_policy: form.eviction_policy[0],
         downstream_caches: downstreamCaches
@@ -45,24 +63,28 @@
     });
 
     if (res.error) {
-      if (res.response.status === 409) {
-        return { error: 'This cache name is already in use', field: 'name' };
+      if (res.response?.status === 409) {
+        return {
+          error: 'This cache name is already in use',
+          field: 'name'
+        } as const;
       } else {
         return { error: 'Failed to update cache' };
       }
     } else {
-      toast.success(`Cache ${data.cacheInfo.name} updated successfully`);
+      toast.success(`Cache ${cacheInfo.name} updated successfully`);
       return { error: '' };
     }
   };
 
   const deleteConfirm = async () => {
-    let res = await deleteCache({ body: { uuid: data.cacheInfo.uuid } });
+    if (!cacheInfo) return;
+    let res = await deleteCache({ body: { uuid: cacheInfo.uuid } });
 
     if (res.error) {
       return { error: 'Failed to delete cache' };
     } else {
-      toast.success(`Cache ${data.cacheInfo.name} deleted successfully`);
+      toast.success(`Cache ${cacheInfo.name} deleted successfully`);
       setTimeout(() => {
         goto('/caches');
       });
@@ -70,40 +92,41 @@
   };
 
   const clearConfirm = async () => {
-    let res = await clearCache({ path: { uuid: data.cacheInfo.uuid } });
+    if (!cacheInfo) return;
+    let res = await clearCache({ path: { uuid: cacheInfo.uuid } });
 
     if (res.error) {
       return { error: 'Failed to clear cache' };
     } else {
-      toast.success(`Cache ${data.cacheInfo.name} cleared successfully`);
+      toast.success(`Cache ${cacheInfo.name} cleared successfully`);
     }
   };
 
   const visibilityConfirm = async () => {
+    if (!cacheInfo) return;
     let res = await editCache({
-      path: { uuid: data.cacheInfo.uuid },
+      path: { uuid: cacheInfo.uuid },
       body: {
-        ...data.cacheInfo,
-        public: !data.cacheInfo.public
+        ...cacheInfo,
+        public: !cacheInfo.public
       }
     });
 
     if (res.error) {
-      toast.error(
-        `Failed to change cache visibility for ${data.cacheInfo.name}`
-      );
+      toast.error(`Failed to change cache visibility for ${cacheInfo.name}`);
     } else {
       toast.success(
-        `Cache ${data.cacheInfo.name} is now ${data.cacheInfo.public ? 'private' : 'public'}`
+        `Cache ${cacheInfo.name} is now ${cacheInfo.public ? 'private' : 'public'}`
       );
     }
   };
 
   const quotaConfirm = async (form: FormValue<typeof quotaSchema>) => {
+    if (!cacheInfo) return;
     let res = await editCache({
-      path: { uuid: data.cacheInfo.uuid },
+      path: { uuid: cacheInfo.uuid },
       body: {
-        ...data.cacheInfo,
+        ...cacheInfo,
         quota: form.quota * 1024 * 1024
       }
     });
@@ -111,30 +134,31 @@
     if (res.error) {
       return { error: 'Failed to change cache quota' };
     } else {
-      toast.success(`Cache ${data.cacheInfo.name} quota updated successfully`);
+      toast.success(`Cache ${cacheInfo.name} quota updated successfully`);
     }
   };
 
   const keyConfirm = async (form: FormValue<typeof keySchema>) => {
+    if (!cacheInfo) return;
     let res = await editCache({
-      path: { uuid: data.cacheInfo.uuid },
+      path: { uuid: cacheInfo.uuid },
       body: {
-        ...data.cacheInfo,
+        ...cacheInfo,
         sig_key: form.sig_key
       }
     });
 
     if (res.error) {
-      if (res.response.status === 406) {
+      if (res.response?.status === 406) {
         return {
           error: 'The provided key is not a valid public signing key',
           field: 'sig_key'
-        };
+        } as const;
       } else {
         return { error: 'Failed to change cache key' };
       }
     } else {
-      toast.success(`Cache ${data.cacheInfo.name} key updated successfully`);
+      toast.success(`Cache ${cacheInfo.name} key updated successfully`);
     }
   };
 </script>
@@ -143,11 +167,8 @@
   <BaseForm
     schema={cacheSchema}
     {onsubmit}
-    initialValue={{
-      ...data.cacheInfo,
-      eviction_policy: [data.cacheInfo.eviction_policy]
-    }}
     class="flex flex-1 flex-col"
+    bind:this={form}
   >
     {#snippet children({ props })}
       <div class="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_auto_1fr]">
@@ -156,7 +177,7 @@
             {...props}
             key="name"
             label="Cache Name"
-            placeholder="Enter cahce name"
+            placeholder="Enter cache name"
             {readonly}
           />
           <FormInput
@@ -239,7 +260,7 @@
           onclick={() => (visibilityOpen = true)}
           disabled={readonly}
         >
-          {#if data.cacheInfo.public}
+          {#if cacheInfo?.public}
             <Lock />
             Make Private
           {:else}
@@ -301,8 +322,8 @@
 </div>
 <FormDialog
   title={`Change Cache Visibility`}
-  description={`Do you really want to make the cache ${data.cacheInfo.name} ${data.cacheInfo.public ? 'private' : 'public'}? This might have implications on who can access the cache and its data.`}
-  confirm={data.cacheInfo.public ? 'Make Private' : 'Make Public'}
+  description={`Do you really want to make the cache ${cacheInfo?.name} ${cacheInfo?.public ? 'private' : 'public'}? This might have implications on who can access the cache and its data.`}
+  confirm={cacheInfo?.public ? 'Make Private' : 'Make Public'}
   confirmVariant="destructive"
   onsubmit={visibilityConfirm}
   bind:open={visibilityOpen}
@@ -310,10 +331,10 @@
 />
 <FormDialog
   title={`Change Quota`}
-  description={`Do you really want to change the quota of cache ${data.cacheInfo.name}? This can lead to the deletion of cache entries if the new quota is smaller than the current usage.`}
+  description={`Do you really want to change the quota of cache ${cacheInfo?.name}? This can lead to the deletion of cache entries if the new quota is smaller than the current usage.`}
   confirm="Change"
   confirmVariant="destructive"
-  initialValue={{ quota: data.cacheInfo.quota / (1024 * 1024) }}
+  initialValue={{ quota: (cacheInfo?.quota ?? 0) / (1024 * 1024) }}
   onsubmit={quotaConfirm}
   bind:open={quotaOpen}
   schema={quotaSchema}
@@ -330,7 +351,7 @@
 </FormDialog>
 <FormDialog
   title={`Change Key`}
-  description={`Do you really want to change the key of cache ${data.cacheInfo.name}? This prevents all pushes using the old key.`}
+  description={`Do you really want to change the key of cache ${cacheInfo?.name}? This prevents all pushes using the old key.`}
   confirm="Change"
   confirmVariant="destructive"
   onsubmit={keyConfirm}
@@ -348,7 +369,7 @@
 </FormDialog>
 <FormDialog
   title={`Clear Cache`}
-  description={`Do you really want to clear the cache ${data.cacheInfo.name}? This action cannot be undone.`}
+  description={`Do you really want to clear the cache ${cacheInfo?.name}? This action cannot be undone.`}
   confirm="Clear"
   confirmVariant="destructive"
   onsubmit={clearConfirm}
@@ -357,7 +378,7 @@
 />
 <FormDialog
   title={`Delete Cache`}
-  description={`Do you really want to delete the cache ${data.cacheInfo.name}? This action cannot be undone.`}
+  description={`Do you really want to delete the cache ${cacheInfo?.name}? This action cannot be undone.`}
   confirm="Delete"
   confirmVariant="destructive"
   onsubmit={deleteConfirm}

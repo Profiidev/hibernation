@@ -8,14 +8,23 @@ import type {
   AuthConfigResponses,
   AuthenticateData,
   AuthenticateErrors,
+  AvatarByIdData,
+  AvatarByIdErrors,
+  AvatarByIdResponses,
   CacheDetailsData,
   CacheDetailsErrors,
   CacheDetailsResponses,
+  ChangeUserEmailData,
+  ChangeUserEmailErrors,
+  ChangeUserEmailResponses,
   ClearCacheData,
   ClearCacheErrors,
   ClearCacheResponses,
   CompleteSetupData,
   CompleteSetupErrors,
+  ConfirmEmailChangeData,
+  ConfirmEmailChangeErrors,
+  ConfirmEmailChangeResponses,
   CreateCacheData,
   CreateCacheErrors,
   CreateCacheResponses,
@@ -130,6 +139,9 @@ import type {
   SendResetLinkData,
   SendResetLinkErrors,
   SendResetLinkResponses,
+  StartEmailChangeData,
+  StartEmailChangeErrors,
+  StartEmailChangeResponses,
   TestData,
   TestErrors,
   TestMailData,
@@ -360,6 +372,22 @@ export const resetUserPassword = <ThrowOnError extends boolean = false>(
     }
   });
 
+export const changeUserEmail = <ThrowOnError extends boolean = false>(
+  options: Options<ChangeUserEmailData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    ChangeUserEmailResponses,
+    ChangeUserEmailErrors,
+    ThrowOnError
+  >({
+    url: '/api/user/management/email',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
+  });
+
 export const userInfoDetail = <ThrowOnError extends boolean = false>(
   options: Options<UserInfoDetailData, ThrowOnError>
 ) =>
@@ -378,22 +406,6 @@ export const listCachesSimple = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({ url: '/api/user/management/caches', ...options });
 
-export const updateAvatar = <ThrowOnError extends boolean = false>(
-  options: Options<UpdateAvatarData, ThrowOnError>
-) =>
-  (options.client ?? client).post<
-    UpdateAvatarResponses,
-    UpdateAvatarErrors,
-    ThrowOnError
-  >({
-    url: '/api/user/account/avatar',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers
-    }
-  });
-
 export const updatePassword = <ThrowOnError extends boolean = false>(
   options: Options<UpdatePasswordData, ThrowOnError>
 ) =>
@@ -403,6 +415,22 @@ export const updatePassword = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     url: '/api/user/account/password',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
+  });
+
+export const startEmailChange = <ThrowOnError extends boolean = false>(
+  options: Options<StartEmailChangeData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    StartEmailChangeResponses,
+    StartEmailChangeErrors,
+    ThrowOnError
+  >({
+    url: '/api/user/account/email_change_start',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -426,6 +454,38 @@ export const updateAccount = <ThrowOnError extends boolean = false>(
     }
   });
 
+export const confirmEmailChange = <ThrowOnError extends boolean = false>(
+  options: Options<ConfirmEmailChangeData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    ConfirmEmailChangeResponses,
+    ConfirmEmailChangeErrors,
+    ThrowOnError
+  >({
+    url: '/api/user/account/email_change_confirm',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
+  });
+
+export const updateAvatar = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateAvatarData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    UpdateAvatarResponses,
+    UpdateAvatarErrors,
+    ThrowOnError
+  >({
+    url: '/api/user/account/avatar',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
+  });
+
 export const info = <ThrowOnError extends boolean = false>(
   options?: Options<InfoData, ThrowOnError>
 ) =>
@@ -433,6 +493,15 @@ export const info = <ThrowOnError extends boolean = false>(
     url: '/api/user/info',
     ...options
   });
+
+export const avatarById = <ThrowOnError extends boolean = false>(
+  options: Options<AvatarByIdData, ThrowOnError>
+) =>
+  (options.client ?? client).get<
+    AvatarByIdResponses,
+    AvatarByIdErrors,
+    ThrowOnError
+  >({ url: '/api/user/info/avatar/{uuid}', ...options });
 
 export const getGeneralSettings = <ThrowOnError extends boolean = false>(
   options?: Options<GetGeneralSettingsData, ThrowOnError>

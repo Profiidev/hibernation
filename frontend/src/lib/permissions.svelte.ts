@@ -9,3 +9,5 @@ export enum Permission {
   CACHE_EDIT = 'cache:edit',
   CACHE_VIEW = 'cache:view'
 }
+
+export const avatarUrl = '/api/user/info/avatar';

@@ -4,14 +4,13 @@ use axum::{
   extract::Path,
   routing::{get, head},
 };
-use centaurus::{bail, db::init::Connection, error::Result};
+use centaurus::{bail, db::init::Connection, error::Result, storage::FileStorage};
 use http::{HeaderMap, HeaderValue, StatusCode, header};
 use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::{
   auth::cli_auth::CliAuth,
-  cache::storage::FileStorage,
   db::{DBTrait, nar::NarInfoData},
 };
 
@@ -227,7 +226,8 @@ async fn nar(
     StatusCode::OK
   };
 
-  let body = storage.get_file(nar_id, range).await?;
+  let nar_name = format!("{}.nar", nar_id);
+  let body = storage.get_file(&nar_name, range).await?;
 
   let mut headers = HeaderMap::new();
   headers.insert(header::CONTENT_TYPE, NAR_MIME.clone());

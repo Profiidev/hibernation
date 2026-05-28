@@ -7,16 +7,16 @@ repository = "https://github.com/Profiidev/hibernation"
 license = "GPL-2.0-only"
 
 [dependencies]
-async-compression = { version = "0.4.41", features = ["tokio", "zstd"] }
+async-compression = { version = "0.4.42", features = ["tokio", "zstd"] }
 bytes = "1.11.1"
-centaurus = { version = "0.11.1", default-features = false, features = [
+centaurus = { version = "0.12.2", default-features = false, features = [
   "error",
   "logging",
   "reqwest",
   "serde_json",
   "url"
 ] }
-clap = { version = "4.6.0", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"] }
 color-eyre = "0.6.5"
 dirs = "6.0.0"
 futures-core = "0.3.32"
@@ -25,16 +25,16 @@ harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev =
 harmonia-store-remote = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
 indicatif = "0.18.4"
 opener = "0.8.4"
-reqwest = { version = "0.13.2", features = ["form", "http3", "json", "stream"] }
+reqwest = { version = "0.13.4", features = ["form", "http3", "json", "stream"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 sha2 = "0.11.0"
 shared = { path = "../shared" }
-tokio = { version = "1.51.1", features = [
+tokio = { version = "1.52.3", features = [
   "fs",
   "io-std",
   "macros",
-  "rt-multi-thread",
+  "rt-multi-thread"
 ] }
 tokio-util = "0.7.18"
 tracing = "0.1.44"
@@ -42,4 +42,4 @@ tracing-error = "0.2.1"
 tracing-indicatif = "=0.3.13"
 tracing-subscriber = "=0.3.19"
 url = { version = "2.5.8", features = ["serde"] }
-uuid = { version = "1.23.0", features = ["serde", "v4"] }
+uuid = { version = "1.23.1", features = ["serde", "v4"] }

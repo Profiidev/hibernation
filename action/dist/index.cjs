@@ -210,10 +210,7 @@ var N = class extends URL {
     function s(e) {
       var t = new u(e);
       return (
-        (t.request = n.request),
-        (t.createSocket = d),
-        (t.defaultPort = 443),
-        t
+        (t.request = n.request), (t.createSocket = d), (t.defaultPort = 443), t
       );
     }
     function c(e) {
@@ -223,10 +220,7 @@ var N = class extends URL {
     function l(e) {
       var t = new u(e);
       return (
-        (t.request = r.request),
-        (t.createSocket = d),
-        (t.defaultPort = 443),
-        t
+        (t.request = r.request), (t.createSocket = d), (t.defaultPort = 443), t
       );
     }
     function u(e) {
@@ -1182,8 +1176,7 @@ var N = class extends URL {
           (n[t] = a),
           (n[t + 1] = o));
       return (
-        r && i !== -1 && (n[i] = Buffer.from(n[i]).toString(`latin1`)),
-        n
+        r && i !== -1 && (n[i] = Buffer.from(n[i]).toString(`latin1`)), n
       );
     }
     function W(e) {
@@ -1723,9 +1716,7 @@ var N = class extends URL {
         }
         onUpgrade(e, t, n) {
           return (
-            i(!this.aborted),
-            i(!this.completed),
-            this[b].onUpgrade(e, t, n)
+            i(!this.aborted), i(!this.completed), this[b].onUpgrade(e, t, n)
           );
         }
         onComplete(e) {
@@ -4520,8 +4511,7 @@ Content-Type: ${c.type || `application/octet-stream`}\r\n\r\n`
     function O(e, t) {
       let [n, r] = t.stream.tee();
       return (
-        (t.stream = n),
-        { stream: r, length: t.length, source: t.source }
+        (t.stream = n), { stream: r, length: t.length, source: t.source }
       );
     }
     function k(e) {
@@ -4536,8 +4526,7 @@ Content-Type: ${c.type || `application/octet-stream`}\r\n\r\n`
             (e) => {
               let t = F(this);
               return (
-                t === null ? (t = ``) : (t &&= y(t)),
-                new m([e], { type: t })
+                t === null ? (t = ``) : (t &&= y(t)), new m([e], { type: t })
               );
             },
             e
@@ -4931,8 +4920,7 @@ Content-Type: ${c.type || `application/octet-stream`}\r\n\r\n`
           if (!l) return -1;
           if ((n(!this.upgrade), n(this.statusCode < 200), e === 100))
             return (
-              r.destroy(o, new d(`bad response`, r.getSocketInfo(o))),
-              -1
+              r.destroy(o, new d(`bad response`, r.getSocketInfo(o))), -1
             );
           if (t && !l.upgrade)
             return (r.destroy(o, new d(`bad upgrade`, r.getSocketInfo(o))), -1);
@@ -5023,9 +5011,7 @@ Content-Type: ${c.type || `application/octet-stream`}\r\n\r\n`
               return (r.destroy(t, new s()), -1);
             if ((d.onComplete(o), (e[T][e[A]++] = null), t[w]))
               return (
-                n(e[x] === 0),
-                r.destroy(t, new f(`reset`)),
-                J.ERROR.PAUSED
+                n(e[x] === 0), r.destroy(t, new f(`reset`)), J.ERROR.PAUSED
               );
             if (!u || (t[_] && e[x] === 0))
               return (r.destroy(t, new f(`reset`)), J.ERROR.PAUSED);
@@ -5702,8 +5688,7 @@ Content-Type: ${c.type || `application/octet-stream`}\r\n\r\n`
         { body: x } = t;
       if (f)
         return (
-          i.errorRequest(e, t, Error(`Upgrade not supported for H2`)),
-          !1
+          i.errorRequest(e, t, Error(`Upgrade not supported for H2`)), !1
         );
       let w = {};
       for (let e = 0; e < b.length; e += 2) {
@@ -10067,8 +10052,7 @@ ${e.format(t)}
         }
         get body() {
           return (
-            k.brandCheck(this, e),
-            this[D].body ? this[D].body.stream : null
+            k.brandCheck(this, e), this[D].body ? this[D].body.stream : null
           );
         }
         get bodyUsed() {
@@ -10662,8 +10646,7 @@ ${e.format(t)}
         }
         get body() {
           return (
-            P.brandCheck(this, e),
-            this[M].body ? this[M].body.stream : null
+            P.brandCheck(this, e), this[M].body ? this[M].body.stream : null
           );
         }
         get bodyUsed() {
@@ -14107,8 +14090,7 @@ ${e.format(t)}
           if (t === a.CLOSE) {
             if (n === 1)
               return (
-                g(this.ws, `Received close frame with a 1-byte body.`),
-                !1
+                g(this.ws, `Received close frame with a 1-byte body.`), !1
               );
             if (
               ((this.#i.closeInfo = this.parseCloseBody(e)),
@@ -16037,8 +16019,7 @@ var hn = function (e, t, n, r) {
         return r;
       } catch (e) {
         return (
-          this._debug(`error processing line. Failed with error ${e}`),
-          ``
+          this._debug(`error processing line. Failed with error ${e}`), ``
         );
       }
     }
@@ -18027,10 +18008,7 @@ function kr(e, t, n, r) {
       c = !1;
     try {
       return (
-        yield o(s, d.createWriteStream(t)),
-        On(`download complete`),
-        (c = !0),
-        t
+        yield o(s, d.createWriteStream(t)), On(`download complete`), (c = !0), t
       );
     } finally {
       if (!c) {

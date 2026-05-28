@@ -14,8 +14,6 @@
     | 'Finished'
     | 'SendError';
 
-  let { data } = $props();
-
   let status = $state('Requesting' as CliAuthStatus);
   let error = $state(false);
   let code = $state('');

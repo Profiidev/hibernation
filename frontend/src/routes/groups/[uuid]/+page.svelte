@@ -3,6 +3,7 @@
   import { Button } from '@profidev/pleiades/components/ui/button';
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
   import Trash from '@lucide/svelte/icons/trash';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import { Permission } from '$lib/permissions.svelte';
   import FormDialog from '@profidev/pleiades/components/form/form-dialog.svelte';
   import { z } from 'zod';
@@ -16,28 +17,79 @@
   import { Spinner } from '@profidev/pleiades/components/ui/spinner';
   import FormSelect from '@profidev/pleiades/components/form/form-select.svelte';
   import Permissions from './Permissions.svelte';
-  import CacheAccess from './CacheAccess.svelte';
   import { ScrollArea } from '@profidev/pleiades/components/ui/scroll-area';
-  import { deleteGroup, editGroup } from '$lib/client';
+  import {
+    deleteGroup,
+    editGroup,
+    type CacheMapping,
+    type GroupDetails,
+    type SimpleCacheInfo,
+    type SimpleUserInfo,
+    type UserInfo
+  } from '$lib/client';
+  import { Skeleton } from '@profidev/pleiades/components/ui/skeleton';
+  import CacheAccess from './CacheAccess.svelte';
 
   const { data } = $props();
 
   let deleteOpen = $state(false);
   let isLoading = $state(false);
-  let readonly = $derived(
-    !data.user?.permissions.includes(Permission.GROUP_EDIT)
-  );
-  let mappings = $derived(data.group.caches);
+  let user: UserInfo | undefined = $state();
+  let adminGroup: string | undefined = $state();
+  let group: GroupDetails | undefined = $state();
+  let form: BaseForm<typeof groupSettings> | undefined = $state();
+  let users: SimpleUserInfo[] | undefined = $state();
+  let mappings: CacheMapping[] = $state([]);
+  let caches: SimpleCacheInfo[] = $state([]);
+
+  let readonly = $derived(!user?.permissions.includes(Permission.GROUP_EDIT));
+
+  $effect(() => {
+    data.groupRes.then((res) => {
+      if (!res.data) {
+        if (res.response?.status === 404) {
+          goto('/groups?error=not_found');
+        } else {
+          goto('/groups?error=other');
+        }
+        return;
+      }
+
+      group = res.data.group;
+      adminGroup = res.data.admin_group;
+      mappings = res.data.group.caches;
+      form?.setValue(formatData(group));
+    });
+  });
+
+  $effect(() => {
+    data.user.then((d) => {
+      user = d;
+    });
+  });
+
+  $effect(() => {
+    data.usersPromise.then(({ data }) => {
+      users = data;
+    });
+  });
+
+  $effect(() => {
+    data.cachesPromise.then(({ data }) => {
+      caches = data ?? [];
+    });
+  });
 
   const deleteItemConfirm = async () => {
+    if (!group) return;
     isLoading = true;
-    let ret = await deleteGroup({ body: { uuid: data.group.id } });
+    let ret = await deleteGroup({ body: { uuid: group.id } });
     isLoading = false;
 
     if (ret.error) {
       return { error: 'Failed to delete group' };
     } else {
-      toast.success(`Group ${data.group.name} deleted successfully`);
+      toast.success(`Group ${group.name} deleted successfully`);
       setTimeout(() => {
         goto('/groups');
       });
@@ -45,17 +97,29 @@
   };
 
   const onsubmit = async (form: FormValue<typeof groupSettings>) => {
-    let group = reformatData(form, data.group.id, mappings);
-    let res = await editGroup({ body: group });
+    if (!group) return;
+    let groupData = reformatData(form, group.id, mappings);
+    if (group.id === adminGroup) {
+      groupData.permissions = group.permissions;
+    }
+    let res = await editGroup({ body: groupData });
 
     if (res.error) {
-      if (res.response.status === 409) {
-        return { error: 'This group name is already in use', field: 'name' };
+      if (res.response?.status === 409) {
+        return {
+          error: 'This group name is already in use',
+          field: 'name'
+        } as const;
+      } else if (res.response?.status === 406) {
+        return {
+          error: 'Admin group must have at least 1 user',
+          field: 'users'
+        } as const;
       } else {
         return { error: 'Failed to update group' };
       }
     } else {
-      toast.success(`Group ${data.group.name} updated successfully`);
+      toast.success(`Group ${group.name} updated successfully`);
       // do not trigger form reset
       return { error: '' };
     }
@@ -67,12 +131,19 @@
     <Button size="icon" variant="ghost" href="/groups" class="mr-2">
       <ArrowLeft class="size-5" />
     </Button>
-    <h3 class="text-xl font-medium">Group: {data.group.name}</h3>
+    <h3 class="flex text-xl font-medium">
+      Group:
+      {#if !group}
+        <Skeleton class="ml-2 h-7 w-20" />
+      {:else}
+        {group.name}
+      {/if}
+    </h3>
     <Button
       class="ml-auto cursor-pointer"
       onclick={() => (deleteOpen = true)}
       variant="destructive"
-      disabled={readonly}
+      disabled={readonly || group?.id === adminGroup}
     >
       <Trash />
       Delete
@@ -85,7 +156,7 @@
       class="flex min-h-0 grow flex-col"
       schema={groupSettings}
       {onsubmit}
-      initialValue={formatData(data.group)}
+      bind:this={form}
     >
       {#snippet children({ props })}
         <ScrollArea class="mt-2 min-h-0">
@@ -98,42 +169,56 @@
                 key="name"
                 label="Group Name"
                 placeholder="Enter group name"
-                {readonly}
+                disabled={readonly}
               />
               <FormSelect
                 {...props}
                 key="users"
                 label="Group Members"
-                data={data.users?.map((user) => ({
+                data={users?.map((user) => ({
                   label: user.name,
                   value: user.id
                 })) || []}
               />
-              <Permissions user={data.user} {readonly} {...props} />
+              {#if group?.id !== adminGroup}
+                <Permissions
+                  {user}
+                  readonly={readonly || adminGroup === group?.id}
+                  {...props}
+                />
+              {/if}
               <CacheAccess
-                caches={data.caches ?? []}
+                {caches}
                 bind:mappings
-                disabled={!data.user?.permissions.includes(
-                  Permission.CACHE_EDIT
-                ) || isLoading}
+                disabled={!user?.permissions.includes(Permission.CACHE_EDIT) ||
+                  isLoading}
               />
             </div>
           </div>
         </ScrollArea>
       {/snippet}
-      {#snippet footer({ isLoading }: { isLoading: boolean })}
+      {#snippet footer({
+        isLoading,
+        isError
+      }: {
+        isLoading: boolean;
+        isError: boolean;
+      })}
         <div class="mt-4 grid w-full grid-cols-1 gap-8 lg:grid-cols-2">
           <Button
             class="ml-auto cursor-pointer"
             type="submit"
             disabled={isLoading}
+            variant={isError ? 'destructive' : undefined}
           >
             {#if isLoading}
               <Spinner />
+            {:else if isError}
+              <RotateCcw />
             {:else}
               <Save />
             {/if}
-            Save Changes</Button
+            {isError ? 'Retry' : 'Save Changes'}</Button
           >
         </div>
       {/snippet}
@@ -142,7 +227,7 @@
 </div>
 <FormDialog
   title={`Delete Group`}
-  description={`Do you really want to delete the group ${data.group.name}?`}
+  description={`Do you really want to delete the group ${group?.name}?`}
   confirm="Delete"
   confirmVariant="destructive"
   onsubmit={deleteItemConfirm}

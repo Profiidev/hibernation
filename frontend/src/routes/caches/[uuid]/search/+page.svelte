@@ -9,6 +9,7 @@
     SearchOrder,
     SearchSort,
     searchStorePaths,
+    type CacheDetails,
     type SearchResult
   } from '$lib/client';
 
@@ -19,12 +20,20 @@
   let order: SearchOrder = $state(SearchOrder.ASC);
   let paths = $state<SearchResult[]>([]);
   let searchTrigger = $state(0);
+  let cacheInfo: CacheDetails | undefined = $state();
+
+  $effect(() => {
+    data.cacheRes.then((res) => {
+      if (!res.data) return;
+      cacheInfo = res.data;
+    });
+  });
 
   $effect(() => {
     let _ = searchTrigger;
-    if (!input) return;
+    if (!input || !cacheInfo) return;
     searchStorePaths({
-      path: { uuid: data.cacheInfo.uuid },
+      path: { uuid: cacheInfo.uuid },
       body: {
         order,
         query: input,
@@ -40,8 +49,9 @@
   });
 
   const delete_path = async (path: string) => {
+    if (!cacheInfo) return;
     let res = await deletePath({
-      path: { uuid: data.cacheInfo.uuid },
+      path: { uuid: cacheInfo.uuid },
       body: { store_path: path }
     });
 
@@ -85,7 +95,7 @@
     data={paths}
     {columns}
     columnData={{
-      write_access: data.cacheInfo.has_write_access,
+      write_access: cacheInfo?.has_write_access || false,
       delete_path
     }}
     class="mt-2 min-h-0 grow"

@@ -36,34 +36,34 @@ const handleMessage = (msg: UpdateMessage, user: string) => {
       break;
     }
     case UpdateType.User: {
-      const _ = invalidate('/api/user/management');
-      const _u = invalidate(`/api/user/management/${msg.uuid}`);
-      const _g = invalidate('/api/group/users');
+      invalidate('/api/user/management').catch(() => {});
+      invalidate(`/api/user/management/${msg.uuid}`).catch(() => {});
+      invalidate('/api/group/users').catch(() => {});
       // Same as current user
       if (msg.uuid === user) {
-        const _i = invalidate('/api/user/info');
+        invalidate('/api/user/info').catch(() => {});
       }
       break;
     }
     case UpdateType.UserPermissions: {
-      const _ = invalidate('/api/user/info');
+      invalidate('/api/user/info').catch(() => {});
       break;
     }
     case UpdateType.Group: {
-      const _ = invalidate('/api/group');
-      const _g = invalidate(`/api/group/${msg.uuid}`);
-      const _u = invalidate('/api/user/management/groups');
+      invalidate('/api/group').catch(() => {});
+      invalidate(`/api/group/${msg.uuid}`).catch(() => {});
+      invalidate('/api/user/management/groups').catch(() => {});
       break;
     }
     case UpdateType.Token: {
-      const _ = invalidate('/api/token');
-      const _t = invalidate(`/api/token/${msg.uuid}`);
+      invalidate('/api/token').catch(() => {});
+      invalidate(`/api/token/${msg.uuid}`).catch(() => {});
       break;
     }
     case UpdateType.Cache: {
-      const _ = invalidate('/api/cache/management');
-      const _c = invalidate(`/api/cache/management/${msg.uuid}`);
-      const _g = invalidate('/api/group/caches');
+      invalidate('/api/cache/management').catch(() => {});
+      invalidate(`/api/cache/management/${msg.uuid}`).catch(() => {});
+      invalidate('/api/group/caches').catch(() => {});
       break;
     }
     default: {

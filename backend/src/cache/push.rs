@@ -15,6 +15,7 @@ use centaurus::{
   db::init::Connection,
   error::{ErrorReportStatusExt, Result},
   eyre::Context,
+  storage::FileStorage,
 };
 use dashmap::DashMap;
 use entity::sea_orm_active_enums::AccessType;
@@ -42,11 +43,7 @@ use tracing::warn;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{
-  auth::cli_auth::CliAuth,
-  cache::{state::CacheEvictionState, storage::FileStorage},
-  db::DBTrait,
-};
+use crate::{auth::cli_auth::CliAuth, cache::state::CacheEvictionState, db::DBTrait};
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
@@ -339,8 +336,10 @@ async fn upload_nar(
       });
 
       let (mut storage_writer, mut storage_reader) = io::duplex(64 * 1024);
+
+      let nar_name = format!("{}.nar", nar_id);
       let storage_task =
-        tokio::spawn(async move { storage.save_file(&mut storage_reader, nar_id).await });
+        tokio::spawn(async move { storage.save_file(&mut storage_reader, &nar_name).await });
 
       let mut raw_hasher = Sha256::new();
       let mut file_size = 0;
