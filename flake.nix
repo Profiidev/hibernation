@@ -62,15 +62,6 @@
               "harmonia-nar-3.0.0" = "sha256-BovRI3p2KXwQ6RF49NqLc0uKP/Jk+yA8E0eqScaIP68=";
             };
           };
-
-          # TODO Remove when nixpkgs pr #524985 is on nixpkgs-unstable
-          postPatch = ''
-            mkdir -p .cargo
-            cat << EOF > .cargo/config.toml
-            [source.crates-io]
-            api = "https://static.crates.io/crates"
-            EOF
-          '';
         };
       }
     );
