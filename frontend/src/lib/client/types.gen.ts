@@ -234,7 +234,7 @@ export type MailActiveResponse = {
 };
 
 export type MailSettings = {
-  smtp_enabled?: boolean;
+  smtp_enabled?: boolean | null;
   smtp_from_address?: string | null;
   smtp_from_name?: string | null;
   smtp_password?: string | null;
@@ -253,6 +253,12 @@ export type OidcCallbackQuery = {
   code?: string | null;
   error?: string | null;
   state: string;
+};
+
+export type OidcSetupResponse = {
+  from_env: Array<string>;
+  settings: UserSettings;
+  site_url: string;
 };
 
 export type PasswordUpdate = {
@@ -395,6 +401,7 @@ export type UserEditReq = {
 export type UserInfo = {
   email: string;
   name: string;
+  oidc_user: boolean;
   permissions: Array<string>;
   uuid: string;
 };
@@ -409,11 +416,14 @@ export type UserListInfo = {
 export type UserSettings = {
   oidc_client_id?: string | null;
   oidc_client_secret?: string | null;
-  oidc_enabled?: boolean;
+  oidc_enabled?: boolean | null;
+  oidc_group_claim?: string | null;
+  oidc_group_sync?: boolean | null;
+  oidc_image_sync?: boolean | null;
   oidc_issuer?: string | null;
   oidc_scopes?: string | null;
-  sso_create_user: boolean;
-  sso_instant_redirect: boolean;
+  sso_create_user?: boolean | null;
+  sso_instant_redirect?: boolean | null;
 };
 
 export type UserSettingsResponse = {
@@ -480,6 +490,70 @@ export type CompleteSetupErrors = {
 };
 
 export type CompleteSetupError = CompleteSetupErrors[keyof CompleteSetupErrors];
+
+export type GetOidcSettingsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/setup/oidc';
+};
+
+export type GetOidcSettingsErrors = {
+  /**
+   * An error occurred
+   */
+  '4XX': unknown;
+  /**
+   * An error occurred
+   */
+  '5XX': unknown;
+};
+
+export type GetOidcSettingsResponses = {
+  200: OidcSetupResponse;
+};
+
+export type GetOidcSettingsResponse =
+  GetOidcSettingsResponses[keyof GetOidcSettingsResponses];
+
+export type InitOidcData = {
+  body: UserSettings;
+  path?: never;
+  query?: never;
+  url: '/api/setup/oidc';
+};
+
+export type InitOidcErrors = {
+  /**
+   * Failed to parse the request body as JSON
+   */
+  400: string;
+  /**
+   * Expected request with `Content-Type: application/json`
+   */
+  415: string;
+  /**
+   * Failed to deserialize the JSON body into the target type
+   */
+  422: string;
+  /**
+   * An error occurred
+   */
+  '4XX': unknown;
+  /**
+   * An error occurred
+   */
+  '5XX': unknown;
+};
+
+export type InitOidcError = InitOidcErrors[keyof InitOidcErrors];
+
+export type InitOidcResponses = {
+  /**
+   * no content
+   */
+  200: unknown;
+};
 
 export type TestTokenData = {
   body?: never;
@@ -880,6 +954,46 @@ export type ChangeUserEmailError =
   ChangeUserEmailErrors[keyof ChangeUserEmailErrors];
 
 export type ChangeUserEmailResponses = {
+  /**
+   * no content
+   */
+  200: unknown;
+};
+
+export type ConvertOidcUserData = {
+  body: ResetUserPassword;
+  path?: never;
+  query?: never;
+  url: '/api/user/management/convert-oidc';
+};
+
+export type ConvertOidcUserErrors = {
+  /**
+   * Failed to parse the request body as JSON
+   */
+  400: string;
+  /**
+   * Expected request with `Content-Type: application/json`
+   */
+  415: string;
+  /**
+   * Failed to deserialize the JSON body into the target type
+   */
+  422: string;
+  /**
+   * An error occurred
+   */
+  '4XX': unknown;
+  /**
+   * An error occurred
+   */
+  '5XX': unknown;
+};
+
+export type ConvertOidcUserError =
+  ConvertOidcUserErrors[keyof ConvertOidcUserErrors];
+
+export type ConvertOidcUserResponses = {
   /**
    * no content
    */
