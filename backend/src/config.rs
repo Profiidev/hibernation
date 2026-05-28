@@ -44,6 +44,7 @@ pub struct Config {
   pub oidc: UserSettings,
 
   pub db_url: String,
+  pub admin_group: String,
   pub virtual_host_routing: bool,
 }
 
@@ -56,6 +57,7 @@ impl Default for Config {
       mail: MailSettings::default(),
       oidc: UserSettings::default(),
       db_url: "".to_string(),
+      admin_group: "Admin".to_string(),
       virtual_host_routing: false,
       metrics: MetricsConfig {
         metrics_name: "hibernation".to_string(),

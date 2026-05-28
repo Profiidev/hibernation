@@ -8,10 +8,12 @@ pub struct Model {
   #[sea_orm(primary_key, auto_increment = false)]
   pub id: Uuid,
   pub name: String,
+  #[sea_orm(unique)]
   pub email: String,
   pub password: String,
   pub salt: String,
   pub avatar: Option<String>,
+  pub oidc_user: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -22,6 +24,8 @@ pub enum Relation {
   GroupUser,
   #[sea_orm(has_many = "super::token::Entity")]
   Token,
+  #[sea_orm(has_one = "super::user_avatar::Entity")]
+  UserAvatar,
 }
 
 impl Related<super::cache_access::Entity> for Entity {
@@ -39,6 +43,12 @@ impl Related<super::group_user::Entity> for Entity {
 impl Related<super::token::Entity> for Entity {
   fn to() -> RelationDef {
     Relation::Token.def()
+  }
+}
+
+impl Related<super::user_avatar::Entity> for Entity {
+  fn to() -> RelationDef {
+    Relation::UserAvatar.def()
   }
 }
 

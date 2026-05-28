@@ -15,3 +15,4 @@ pub use super::settings::Entity as Settings;
 pub use super::setup::Entity as Setup;
 pub use super::token::Entity as Token;
 pub use super::user::Entity as User;
+pub use super::user_avatar::Entity as UserAvatar;

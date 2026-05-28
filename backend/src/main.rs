@@ -72,9 +72,13 @@ fn api_router(rate_limiter: &mut RateLimiter) -> ApiRouter {
 
 async fn state(mut router: ApiRouter, config: Config) -> ApiRouter {
   let db = init_db::<migration::Migrator>(&config.db, &config.db_url).await;
-  centaurus::backend::endpoints::setup::create_admin_group(&db, utils::permissions())
-    .await
-    .expect("Failed to create admin group");
+  centaurus::backend::endpoints::setup::create_admin_group(
+    &db,
+    utils::permissions(),
+    Some(config.admin_group.clone()),
+  )
+  .await
+  .expect("Failed to create admin group");
 
   router = auth::state(router, &config, &db).await;
   router = mail::state(router, &db, &config).await;
