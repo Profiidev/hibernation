@@ -124,7 +124,6 @@ export type DeleteUserRequest = {
 };
 
 export type DetailUserInfo = {
-  avatar?: string | null;
   caches: Array<CacheMapping>;
   email: string;
   groups: Array<SimpleGroupInfo>;
