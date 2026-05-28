@@ -1,6 +1,7 @@
 use aide::OperationIo;
-use axum::{extract::FromRequestParts, Extension};
+use axum::{Extension, extract::FromRequestParts};
 use centaurus::{
+  Config,
   backend::{
     auth::settings::{AuthConfig, UserSettings},
     config::{BaseConfig, MetricsConfig, SiteConfig},
@@ -8,11 +9,10 @@ use centaurus::{
   db::config::DBConfig,
   mail::MailSettings,
   storage::StorageConfig,
-  Config,
 };
 use figment::{
-  providers::{Env, Serialized},
   Figment,
+  providers::{Env, Serialized},
 };
 use serde::{Deserialize, Serialize};
 use tracing::{instrument, warn};
