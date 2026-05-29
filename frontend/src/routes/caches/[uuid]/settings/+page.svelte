@@ -22,6 +22,7 @@
   import { Label } from '@profidev/pleiades/components/ui/label';
   import { clearCache, deleteCache, editCache } from '$lib/client';
   import { EvictionPolicy, type CacheDetails } from '$lib/client/types.gen.js';
+  import RotateCCW from '@lucide/svelte/icons/rotate-ccw';
 
   const { data } = $props();
 
@@ -230,7 +231,13 @@
         </div>
       </div>
     {/snippet}
-    {#snippet footer({ isLoading }: { isLoading: boolean })}
+    {#snippet footer({
+      isLoading,
+      isError
+    }: {
+      isLoading: boolean;
+      isError: boolean;
+    })}
       <div class="mt-4 grid w-full grid-cols-1 gap-8 xl:grid-cols-2">
         <Button
           class="ml-auto cursor-pointer"
@@ -239,6 +246,8 @@
         >
           {#if isLoading}
             <Spinner />
+          {:else if isError}
+            <RotateCCW class="mr-2 h-4 w-4" />
           {:else}
             <Save />
           {/if}
