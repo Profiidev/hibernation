@@ -822,7 +822,7 @@ dependencies = [
  "aws-sdk-s3",
  "axum",
  "axum-extra",
- "centaurus 0.13.1",
+ "centaurus 0.14.0",
  "chrono",
  "dashmap",
  "dotenvy",
@@ -1132,6 +1132,7 @@ dependencies = [
  "sea-orm-migration",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "time",
  "tokio",
  "tokio-util",
@@ -3401,7 +3402,7 @@ dependencies = [
 name = "migration"
 version = "0.1.0"
 dependencies = [
- "centaurus 0.13.1",
+ "centaurus 0.14.0",
  "sea-orm-migration",
  "tokio",
 ]
