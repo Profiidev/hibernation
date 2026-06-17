@@ -215,6 +215,8 @@ async fn nar(
   };
   tracing::info!("Serving nar {} for cache {}", nar_id, cache.id);
 
+  db.nar().nar_accessed(nar_id).await?;
+
   let range = headers
     .get(http::header::RANGE)
     .and_then(|h| h.to_str().ok())

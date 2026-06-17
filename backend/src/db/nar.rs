@@ -373,4 +373,21 @@ impl<'db> NarTable<'db> {
       .one(self.db)
       .await
   }
+
+  pub async fn nar_accessed(&self, nar_id: Uuid) -> Result<(), DbErr> {
+    let model = nar_info::Entity::find_by_id(nar_id)
+      .one(self.db)
+      .await?
+      .ok_or(DbErr::RecordNotFound("nar_info".to_string()))?;
+
+    let accessed = model.accessed;
+    let mut model = model.into_active_model();
+
+    model.last_accessed_at = Set(Some(chrono::Utc::now().naive_utc()));
+    model.accessed = Set(accessed + 1);
+
+    model.save(self.db).await?;
+
+    Ok(())
+  }
 }
