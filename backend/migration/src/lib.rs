@@ -23,6 +23,7 @@ impl MigratorTrait for Migrator {
       Box::new(m20260319_193259_nar::Migration),
       Box::new(m20260319_194332_nar_info::Migration),
       Box::new(m20260320_164249_cache_access::Migration),
+      Box::new(centaurus::db::migrations::m6_user_oidc_subject::Migration),
     ]
   }
 }
