@@ -52,7 +52,6 @@
   let isLoading = $state(false);
   let readonly = $state(true);
   let allowSpecialEdit = $state(false);
-  let mailActive = $state(false);
   let userInfo: DetailUserInfo | undefined = $state();
   let groups: SimpleGroupInfo[] = $state([]);
   let form: BaseForm<typeof userSettings> | undefined = $state();
@@ -78,12 +77,6 @@
         user.permissions.includes(perm)
       );
       mappings = detailUserInfo.caches;
-    });
-  });
-
-  $effect(() => {
-    data.mailActivePromise.then((res) => {
-      mailActive = res;
     });
   });
 
@@ -242,7 +235,7 @@
         {userInfo.name}
       {/if}
     </h3>
-    {#if !mailActive && allowSpecialEdit && !userInfo?.oidc_user}
+    {#if allowSpecialEdit && !userInfo?.oidc_user}
       <Button
         variant="secondary"
         class="mr-2 ml-auto cursor-pointer"
@@ -257,9 +250,7 @@
       <Button
         variant="secondary"
         class={'mr-2 cursor-pointer' +
-          (mailActive || !allowSpecialEdit || userInfo?.oidc_user
-            ? ' ml-auto'
-            : '')}
+          (!allowSpecialEdit || userInfo?.oidc_user ? ' ml-auto' : '')}
         onclick={() => (convertOpen = true)}
         disabled={readonly}
       >
@@ -269,7 +260,7 @@
     {/if}
     <Button
       class={'cursor-pointer' +
-        (!(!mailActive && allowSpecialEdit && !userInfo?.oidc_user) &&
+        (!(allowSpecialEdit && !userInfo?.oidc_user) &&
         !(allowSpecialEdit && userInfo?.oidc_user)
           ? ' ml-auto'
           : '')}
@@ -333,7 +324,7 @@
                   readonly
                   value={userInfo?.email}
                 />
-                {#if !mailActive && allowSpecialEdit}
+                {#if allowSpecialEdit && !userInfo?.oidc_user}
                   <Button
                     variant="secondary"
                     class="cursor-pointer"
