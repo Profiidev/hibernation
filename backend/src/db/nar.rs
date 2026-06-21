@@ -100,7 +100,7 @@ impl<'db> NarTable<'db> {
           };
 
           let nar_info = nar_info::ActiveModel {
-            id: Set(Uuid::new_v4()),
+            id: Set(Uuid::now_v7()),
             nar_id: Set(nar.id),
             cache_id: Set(cache),
             compression: Set("zst".to_string()),
@@ -117,7 +117,7 @@ impl<'db> NarTable<'db> {
           let mut nar_refernces = Vec::new();
           for reference in references {
             let reference = nar_info_reference::ActiveModel {
-              id: Set(Uuid::new_v4()),
+              id: Set(Uuid::now_v7()),
               nar_info_id: Set(nar_info.id),
               store_path: Set(reference),
             };

@@ -291,7 +291,7 @@ async fn upload_nar(
     bail!("Invalid upload session");
   };
 
-  let nar_id = Uuid::new_v4();
+  let nar_id = Uuid::now_v7();
   let (nar_hash, nar_size, file_hash, file_size, nar_found) = match db
     .nar()
     .create_nar(nar_id, &info.nar_hash, info.nar_size)

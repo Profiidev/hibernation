@@ -226,7 +226,7 @@ impl<'db> CacheTable<'db> {
       .transaction::<_, Uuid, DbErr>(|db| {
         Box::pin(async move {
           let cache = cache::ActiveModel {
-            id: Set(Uuid::new_v4()),
+            id: Set(Uuid::now_v7()),
             name: Set(name),
             public: Set(public),
             quota: Set(quota),
@@ -247,7 +247,7 @@ impl<'db> CacheTable<'db> {
           cache_access.insert(db).await?;
 
           let downstream_cache = downstream_cache::ActiveModel {
-            id: Set(Uuid::new_v4()),
+            id: Set(Uuid::now_v7()),
             cache_id: Set(res.id),
             url: Set("https://cache.nixos.org".to_string()),
           };
@@ -349,7 +349,7 @@ impl<'db> CacheTable<'db> {
     let mut new_downstreams = Vec::new();
     for url in downstream_caches {
       new_downstreams.push(downstream_cache::ActiveModel {
-        id: Set(Uuid::new_v4()),
+        id: Set(Uuid::now_v7()),
         cache_id: Set(cache_id),
         url: Set(url.to_string()),
       });

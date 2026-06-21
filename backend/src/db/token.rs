@@ -19,7 +19,7 @@ impl<'db> TokenTable<'db> {
     exp: DateTime,
   ) -> Result<token::Model, DbErr> {
     let active_model = token::ActiveModel {
-      id: Set(Uuid::new_v4()),
+      id: Set(Uuid::now_v7()),
       user_id: Set(user),
       name: Set(name),
       exp: Set(exp),
