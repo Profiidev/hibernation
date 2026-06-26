@@ -6,8 +6,7 @@ use centaurus::{
   backend::{
     auth::{
       jwt::jwt_from_request,
-      jwt_auth,
-      jwt_state::JWT_COOKIE_NAME,
+      jwt_state::{JWT_COOKIE_NAME, JwtState},
       permission::{NoPerm, Permission},
       pw_state::PasswordState,
     },
@@ -44,7 +43,15 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for CliAuth<P> {
     let user = if token.len() == CLI_TOKEN_LEN {
       check_token(&db, parts, token).await?
     } else {
-      jwt_auth::check_jwt(&db, parts, token).await?.sub
+      let state = parts.extract_state::<JwtState>().await;
+
+      let Ok(claims) = state.validate_token(&token) else {
+        tracing::error!("invalid token claims for token: {}", token);
+        bail!(UNAUTHORIZED, "invalid token");
+      };
+      state.auth.check(&db, parts, &token, &claims).await?;
+
+      claims.sub
     };
 
     P::check(&db, user, parts).await?;
