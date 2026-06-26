@@ -2,7 +2,7 @@
   import { Input } from '@profidev/pleiades/components/ui/input';
   import { toast } from '@profidev/pleiades/components/util/general';
   import * as Select from '@profidev/pleiades/components/ui/select';
-  import Table from '$lib/components/table/Table.svelte';
+  import Table from '@profidev/pleiades/components/table/clean-table.svelte';
   import { columns } from './table.svelte';
   import {
     deletePath,
