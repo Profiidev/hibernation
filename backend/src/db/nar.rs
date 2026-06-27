@@ -374,8 +374,10 @@ impl<'db> NarTable<'db> {
       .await
   }
 
-  pub async fn nar_accessed(&self, nar_id: Uuid) -> Result<(), DbErr> {
-    let model = nar_info::Entity::find_by_id(nar_id)
+  pub async fn nar_accessed(&self, nar_id: Uuid, cache: Uuid) -> Result<(), DbErr> {
+    let model = nar_info::Entity::find()
+      .filter(nar_info::Column::NarId.eq(nar_id))
+      .filter(nar_info::Column::CacheId.eq(cache))
       .one(self.db)
       .await?
       .ok_or(DbErr::RecordNotFound("nar_info".to_string()))?;
