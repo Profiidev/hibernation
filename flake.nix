@@ -9,6 +9,9 @@
     extra-trusted-public-keys = [
       "profidev.cachix.org:tg4xEn64UMdvA5jJYT8omo/CQHk8+spLyeGT2YAku70="
     ];
+
+    connect-timeout = 5;
+    fallback = true;
   };
 
   inputs = {
