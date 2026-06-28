@@ -45,6 +45,17 @@ impl<'db> TokenTable<'db> {
     Ok(())
   }
 
+  pub async fn invalidate_expired(&self, user: Uuid) -> Result<u64, DbErr> {
+    Ok(
+      Token::delete_many()
+        .filter(token::Column::UserId.eq(user))
+        .filter(token::Column::Exp.lt(Utc::now().naive_utc()))
+        .exec(self.db)
+        .await?
+        .rows_affected,
+    )
+  }
+
   pub async fn replace(&self, user: Uuid, id: Uuid, hash: String) -> Result<(), DbErr> {
     let mut token = self.by_id(id).await?.into_active_model();
     if token.user_id.as_ref() != &user {

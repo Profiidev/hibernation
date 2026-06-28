@@ -18,6 +18,10 @@ pub fn router() -> ApiRouter {
     .api_route("/", post_with(create_token, |op| op.id("createToken")))
     .api_route("/", delete_with(delete_token, |op| op.id("deleteToken")))
     .api_route("/", put_with(edit_token, |op| op.id("editToken")))
+    .api_route(
+      "/expired",
+      delete_with(delete_expired_tokens, |op| op.id("deleteExpiredTokens")),
+    )
     .api_route("/{uuid}", get_with(token_info, |op| op.id("tokenInfo")))
     .api_route(
       "/{uuid}",
@@ -130,6 +134,19 @@ async fn delete_token(
     .broadcast(UpdateMessage::Token { uuid: req.uuid })
     .await;
   Ok(())
+}
+
+#[derive(Serialize, JsonSchema)]
+struct DeleteExpiredTokensResponse {
+  deleted: u64,
+}
+
+async fn delete_expired_tokens(
+  auth: JwtAuth,
+  db: Connection,
+) -> Result<Json<DeleteExpiredTokensResponse>> {
+  let deleted = db.token().invalidate_expired(auth.user_id).await?;
+  Ok(Json(DeleteExpiredTokensResponse { deleted }))
 }
 
 #[derive(Deserialize, JsonSchema)]
