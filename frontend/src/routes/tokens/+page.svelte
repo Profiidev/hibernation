@@ -7,7 +7,6 @@
   import { columns } from './table.svelte';
   import { z } from 'zod';
   import { toast } from '@profidev/pleiades/components/util/general';
-  import { invalidate } from '$app/navigation';
   import {
     deleteExpiredTokens,
     deleteToken,
@@ -60,7 +59,6 @@
       return { error: 'Failed to delete token' };
     } else {
       toast.success(`Token ${selected.name} deleted successfully`);
-      invalidate((url) => url.pathname.startsWith('/api/token'));
     }
   };
 
@@ -79,7 +77,6 @@
     } else {
       toast.success(`Deleted ${deleted} expired token(s)`);
     }
-    invalidate((url) => url.pathname.startsWith('/api/token'));
   };
 
   const startDeleteToken = (item: TokenInfo) => {
