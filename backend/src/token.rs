@@ -18,6 +18,10 @@ pub fn router() -> ApiRouter {
     .api_route("/", post_with(create_token, |op| op.id("createToken")))
     .api_route("/", delete_with(delete_token, |op| op.id("deleteToken")))
     .api_route("/", put_with(edit_token, |op| op.id("editToken")))
+    .api_route(
+      "/expired",
+      delete_with(delete_expired_tokens, |op| op.id("deleteExpiredTokens")),
+    )
     .api_route("/{uuid}", get_with(token_info, |op| op.id("tokenInfo")))
     .api_route(
       "/{uuid}",
@@ -109,7 +113,9 @@ async fn create_token(
     .insert(auth.user_id, req.name, hash, req.exp.naive_utc())
     .await?
     .id;
-  updater.broadcast(UpdateMessage::Token { uuid }).await;
+  updater
+    .send_to(auth.user_id, UpdateMessage::Token { uuid })
+    .await;
 
   Ok(Json(CreateTokenResponse { token, uuid }))
 }
@@ -127,9 +133,28 @@ async fn delete_token(
 ) -> Result<()> {
   db.token().invalidate(auth.user_id, req.uuid).await?;
   updater
-    .broadcast(UpdateMessage::Token { uuid: req.uuid })
+    .send_to(auth.user_id, UpdateMessage::Token { uuid: req.uuid })
     .await;
   Ok(())
+}
+
+#[derive(Serialize, JsonSchema)]
+struct DeleteExpiredTokensResponse {
+  deleted: u64,
+}
+
+async fn delete_expired_tokens(
+  auth: JwtAuth,
+  db: Connection,
+  updater: Updater,
+) -> Result<Json<DeleteExpiredTokensResponse>> {
+  let deleted = db.token().invalidate_expired(auth.user_id).await?;
+  if deleted > 0 {
+    updater
+      .send_to(auth.user_id, UpdateMessage::Token { uuid: Uuid::nil() })
+      .await;
+  }
+  Ok(Json(DeleteExpiredTokensResponse { deleted }))
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -159,7 +184,7 @@ async fn edit_token(
     .update(auth.user_id, req.uuid, req.name, req.exp.naive_utc())
     .await?;
   updater
-    .broadcast(UpdateMessage::Token { uuid: req.uuid })
+    .send_to(auth.user_id, UpdateMessage::Token { uuid: req.uuid })
     .await;
   Ok(())
 }

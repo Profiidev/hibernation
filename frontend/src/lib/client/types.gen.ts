@@ -107,6 +107,10 @@ export type DeleteCacheRequest = {
   uuid: string;
 };
 
+export type DeleteExpiredTokensResponse = {
+  deleted: number;
+};
+
 export type DeleteGroupRequest = {
   uuid: string;
 };
@@ -259,6 +263,10 @@ export type OidcSetupResponse = {
   from_env: Array<string>;
   settings: UserSettings;
   site_url: string;
+};
+
+export type OidcUrlQuery = {
+  redirect_to?: string | null;
 };
 
 export type PasswordUpdate = {
@@ -2392,6 +2400,31 @@ export type EditTokenResponses = {
    */
   200: unknown;
 };
+
+export type DeleteExpiredTokensData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/token/expired';
+};
+
+export type DeleteExpiredTokensErrors = {
+  /**
+   * An error occurred
+   */
+  '4XX': unknown;
+  /**
+   * An error occurred
+   */
+  '5XX': unknown;
+};
+
+export type DeleteExpiredTokensResponses = {
+  200: DeleteExpiredTokensResponse;
+};
+
+export type DeleteExpiredTokensResponse2 =
+  DeleteExpiredTokensResponses[keyof DeleteExpiredTokensResponses];
 
 export type TokenInfoData = {
   body?: never;
