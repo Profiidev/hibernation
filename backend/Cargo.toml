@@ -31,7 +31,7 @@ dotenvy = "0.15.7"
 entity = { path = "entity" }
 figment = { version = "0.10.19", features = ["env"] }
 futures-util = "0.3.32"
-harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
+harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "5f8e47497f37924b4526c62ea99d2a1fbef70912" }
 http = "1.4.1"
 # Required to enable image formats
 image = { version = "0.25.10", default-features = false, features = [

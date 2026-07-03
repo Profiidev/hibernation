@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
+harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "5f8e47497f37924b4526c62ea99d2a1fbef70912" }
 serde = { version = "1.0.228", features = ["derive"] }
 uuid = { version = "1.23.1", features = ["v4", "serde"] }
 tokio = { version = "1.52.3", features = [] }
