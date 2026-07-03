@@ -175,6 +175,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrayref"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76a2e8124351fda1ef8aaaa3bbd7ebbcb486bbcd4225aca0aa0d84bb2db8fecb"
+
+[[package]]
 name = "arrayvec"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -946,6 +952,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "blake3"
+version = "1.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0aa83c34e62843d924f905e0f5c866eb1dd6545fc4d719e803d9ba6030371fce"
+dependencies = [
+ "arrayref",
+ "arrayvec",
+ "cc",
+ "cfg-if",
+ "constant_time_eq",
+ "cpufeatures 0.3.0",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1344,6 +1364,12 @@ name = "const-oid"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
+
+[[package]]
+name = "constant_time_eq"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d52eff69cd5e647efe296129160853a42795992097e8af39800e1060caeea9b"
 
 [[package]]
 name = "convert_case"
@@ -2327,6 +2353,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "harmonia-file-core"
+version = "3.1.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "harmonia-file-nar"
+version = "3.1.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "bstr",
+ "bytes",
+ "derive_more",
+ "futures-core",
+ "futures-sink",
+ "futures-util",
+ "harmonia-file-core",
+ "harmonia-utils-io 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "nix 0.31.3",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "walkdir",
+]
+
+[[package]]
 name = "harmonia-nar"
 version = "3.0.0"
 source = "git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0#f0672e5b502c14d506ea5e6acca7729a16f14436"
@@ -2335,7 +2395,7 @@ dependencies = [
  "bytes",
  "derive_more",
  "futures",
- "harmonia-utils-io",
+ "harmonia-utils-io 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0)",
  "nix 0.31.3",
  "pin-project-lite",
  "thiserror 2.0.18",
@@ -2356,16 +2416,50 @@ dependencies = [
  "derive_more",
  "futures",
  "harmonia-nar",
- "harmonia-protocol-derive",
+ "harmonia-protocol-derive 3.0.0",
  "harmonia-store-core",
- "harmonia-utils-hash",
- "harmonia-utils-io",
+ "harmonia-utils-hash 0.0.0-alpha.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "harmonia-utils-io 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0)",
  "libc",
  "num_enum",
  "pin-project-lite",
  "serde",
  "serde_json",
  "serde_with",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "harmonia-protocol"
+version = "3.1.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "async-stream",
+ "bstr",
+ "bytes",
+ "derive_more",
+ "futures-core",
+ "futures-util",
+ "harmonia-file-nar",
+ "harmonia-protocol-derive 3.1.0",
+ "harmonia-store-aterm",
+ "harmonia-store-build-result",
+ "harmonia-store-content-address",
+ "harmonia-store-derivation",
+ "harmonia-store-path",
+ "harmonia-store-path-info",
+ "harmonia-utils-base-encoding 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "harmonia-utils-hash 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "harmonia-utils-io 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "harmonia-utils-signature",
+ "libc",
+ "num_enum",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
  "thiserror 2.0.18",
  "tokio",
  "tokio-util",
@@ -2383,6 +2477,55 @@ dependencies = [
 ]
 
 [[package]]
+name = "harmonia-protocol-derive"
+version = "3.1.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
+]
+
+[[package]]
+name = "harmonia-store-aterm"
+version = "0.0.0-alpha.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "bytes",
+ "harmonia-store-content-address",
+ "harmonia-store-derivation",
+ "harmonia-store-path",
+ "harmonia-utils-base-encoding 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "harmonia-utils-hash 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "memchr",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "harmonia-store-build-result"
+version = "3.1.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "harmonia-store-derivation",
+ "num_enum",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "harmonia-store-content-address"
+version = "3.1.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "derive_more",
+ "harmonia-store-path",
+ "harmonia-utils-hash 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "harmonia-store-core"
 version = "0.0.0-alpha.0"
 source = "git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0#f0672e5b502c14d506ea5e6acca7729a16f14436"
@@ -2390,8 +2533,8 @@ dependencies = [
  "bytes",
  "data-encoding",
  "derive_more",
- "harmonia-utils-base-encoding",
- "harmonia-utils-hash",
+ "harmonia-utils-base-encoding 0.0.0-alpha.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "harmonia-utils-hash 0.0.0-alpha.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_enum",
  "ring",
  "serde",
@@ -2404,16 +2547,64 @@ dependencies = [
 ]
 
 [[package]]
+name = "harmonia-store-derivation"
+version = "0.0.0-alpha.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "bytes",
+ "data-encoding",
+ "derive_more",
+ "harmonia-store-content-address",
+ "harmonia-store-path",
+ "harmonia-utils-base-encoding 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "harmonia-utils-hash 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "harmonia-utils-signature",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "zerocopy",
+]
+
+[[package]]
+name = "harmonia-store-path"
+version = "3.1.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "derive_more",
+ "harmonia-utils-base-encoding 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "harmonia-utils-hash 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "serde",
+ "thiserror 2.0.18",
+ "zerocopy",
+]
+
+[[package]]
+name = "harmonia-store-path-info"
+version = "3.1.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "harmonia-store-content-address",
+ "harmonia-store-path",
+ "harmonia-utils-hash 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "harmonia-utils-signature",
+ "serde",
+]
+
+[[package]]
 name = "harmonia-store-remote"
-version = "3.0.0"
-source = "git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0#f0672e5b502c14d506ea5e6acca7729a16f14436"
+version = "3.1.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
 dependencies = [
  "async-stream",
- "futures",
- "harmonia-nar",
- "harmonia-protocol",
- "harmonia-store-core",
- "harmonia-utils-io",
+ "futures-core",
+ "futures-util",
+ "harmonia-file-nar",
+ "harmonia-protocol 3.1.0",
+ "harmonia-store-content-address",
+ "harmonia-store-derivation",
+ "harmonia-store-path",
+ "harmonia-utils-io 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "harmonia-utils-signature",
  "prometheus",
  "tokio",
  "tracing",
@@ -2431,6 +2622,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "harmonia-utils-base-encoding"
+version = "0.0.0-alpha.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "data-encoding",
+ "derive_more",
+ "serde",
+]
+
+[[package]]
 name = "harmonia-utils-hash"
 version = "0.0.0-alpha.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2438,11 +2639,42 @@ checksum = "301feeb6f34b380ab13df6bb264c461704dbbb7f81b45b46c406c0d8c2d8d7f4"
 dependencies = [
  "data-encoding",
  "derive_more",
- "harmonia-utils-base-encoding",
+ "harmonia-utils-base-encoding 0.0.0-alpha.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "md5",
  "ring",
  "serde",
  "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "harmonia-utils-hash"
+version = "0.0.0-alpha.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "blake3",
+ "data-encoding",
+ "derive_more",
+ "harmonia-utils-base-encoding 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "md5",
+ "pin-project-lite",
+ "serde",
+ "sha1 0.11.0",
+ "sha2 0.11.0",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "harmonia-utils-io"
+version = "0.0.0-alpha.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "bytes",
+ "futures-util",
+ "libc",
+ "nix 0.31.3",
+ "pin-project-lite",
  "tokio",
 ]
 
@@ -2456,6 +2688,21 @@ dependencies = [
  "pin-project-lite",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "harmonia-utils-signature"
+version = "3.1.0"
+source = "git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912#5f8e47497f37924b4526c62ea99d2a1fbef70912"
+dependencies = [
+ "data-encoding",
+ "ed25519-dalek",
+ "getrandom 0.4.3",
+ "harmonia-utils-base-encoding 0.0.0-alpha.0 (git+https://github.com/nix-community/harmonia?rev=5f8e47497f37924b4526c62ea99d2a1fbef70912)",
+ "serde",
+ "subtle",
+ "thiserror 2.0.18",
+ "zeroize",
 ]
 
 [[package]]
@@ -2569,7 +2816,7 @@ dependencies = [
  "color-eyre",
  "dirs",
  "futures-core",
- "harmonia-protocol",
+ "harmonia-protocol 3.0.0",
  "harmonia-store-core",
  "harmonia-store-remote",
  "indicatif",
@@ -3460,6 +3707,7 @@ dependencies = [
  "cfg-if",
  "cfg_aliases",
  "libc",
+ "memoffset",
 ]
 
 [[package]]
@@ -6798,3 +7046,8 @@ checksum = "27bc9d5b815bc103f142aa054f561d9187d191692ec7c2d1e2b4737f8dbd7296"
 dependencies = [
  "zune-core",
 ]
+
+[[patch.unused]]
+name = "harmonia-store-remote"
+version = "3.0.0"
+source = "git+https://github.com/nix-community/harmonia?rev=harmonia-v3.0.0#f0672e5b502c14d506ea5e6acca7729a16f14436"

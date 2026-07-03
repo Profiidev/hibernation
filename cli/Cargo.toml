@@ -22,7 +22,7 @@ dirs = "6.0.0"
 futures-core = "0.3.32"
 harmonia-protocol = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
 harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
-harmonia-store-remote = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
+harmonia-store-remote = { git = "https://github.com/nix-community/harmonia", rev = "5f8e47497f37924b4526c62ea99d2a1fbef70912" }
 indicatif = "0.18.4"
 opener = "0.8.4"
 reqwest = { version = "0.13.4", features = ["form", "http3", "json", "stream"] }
