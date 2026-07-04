@@ -81,7 +81,11 @@ FROM node:26-slim@sha256:a1d9d671994fc2d26e297ac56b4b1522a8bc7fa71c43b14cd1b1fe6
 ENV DB_URL="sqlite:/data/hibernation.db?mode=rwc"
 ENV STORAGE_PATH="/data/storage"
 ENV SITE_URL="http://localhost:8000"
-RUN mkdir -p /data/storage
+
+RUN mkdir -p /data/storage \
+    && groupadd -r hibernation \
+    && useradd -r -g hibernation hibernation \
+    && chown -R hibernation:hibernation /data
 
 COPY --from=backend-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
@@ -90,5 +94,7 @@ COPY --from=frontend-builder /app/frontend/build /app/frontend
 COPY --from=frontend-builder /app/frontend/package.json /app/frontend/package.json
 COPY --from=frontend-builder /app/package-lock.json /app/package-lock.json
 COPY --from=backend-builder /app/app /usr/local/bin/hibernation
+
+USER hibernation
 
 ENTRYPOINT ["hibernation"]
