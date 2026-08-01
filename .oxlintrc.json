@@ -4,6 +4,7 @@
   "ignorePatterns": [
     "*.svelte",
     "frontend/src/lib/client/**",
+    "frontend/src/lib/components/code/**",
     "action/dist/**",
     "vite.config.ts"
   ]
