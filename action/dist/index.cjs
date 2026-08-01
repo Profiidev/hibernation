@@ -885,9 +885,9 @@ var P = class extends URL {
           let t = e.length,
             n = 0,
             r = this;
-          for (; r !== null && n < t; ) {
+          for (; r !== null && n < t;) {
             let i = e[n];
-            for (i <= 90 && i >= 65 && (i |= 32); r !== null; ) {
+            for (i <= 90 && i >= 65 && (i |= 32); r !== null;) {
               if (i === r.code) {
                 if (t === ++n) return r;
                 r = r.middle;
@@ -1991,7 +1991,7 @@ var P = class extends URL {
       n += i;
       let e = 0,
         t = s.length;
-      for (; e < t; ) {
+      for (; e < t;) {
         let r = s[e];
         (r._state === u
           ? ((r._idleStart = n - i), (r._state = d))
@@ -2723,7 +2723,7 @@ var P = class extends URL {
     }
     function u(e, t, n) {
       let r = ``;
-      for (; n.position < t.length && e(t[n.position]); )
+      for (; n.position < t.length && e(t[n.position]);)
         ((r += t[n.position]), n.position++);
       return r;
     }
@@ -2776,7 +2776,7 @@ var P = class extends URL {
           parameters: new Map(),
           essence: `${o}/${c}`
         };
-      for (; t.position < e.length; ) {
+      for (; t.position < e.length;) {
         (t.position++, u((e) => a.test(e), e, t));
         let n = u((e) => e !== `;` && e !== `=`, e, t);
         if (((n = n.toLowerCase()), t.position < e.length)) {
@@ -2860,8 +2860,8 @@ var P = class extends URL {
     function w(e, t, n, r) {
       let i = 0,
         a = e.length - 1;
-      if (t) for (; i < e.length && r(e.charCodeAt(i)); ) i++;
-      if (n) for (; a > 0 && r(e.charCodeAt(a)); ) a--;
+      if (t) for (; i < e.length && r(e.charCodeAt(i));) i++;
+      if (n) for (; a > 0 && r(e.charCodeAt(a));) a--;
       return i === 0 && a === e.length - 1 ? e : e.slice(i, a + 1);
     }
     function T(e) {
@@ -2870,7 +2870,7 @@ var P = class extends URL {
       let n = ``,
         r = 0,
         i = 65535;
-      for (; r < t; )
+      for (; r < t;)
         (r + i > t && (i = t - r),
           (n += String.fromCharCode.apply(null, e.subarray(r, (r += i)))));
       return n;
@@ -3899,7 +3899,7 @@ var P = class extends URL {
         n = { position: 0 },
         r = [],
         i = ``;
-      for (; n.position < t.length; ) {
+      for (; n.position < t.length;) {
         if (
           ((i += c((e) => e !== `"` && e !== `,`, t, n)), n.position < t.length)
         )
@@ -4235,11 +4235,10 @@ var P = class extends URL {
       let a = Buffer.from(`--${r}`, `utf8`),
         o = [],
         u = { position: 0 };
-      for (; e[u.position] === 13 && e[u.position + 1] === 10; )
-        u.position += 2;
+      for (; e[u.position] === 13 && e[u.position + 1] === 10;) u.position += 2;
       let f = e.length;
-      for (; e[f - 1] === 10 && e[f - 2] === 13; ) f -= 2;
-      for (f !== e.length && (e = e.subarray(0, f)); ; ) {
+      for (; e[f - 1] === 10 && e[f - 2] === 13;) f -= 2;
+      for (f !== e.length && (e = e.subarray(0, f)); ;) {
         if (e.subarray(u.position, u.position + a.length).equals(a))
           u.position += a.length;
         else return `failure`;
@@ -4345,14 +4344,14 @@ var P = class extends URL {
     }
     function x(e, t, n) {
       let r = n.position;
-      for (; r < t.length && e(t[r]); ) ++r;
+      for (; r < t.length && e(t[r]);) ++r;
       return t.subarray(n.position, (n.position = r));
     }
     function S(e, t, n, r) {
       let i = 0,
         a = e.length - 1;
-      if (t) for (; i < e.length && r(e[i]); ) i++;
-      if (n) for (; a > 0 && r(e[a]); ) a--;
+      if (t) for (; i < e.length && r(e[i]);) i++;
+      if (n) for (; a > 0 && r(e[a]);) a--;
       return i === 0 && a === e.length - 1 ? e : e.subarray(i, a + 1);
     }
     function C(e, t, n) {
@@ -4794,7 +4793,7 @@ Content-Type: ${c.type || `application/octet-stream`}\r\n\r\n`
             this.readMore());
         }
         readMore() {
-          for (; !this.paused && this.ptr; ) {
+          for (; !this.paused && this.ptr;) {
             let e = this.socket.read();
             if (e === null) break;
             this.execute(e);
@@ -6478,7 +6477,7 @@ Content-Type: ${c.type || `application/octet-stream`}\r\n\r\n`
             }),
           r.code === `ERR_TLS_CERT_ALTNAME_INVALID`)
         )
-          for (n(e[y] === 0); e[b] > 0 && e[S][e[O]].servername === e[m]; ) {
+          for (n(e[y] === 0); e[b] > 0 && e[S][e[O]].servername === e[m];) {
             let t = e[S][e[O]++];
             a.errorRequest(e, t, r);
           }
@@ -6649,7 +6648,7 @@ Content-Type: ${c.type || `application/octet-stream`}\r\n\r\n`
           ((this[b] = function (e, n) {
             let r = t[v],
               i = !1;
-            for (; !i; ) {
+            for (; !i;) {
               let e = r.shift();
               if (!e) break;
               (t[c]--, (i = !this.dispatch(e.opts, e.handler)));
@@ -6860,7 +6859,7 @@ Content-Type: ${c.type || `application/octet-stream`}\r\n\r\n`
       x = Symbol(`kErrorPenalty`);
     function S(e, t) {
       if (e === 0) return t;
-      for (; t !== 0; ) {
+      for (; t !== 0;) {
         let n = t;
         ((t = e % t), (e = n));
       }
@@ -6946,7 +6945,7 @@ Content-Type: ${c.type || `application/octet-stream`}\r\n\r\n`
           return;
         let e = 0,
           t = this[a].findIndex((e) => !e[o]);
-        for (; e++ < this[a].length; ) {
+        for (; e++ < this[a].length;) {
           this[v] = (this[v] + 1) % this[a].length;
           let e = this[a][this[v]];
           if (
@@ -9678,8 +9677,8 @@ ${e.format(t)}
     function p(e) {
       let t = 0,
         n = e.length;
-      for (; n > t && f(e.charCodeAt(n - 1)); ) --n;
-      for (; n > t && f(e.charCodeAt(t)); ) ++t;
+      for (; n > t && f(e.charCodeAt(n - 1));) --n;
+      for (; n > t && f(e.charCodeAt(t));) ++t;
       return t === 0 && n === e.length ? e : e.substring(t, n);
     }
     function m(e, t) {
@@ -9813,7 +9812,7 @@ ${e.format(t)}
                 ((s = o + ((a - o) >> 1)),
                   t[s][0] <= l[0] ? (o = s + 1) : (a = s));
               if (r !== s) {
-                for (i = r; i > o; ) t[i] = t[--i];
+                for (i = r; i > o;) t[i] = t[--i];
                 t[o] = l;
               }
             }
@@ -12146,7 +12145,7 @@ ${e.format(t)}
         f = l.read(),
         p = !0;
       (async () => {
-        for (; !e[a]; )
+        for (; !e[a];)
           try {
             let { done: m, value: h } = await f;
             if (
@@ -12976,7 +12975,7 @@ ${e.format(t)}
         if (t === 1 || e[t - 1] !== `"`) throw Error(`Invalid cookie value`);
         (--t, ++n);
       }
-      for (; n < t; ) {
+      for (; n < t;) {
         let t = e.charCodeAt(n++);
         if (t < 33 || t > 126 || t === 34 || t === 44 || t === 59 || t === 92)
           throw Error(`Invalid cookie value`);
@@ -13619,7 +13618,7 @@ ${e.format(t)}
     function O(e) {
       let t = { position: 0 },
         n = new Map();
-      for (; t.position < e.length; ) {
+      for (; t.position < e.length;) {
         let [r, i = ``] = f(`;`, e, t).split(`=`);
         (n.set(p(r, !0, !1), p(i, !1, !0)), t.position++);
       }
@@ -14014,7 +14013,7 @@ ${e.format(t)}
             : !0;
         }
         run(e) {
-          for (; this.#r; )
+          for (; this.#r;)
             if (this.#i === i.INFO) {
               if (this.#n < 2) return e();
               let t = this.consume(2),
@@ -14149,7 +14148,7 @@ ${e.format(t)}
             return ((this.#n -= this.#e[0].length), this.#e.shift());
           let t = Buffer.allocUnsafe(e),
             n = 0;
-          for (; n !== e; ) {
+          for (; n !== e;) {
             let r = this.#e[0],
               { length: i } = r;
             if (i + n === e) {
@@ -14265,7 +14264,7 @@ ${e.format(t)}
         async #r() {
           this.#t = !0;
           let e = this.#e;
-          for (; !e.isEmpty(); ) {
+          for (; !e.isEmpty();) {
             let t = e.shift();
             (t.promise !== null && (await t.promise),
               this.#n.write(t.frame, t.callback),
@@ -14695,7 +14694,7 @@ ${e.format(t)}
                   (this.checkBOM = !1));
                 break;
             }
-          for (; this.pos < this.buffer.length; ) {
+          for (; this.pos < this.buffer.length;) {
             if (this.eventEndCheck) {
               if (this.crlfCheck) {
                 if (this.buffer[this.pos] === o) {
@@ -16118,7 +16117,7 @@ var gn = function (e, t, n, r) {
       try {
         let r = t + e.toString(),
           i = r.indexOf(l.EOL);
-        for (; i > -1; )
+        for (; i > -1;)
           (n(r.substring(0, i)),
             (r = r.substring(i + l.EOL.length)),
             (i = r.indexOf(l.EOL)));
@@ -16895,7 +16894,7 @@ var Nn = o((e, t) => {
             if (this.prerelease.length === 0) this.prerelease = [e];
             else {
               let r = this.prerelease.length;
-              for (; --r >= 0; )
+              for (; --r >= 0;)
                 typeof this.prerelease[r] == `number` &&
                   (this.prerelease[r]++, (r = -2));
               if (r === -1) {
@@ -17115,7 +17114,7 @@ var Nn = o((e, t) => {
       else {
         let n = t.includePrerelease ? i[a.COERCERTLFULL] : i[a.COERCERTL],
           r;
-        for (; (r = n.exec(e)) && (!o || o.index + o[0].length !== e.length); )
+        for (; (r = n.exec(e)) && (!o || o.index + o[0].length !== e.length);)
           ((!o || r.index + r[0].length !== o.index + o[0].length) && (o = r),
             (n.lastIndex = r.index + r[1].length + r[2].length));
         n.lastIndex = -1;
@@ -17329,7 +17328,7 @@ var Nn = o((e, t) => {
         let n = !0,
           r = e.slice(),
           i = r.pop();
-        for (; n && r.length; )
+        for (; n && r.length;)
           ((n = r.every((e) => i.intersects(e, t))), (i = r.pop()));
         return n;
       },
@@ -18032,7 +18031,7 @@ var wr = function (e, t, n, r) {
     execute(e, t) {
       return wr(this, void 0, void 0, function* () {
         let n = 1;
-        for (; n < this.maxAttempts; ) {
+        for (; n < this.maxAttempts;) {
           try {
             return yield e();
           } catch (e) {
