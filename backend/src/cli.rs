@@ -24,7 +24,6 @@ use rand::{RngExt, distr::Alphanumeric};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tokio::{spawn, time::sleep};
-use tower_governor::GovernorLayer;
 use uuid::Uuid;
 
 use crate::{
@@ -36,7 +35,7 @@ use crate::{
 pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {
   ApiRouter::new()
     .api_route("/", put_with(get_token, |op| op.id("getToken")))
-    .layer(GovernorLayer::new(rate_limiter.create_limiter()))
+    .layer(rate_limiter.create_limiter())
     .api_route("/", post_with(new_code, |op| op.id("newCode")))
 }
 

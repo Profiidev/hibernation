@@ -258,7 +258,7 @@ impl<'db> NarTable<'db> {
     let builder = self.db.get_database_backend();
     let missing = self
       .db
-      .query_all(builder.build(&query))
+      .query_all_raw(builder.build(&query))
       .await?
       .into_iter()
       .map(|row| StorePath::from_base_path(&row.try_get_by_index::<String>(0).unwrap()).unwrap())
