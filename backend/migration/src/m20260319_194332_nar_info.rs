@@ -166,7 +166,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum NarInfo {
+pub enum NarInfo {
   Table,
   Id,
   CacheId,

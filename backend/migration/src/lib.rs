@@ -5,6 +5,7 @@ mod m20260319_192505_cache;
 mod m20260319_193259_nar;
 mod m20260319_194332_nar_info;
 mod m20260320_164249_cache_access;
+mod m20260806_134347_nar_info_last_accessed_not_null;
 
 pub struct Migrator;
 
@@ -24,6 +25,7 @@ impl MigratorTrait for Migrator {
       Box::new(m20260319_194332_nar_info::Migration),
       Box::new(m20260320_164249_cache_access::Migration),
       Box::new(centaurus::db::migrations::m6_user_oidc_subject::Migration),
+      Box::new(m20260806_134347_nar_info_last_accessed_not_null::Migration),
     ]
   }
 }

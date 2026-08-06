@@ -8,7 +8,7 @@ use entity::{
   sea_orm_active_enums::{AccessType, EvictionPolicy},
 };
 use http::StatusCode;
-use migration::{ExprTrait, Func, NullOrdering, Query, WindowStatement};
+use migration::{ExprTrait, Func, Query, WindowStatement};
 use schemars::JsonSchema;
 use sea_orm::{
   ActiveValue::Set, Condition, FromQueryResult, IntoActiveModel, Iterable, JoinType, QuerySelect,
@@ -399,10 +399,9 @@ impl<'db> CacheTable<'db> {
     match eviction_policy {
       EvictionPolicy::LeastRecentlyUsed => {
         window
-          .order_by_with_nulls(
+          .order_by(
             (nar_info::Entity, nar_info::Column::LastAccessedAt),
             sea_orm::Order::Asc,
-            NullOrdering::First,
           )
           .order_by(
             (nar_info::Entity, nar_info::Column::CreatedAt),

@@ -30,7 +30,7 @@ pub enum SearchSort {
 pub struct SearchResult {
   pub store_path: String,
   pub created_at: chrono::NaiveDateTime,
-  pub last_accessed_at: Option<chrono::NaiveDateTime>,
+  pub last_accessed_at: chrono::NaiveDateTime,
   pub size: i64,
   pub accessed: i64,
 }
@@ -99,6 +99,8 @@ impl<'db> NarTable<'db> {
             nar.update(db).await?
           };
 
+          let now = chrono::Utc::now().naive_utc();
+
           let nar_info = nar_info::ActiveModel {
             id: Set(Uuid::now_v7()),
             nar_id: Set(nar.id),
@@ -108,8 +110,8 @@ impl<'db> NarTable<'db> {
             store_path_hash: Set(store_path_hash),
             deriver: Set(deriver),
             signature: Set(signature),
-            created_at: Set(chrono::Utc::now().naive_utc()),
-            last_accessed_at: Set(None),
+            created_at: Set(now),
+            last_accessed_at: Set(now),
             accessed: Set(0),
           };
           let nar_info = nar_info.insert(db).await?;
@@ -385,7 +387,7 @@ impl<'db> NarTable<'db> {
     let accessed = model.accessed;
     let mut model = model.into_active_model();
 
-    model.last_accessed_at = Set(Some(chrono::Utc::now().naive_utc()));
+    model.last_accessed_at = Set(chrono::Utc::now().naive_utc());
     model.accessed = Set(accessed + 1);
 
     model.save(self.db).await?;
