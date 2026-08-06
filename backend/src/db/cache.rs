@@ -461,7 +461,7 @@ impl<'db> CacheTable<'db> {
       .to_owned();
 
     let builder = self.db.get_database_backend();
-    self.db.query_all(builder.build(&delete_query)).await?;
+    self.db.query_all_raw(builder.build(&delete_query)).await?;
 
     Ok(())
   }

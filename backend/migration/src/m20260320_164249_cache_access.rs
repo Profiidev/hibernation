@@ -22,6 +22,9 @@ impl MigrationTrait for Migration {
       sea_orm_migration::SchemaManagerConnection::Transaction(trans) => {
         trans.get_database_backend()
       }
+      sea_orm_migration::SchemaManagerConnection::OwnedTransaction(trans) => {
+        trans.get_database_backend()
+      }
     };
 
     if backend == DatabaseBackend::Postgres {
@@ -145,6 +148,9 @@ impl MigrationTrait for Migration {
     let backend = match manager.get_connection() {
       sea_orm_migration::SchemaManagerConnection::Connection(conn) => conn.get_database_backend(),
       sea_orm_migration::SchemaManagerConnection::Transaction(trans) => {
+        trans.get_database_backend()
+      }
+      sea_orm_migration::SchemaManagerConnection::OwnedTransaction(trans) => {
         trans.get_database_backend()
       }
     };
