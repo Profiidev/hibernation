@@ -8,9 +8,7 @@ import type {
 
 const searchResultSchemaResponseTransformer = (data: any) => {
   data.created_at = new Date(data.created_at);
-  if (data.last_accessed_at) {
-    data.last_accessed_at = new Date(data.last_accessed_at);
-  }
+  data.last_accessed_at = new Date(data.last_accessed_at);
   return data;
 };
 

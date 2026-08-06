@@ -299,7 +299,7 @@ export type SearchOrder = (typeof SearchOrder)[keyof typeof SearchOrder];
 export type SearchResult = {
   accessed: number;
   created_at: Date;
-  last_accessed_at?: Date | null;
+  last_accessed_at: Date;
   size: number;
   store_path: string;
 };

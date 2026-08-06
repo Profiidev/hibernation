@@ -168,7 +168,7 @@ struct SearchStorePathsRequest {
 pub struct SearchResult {
   store_path: String,
   created_at: DateTime<Utc>,
-  last_accessed_at: Option<DateTime<Utc>>,
+  last_accessed_at: DateTime<Utc>,
   size: i64,
   accessed: i64,
 }
@@ -200,9 +200,7 @@ async fn search_store_paths(
     .map(|entry| SearchResult {
       store_path: entry.store_path,
       created_at: DateTime::from_naive_utc_and_offset(entry.created_at, Utc),
-      last_accessed_at: entry
-        .last_accessed_at
-        .map(|val| DateTime::from_naive_utc_and_offset(val, Utc)),
+      last_accessed_at: DateTime::from_naive_utc_and_offset(entry.last_accessed_at, Utc),
       size: entry.size,
       accessed: entry.accessed,
     })
