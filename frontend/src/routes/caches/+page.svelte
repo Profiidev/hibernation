@@ -10,6 +10,7 @@
   import { Progress } from '@profidev/pleiades/components/ui/progress';
   import { size_to_gib } from '$lib/backend/util.svelte.js';
   import type { CacheInfo, UserInfo } from '$lib/client/types.gen.js';
+  import { afterNavigate } from '$app/navigation';
 
   const { data } = $props();
 
@@ -24,18 +25,22 @@
     data.caches.then((c) => (caches = c));
   });
 
-  $effect(() => {
-    if (data.error) {
+  let errorToasted = false;
+  afterNavigate(() => {
+    if (!data.error) return;
+
+    if (!errorToasted) {
+      errorToasted = true;
       if (data.error === 'not_found') {
         toast.error('Cache not found');
       } else if (data.error === 'other') {
         toast.error('Failed to load cache');
       }
-
-      const url = new URL(window.location.href);
-      url.searchParams.delete('error');
-      window.history.replaceState({}, '', url);
     }
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete('error');
+    window.history.replaceState({}, '', url);
   });
 </script>
 

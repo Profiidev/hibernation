@@ -7,6 +7,7 @@
   import { columns } from './table.svelte';
   import { z } from 'zod';
   import { toast } from '@profidev/pleiades/components/util/general';
+  import { afterNavigate } from '$app/navigation';
   import {
     deleteExpiredTokens,
     deleteToken,
@@ -30,18 +31,22 @@
     });
   });
 
-  $effect(() => {
-    if (data.error) {
+  let errorToasted = false;
+  afterNavigate(() => {
+    if (!data.error) return;
+
+    if (!errorToasted) {
+      errorToasted = true;
       if (data.error === 'not_found') {
         toast.error('Token not found');
       } else if (data.error === 'other') {
         toast.error('Failed to load token');
       }
-
-      const url = new URL(window.location.href);
-      url.searchParams.delete('error');
-      window.history.replaceState({}, '', url);
     }
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete('error');
+    window.history.replaceState({}, '', url);
   });
 
   const deleteItemConfirm = async () => {
