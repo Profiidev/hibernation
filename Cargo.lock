@@ -1001,7 +1001,7 @@ dependencies = [
  "async-compression",
  "axum",
  "axum-extra",
- "centaurus 0.17.0",
+ "centaurus",
  "chrono",
  "dashmap",
  "dotenvy",
@@ -1265,24 +1265,6 @@ dependencies = [
  "jobserver",
  "libc",
  "shlex",
-]
-
-[[package]]
-name = "centaurus"
-version = "0.16.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a93c2ef1eb37a51a73505851b28bf0d8d3d48244960d4494c8e5ac2b06cd5270"
-dependencies = [
- "centaurus-derive",
- "color-eyre",
- "eyre",
- "reqwest",
- "serde",
- "serde_json",
- "tracing",
- "tracing-error",
- "tracing-subscriber",
- "url",
 ]
 
 [[package]]
@@ -2805,7 +2787,7 @@ version = "0.3.4"
 dependencies = [
  "async-compression",
  "bytes",
- "centaurus 0.16.3",
+ "centaurus",
  "clap",
  "color-eyre",
  "dirs",
@@ -3685,7 +3667,7 @@ dependencies = [
 name = "migration"
 version = "0.1.0"
 dependencies = [
- "centaurus 0.17.0",
+ "centaurus",
  "sea-orm-migration",
  "tokio",
 ]
