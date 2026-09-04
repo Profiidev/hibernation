@@ -22,6 +22,7 @@ pub fn init_logging(log_level: LevelFilter) {
   let layer = tracing_subscriber::fmt::layer()
     .with_writer(indicatif_layer.get_stderr_writer())
     .with_ansi(true)
+    .with_ansi_sanitization(false)
     .with_filter(log_level);
 
   tracing_subscriber::registry()
