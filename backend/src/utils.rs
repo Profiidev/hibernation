@@ -6,6 +6,7 @@ use centaurus::{
   },
   permission,
 };
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -44,3 +45,10 @@ pub fn permissions() -> Vec<&'static str> {
 permission!(CacheCreate, "cache:create");
 permission!(CacheView, "cache:view");
 permission!(CacheEdit, "cache:edit");
+
+pub fn client() -> Client {
+  Client::builder()
+    .user_agent(format!("Hibernation v{}", env!("CARGO_PKG_VERSION")))
+    .build()
+    .expect("Failed to build HTTP client")
+}

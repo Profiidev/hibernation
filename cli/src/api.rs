@@ -37,7 +37,7 @@ impl ApiClient {
     Self {
       token,
       url,
-      client: Client::new(),
+      client: client(),
     }
   }
 
@@ -88,7 +88,7 @@ impl ApiClient {
   pub async fn request_token(url: Url, code: &str) -> Result<String> {
     let url = url.join(&format!("/api/cli?code={}", code))?;
 
-    let client = Client::new();
+    let client = client();
     let req = client.put(url).build()?;
     let res = client.execute(req).await?.error_for_status()?;
 
@@ -199,6 +199,13 @@ impl ApiClient {
     let url = self.url.join(path)?;
     Ok(self.client.request(method, url).bearer_auth(&self.token))
   }
+}
+
+fn client() -> Client {
+  Client::builder()
+    .user_agent(format!("Hibernation CLI v{}", env!("CARGO_PKG_VERSION")))
+    .build()
+    .expect("Failed to build HTTP client")
 }
 
 fn check_server_version(res: &Response) {
