@@ -22,7 +22,6 @@ use entity::sea_orm_active_enums::AccessType;
 use futures_util::StreamExt;
 use harmonia_store_core::store_path::StorePath;
 use http::StatusCode;
-use reqwest::Client;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -43,7 +42,9 @@ use tracing::warn;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{auth::cli_auth::CliAuth, cache::state::CacheEvictionState, db::DBTrait};
+use crate::{
+  auth::cli_auth::CliAuth, cache::state::CacheEvictionState, db::DBTrait, utils::client,
+};
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
@@ -147,7 +148,7 @@ async fn upload_info(
   }
 
   let mut downstream_caches = db.cache().downstream_caches(cache.id).await?;
-  let client = Client::new();
+  let client = client();
   while let Some(downstream) = downstream_caches.pop() {
     let mut futures = Vec::new();
 
@@ -251,7 +252,7 @@ async fn upload_path(
 
   if !req.force {
     let mut downstream_caches = db.cache().downstream_caches(cache.id).await?;
-    let client = Client::new();
+    let client = client();
     while let Some(downstream) = downstream_caches.pop() {
       let url = Url::parse(&downstream.url)
         .unwrap()
