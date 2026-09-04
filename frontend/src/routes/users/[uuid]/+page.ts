@@ -7,13 +7,13 @@ import {
 
 export const load: PageLoad = async ({ params, fetch }) => {
   const resPromise = userInfoDetail({
-    fetch,
-    path: { uuid: params.uuid }
-  });
-  const groupsPromise = listGroupsSimple({
-    fetch
-  }).then((res) => res.data ?? []);
-  const cachesPromise = listCachesSimple({ fetch });
+      fetch,
+      path: { uuid: params.uuid }
+    }),
+    groupsPromise = listGroupsSimple({
+      fetch
+    }).then((res) => res.data ?? []),
+    cachesPromise = listCachesSimple({ fetch });
 
   return {
     cachesPromise,

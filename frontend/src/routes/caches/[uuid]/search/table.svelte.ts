@@ -1,16 +1,18 @@
-import type { ColumnDef } from '@tanstack/table-core';
-import { createColumnCell } from '@profidev/pleiades/components/table/helpers.svelte';
-import { renderComponent } from '@profidev/pleiades/components/ui/data-table';
+import { renderComponent } from '@tanstack/svelte-table';
+import type { RowData } from '@tanstack/table-core';
+import {
+  type TableColumnDef,
+  createColumnCell
+} from '@profidev/pleiades/components/table/helpers.svelte';
 import TableHead from './TableHead.svelte';
-import * as DataTable from '@profidev/pleiades/components/ui/data-table';
 import Actions from './Actions.svelte';
 import type { SearchResult } from '$lib/client';
 
-const createColumn = <C>(
+const createColumn = <C extends RowData>(
   key: string,
   title: string,
   formatter?: (value: any) => string
-): ColumnDef<C> => ({
+): TableColumnDef<C> => ({
   accessorKey: key,
   ...createColumnCell(key, formatter),
   header: () =>
@@ -25,7 +27,7 @@ export const columns = ({
 }: {
   write_access: boolean;
   delete_path: (path: string) => void;
-}): ColumnDef<SearchResult>[] => [
+}): TableColumnDef<SearchResult>[] => [
   createColumn('store_path', 'StorePath'),
   createColumn(
     'size',
@@ -49,7 +51,7 @@ export const columns = ({
   {
     accessorKey: 'actions',
     cell: ({ row }) =>
-      DataTable.renderComponent(Actions, {
+      renderComponent(Actions, {
         delete_disabled: !write_access,
         remove: () => delete_path(row.original.store_path)
       }),
