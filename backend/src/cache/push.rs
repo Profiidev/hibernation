@@ -422,7 +422,7 @@ async fn store_nar<R: AsyncRead + Unpin + Send>(
       decode_err = Some(e);
     }
   });
-  storage.save_file(&mut reader, name).await?;
+  storage.save_file(&mut reader, name.into()).await?;
   drop(reader);
 
   let error = if file_size > quota {
@@ -436,7 +436,7 @@ async fn store_nar<R: AsyncRead + Unpin + Send>(
   };
 
   if let Some(error) = error {
-    storage.delete_file(name).await?;
+    storage.delete_file(&name.into()).await?;
     bail!("{error}");
   }
 
@@ -510,10 +510,14 @@ mod tests {
   }
 
   impl TestStorage {
-    fn new() -> Self {
+    async fn new() -> Self {
       let dir = std::env::temp_dir().join(format!("hibernation-push-{}", Uuid::new_v4()));
+      let config = centaurus::storage::StorageConfig {
+        storage_path: dir.to_string_lossy().into_owned(),
+        ..Default::default()
+      };
       Self {
-        storage: FileStorage::Local(dir.clone()),
+        storage: FileStorage::init(&config).await.unwrap(),
         dir,
       }
     }
@@ -537,7 +541,7 @@ mod tests {
 
   #[tokio::test]
   async fn stores_valid_nar() {
-    let s = TestStorage::new();
+    let s = TestStorage::new().await;
     let nar = nar();
     let file = zstd::encode_all(&nar[..], 3).unwrap();
 
@@ -558,10 +562,10 @@ mod tests {
   }
 
   async fn assert_rejected(file: &[u8], quota: u64, nar_hash: &str, nar_size: u64) {
-    let s = TestStorage::new();
+    let s = TestStorage::new().await;
     let res = store_nar(&s.storage, file, "a.nar", quota, nar_hash, nar_size).await;
     assert!(res.is_err());
-    assert!(!s.storage.exists("a.nar").await.unwrap());
+    assert!(!s.storage.exists(&"a.nar".into()).await.unwrap());
   }
 
   #[tokio::test]
@@ -573,7 +577,7 @@ mod tests {
 
   #[tokio::test]
   async fn accepts_exactly_quota() {
-    let s = TestStorage::new();
+    let s = TestStorage::new().await;
     let nar = nar();
     let file = zstd::encode_all(&nar[..], 3).unwrap();
     let res = store_nar(
