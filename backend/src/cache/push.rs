@@ -1,11 +1,11 @@
 use aide::axum::routing::{post_with, put_with};
 use std::{
+  io::Write,
   sync::Arc,
   time::{Duration, Instant},
 };
 
 use aide::{OperationIo, axum::ApiRouter};
-use async_compression::tokio::bufread::ZstdDecoder;
 use axum::{
   Extension, Json,
   extract::{DefaultBodyLimit, FromRequestParts, Path, Request},
@@ -19,7 +19,7 @@ use centaurus::{
 };
 use dashmap::DashMap;
 use entity::sea_orm_active_enums::AccessType;
-use futures_util::StreamExt;
+use futures_util::{StreamExt, TryStreamExt};
 use harmonia_store_core::store_path::StorePath;
 use http::StatusCode;
 use schemars::JsonSchema;
@@ -35,10 +35,11 @@ use shared::{
   sig::PublicKey,
 };
 use tokio::{
-  io::{self, AsyncReadExt, AsyncWriteExt, BufReader},
+  io::{self, AsyncRead, AsyncReadExt},
+  sync::Semaphore,
   time::sleep,
 };
-use tracing::warn;
+use tokio_util::io::{InspectReader, StreamReader};
 use url::Url;
 use uuid::Uuid;
 
@@ -75,15 +76,39 @@ struct UploadFinishData {
   nar_found: bool,
 }
 
+struct NarHasher {
+  hasher: Sha256,
+  size: u64,
+  max_size: u64,
+}
+
+impl Write for NarHasher {
+  fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+    self.size += buf.len() as u64;
+    if self.size > self.max_size {
+      return Err(std::io::Error::other(
+        "Decompressed NAR exceeds declared size",
+      ));
+    }
+    self.hasher.update(buf);
+    Ok(buf.len())
+  }
+
+  fn flush(&mut self) -> std::io::Result<()> {
+    Ok(())
+  }
+}
+
 #[derive(FromRequestParts, Clone, OperationIo)]
 #[from_request(via(Extension))]
 pub struct PushState {
   pending_uploads: Arc<DashMap<Uuid, (UploadPathRequest, i64, Instant)>>,
   pending_finish: Arc<DashMap<Uuid, (UploadFinishData, Instant)>>,
+  upload_limit: Arc<Semaphore>,
 }
 
 impl PushState {
-  pub fn new() -> Self {
+  pub fn new(max_concurrent_uploads: usize) -> Self {
     let pending_uploads = Arc::new(DashMap::new());
     let pending_finish: Arc<DashMap<Uuid, (UploadFinishData, Instant)>> = Arc::new(DashMap::new());
 
@@ -105,6 +130,7 @@ impl PushState {
     Self {
       pending_uploads,
       pending_finish,
+      upload_limit: Arc::new(Semaphore::new(max_concurrent_uploads)),
     }
   }
 }
@@ -291,6 +317,11 @@ async fn upload_nar(
   let Some((_, (info, quota, _))) = state.pending_uploads.remove(&path.uuid) else {
     bail!("Invalid upload session");
   };
+  let _permit = state
+    .upload_limit
+    .acquire()
+    .await
+    .context("Upload limiter closed")?;
 
   let nar_id = Uuid::now_v7();
   let (nar_hash, nar_size, file_hash, file_size, nar_found) = match db
@@ -312,67 +343,29 @@ async fn upload_nar(
       )
     }
     None => {
-      let (mut pipe_writer, pipe_reader) = io::duplex(64 * 1024);
-      let hashing_task = tokio::spawn(async move {
-        let mut decompressed_hasher = Sha256::new();
-        let mut decoder = ZstdDecoder::new(BufReader::new(pipe_reader));
-        let mut buffer = [0u8; 8192];
-        let mut size = 0;
+      let body = StreamReader::new(
+        body
+          .into_body()
+          .into_data_stream()
+          .map_err(io::Error::other),
+      );
+      let (file_hash, file_size) = store_nar(
+        &storage,
+        body,
+        &format!("{}.nar", nar_id),
+        quota as u64,
+        &info.nar_hash,
+        info.nar_size,
+      )
+      .await?;
 
-        loop {
-          let n = match decoder.read(&mut buffer).await {
-            Ok(0) => break,
-            Ok(n) => n,
-            Err(e) => {
-              warn!("Error reading from decoder: {:?}", e);
-              return (String::new(), 0);
-            }
-          };
-
-          size += n as u64;
-          decompressed_hasher.update(&buffer[..n]);
-        }
-
-        (to_nix_base32(&decompressed_hasher.finalize()), size)
-      });
-
-      let (mut storage_writer, mut storage_reader) = io::duplex(64 * 1024);
-
-      let nar_name = format!("{}.nar", nar_id);
-      let storage_task =
-        tokio::spawn(async move { storage.save_file(&mut storage_reader, &nar_name).await });
-
-      let mut raw_hasher = Sha256::new();
-      let mut file_size = 0;
-      let mut stream = body.into_body().into_data_stream();
-
-      while let Some(chunk) = stream.next().await {
-        let chunk = chunk.context("Failed to read request body")?;
-
-        file_size += chunk.len() as u64;
-        raw_hasher.update(&chunk);
-        pipe_writer.write_all(&chunk).await?;
-        storage_writer.write_all(&chunk).await?;
-
-        if file_size > quota as u64 {
-          bail!("File size exceeds cache quota");
-        }
-      }
-      pipe_writer.shutdown().await?; // Ensure all data is flushed to the decoder
-      storage_writer.shutdown().await?; // Ensure all data is flushed to storage
-      drop(pipe_writer); // Close the writer to signal EOF to the decoder
-      drop(storage_writer); // Close the writer to signal EOF to storage
-
-      storage_task.await.context("Storage task failed")??;
-
-      let file_hash = to_nix_base32(&raw_hasher.finalize());
-      let (nar_hash, nar_size) = hashing_task.await.context("Hashing task failed")?;
-
-      if nar_hash != info.nar_hash || nar_size != info.nar_size {
-        bail!("NAR hash or size mismatch");
-      }
-
-      (nar_hash, nar_size, file_hash, file_size, false)
+      (
+        info.nar_hash.clone(),
+        info.nar_size,
+        file_hash,
+        file_size,
+        false,
+      )
     }
   };
 
@@ -401,6 +394,53 @@ async fn upload_nar(
   );
 
   Ok(())
+}
+
+async fn store_nar<R: AsyncRead + Unpin + Send>(
+  storage: &FileStorage,
+  body: R,
+  name: &str,
+  quota: u64,
+  nar_hash: &str,
+  nar_size: u64,
+) -> Result<(String, u64)> {
+  let mut file_hasher = Sha256::new();
+  let mut file_size = 0;
+  let mut nar = zstd::stream::write::Decoder::new(NarHasher {
+    hasher: Sha256::new(),
+    size: 0,
+    max_size: nar_size,
+  })?;
+  let mut decode_err = None;
+
+  let mut reader = InspectReader::new(body.take(quota.saturating_add(1)), |buf| {
+    file_hasher.update(buf);
+    file_size += buf.len() as u64;
+    if decode_err.is_none()
+      && let Err(e) = nar.write_all(buf)
+    {
+      decode_err = Some(e);
+    }
+  });
+  storage.save_file(&mut reader, name).await?;
+  drop(reader);
+
+  let error = if file_size > quota {
+    Some("File size exceeds cache quota".to_string())
+  } else if let Some(e) = decode_err.or_else(|| nar.flush().err()) {
+    Some(format!("Failed to decompress NAR: {e}"))
+  } else {
+    let decoded = nar.into_inner();
+    (to_nix_base32(&decoded.hasher.finalize()) != nar_hash || decoded.size != nar_size)
+      .then(|| "NAR hash or size mismatch".to_string())
+  };
+
+  if let Some(error) = error {
+    storage.delete_file(name).await?;
+    bail!("{error}");
+  }
+
+  Ok((to_nix_base32(&file_hasher.finalize()), file_size))
 }
 
 async fn upload_finish(
@@ -458,4 +498,144 @@ async fn upload_finish(
   drop(lock); // Release the cache lock as soon as possible
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  struct TestStorage {
+    storage: FileStorage,
+    dir: std::path::PathBuf,
+  }
+
+  impl TestStorage {
+    fn new() -> Self {
+      let dir = std::env::temp_dir().join(format!("hibernation-push-{}", Uuid::new_v4()));
+      Self {
+        storage: FileStorage::Local(dir.clone()),
+        dir,
+      }
+    }
+  }
+
+  impl Drop for TestStorage {
+    fn drop(&mut self) {
+      let _ = std::fs::remove_dir_all(&self.dir);
+    }
+  }
+
+  fn nar() -> Vec<u8> {
+    (0..200_000u32)
+      .flat_map(|i| (i % 251).to_le_bytes())
+      .collect()
+  }
+
+  fn hash(data: &[u8]) -> String {
+    to_nix_base32(&Sha256::digest(data))
+  }
+
+  #[tokio::test]
+  async fn stores_valid_nar() {
+    let s = TestStorage::new();
+    let nar = nar();
+    let file = zstd::encode_all(&nar[..], 3).unwrap();
+
+    let (file_hash, file_size) = store_nar(
+      &s.storage,
+      &file[..],
+      "a.nar",
+      u64::MAX,
+      &hash(&nar),
+      nar.len() as u64,
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(file_hash, hash(&file));
+    assert_eq!(file_size, file.len() as u64);
+    assert_eq!(std::fs::read(s.dir.join("a.nar")).unwrap(), file);
+  }
+
+  async fn assert_rejected(file: &[u8], quota: u64, nar_hash: &str, nar_size: u64) {
+    let s = TestStorage::new();
+    let res = store_nar(&s.storage, file, "a.nar", quota, nar_hash, nar_size).await;
+    assert!(res.is_err());
+    assert!(!s.storage.exists("a.nar").await.unwrap());
+  }
+
+  #[tokio::test]
+  async fn rejects_over_quota() {
+    let nar = nar();
+    let file = zstd::encode_all(&nar[..], 3).unwrap();
+    assert_rejected(&file, file.len() as u64 - 1, &hash(&nar), nar.len() as u64).await;
+  }
+
+  #[tokio::test]
+  async fn accepts_exactly_quota() {
+    let s = TestStorage::new();
+    let nar = nar();
+    let file = zstd::encode_all(&nar[..], 3).unwrap();
+    let res = store_nar(
+      &s.storage,
+      &file[..],
+      "a.nar",
+      file.len() as u64,
+      &hash(&nar),
+      nar.len() as u64,
+    )
+    .await;
+    assert!(res.is_ok());
+  }
+
+  #[tokio::test]
+  async fn rejects_invalid_zstd() {
+    let nar = nar();
+    assert_rejected(&nar, u64::MAX, &hash(&nar), nar.len() as u64).await;
+  }
+
+  #[tokio::test]
+  async fn rejects_truncated_zstd() {
+    let nar = nar();
+    let file = zstd::encode_all(&nar[..], 3).unwrap();
+    assert_rejected(
+      &file[..file.len() / 2],
+      u64::MAX,
+      &hash(&nar),
+      nar.len() as u64,
+    )
+    .await;
+  }
+
+  #[tokio::test]
+  async fn rejects_hash_mismatch() {
+    let nar = nar();
+    let file = zstd::encode_all(&nar[..], 3).unwrap();
+    assert_rejected(&file, u64::MAX, &hash(b"other"), nar.len() as u64).await;
+  }
+
+  #[tokio::test]
+  async fn rejects_larger_than_declared_size() {
+    let nar = nar();
+    let file = zstd::encode_all(&nar[..], 3).unwrap();
+    assert_rejected(&file, u64::MAX, &hash(&nar), nar.len() as u64 - 1).await;
+  }
+
+  #[tokio::test]
+  async fn rejects_smaller_than_declared_size() {
+    let nar = nar();
+    let file = zstd::encode_all(&nar[..], 3).unwrap();
+    assert_rejected(&file, u64::MAX, &hash(&nar), nar.len() as u64 + 1).await;
+  }
+
+  #[tokio::test]
+  async fn limits_concurrent_uploads() {
+    let state = PushState::new(3);
+    let permits = (0..3)
+      .map(|_| state.upload_limit.clone().try_acquire_owned().unwrap())
+      .collect::<Vec<_>>();
+    assert!(state.upload_limit.try_acquire().is_err());
+    drop(permits);
+    assert!(state.upload_limit.try_acquire().is_ok());
+  }
 }
