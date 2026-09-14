@@ -32,24 +32,25 @@ volumes:
 
 The critical configuration is done via environment variables everything else via the UI:
 
-| Variable             | Description                                                                | Default                              |
-| -------------------- | -------------------------------------------------------------------------- | ------------------------------------ |
-| DB_URL               | PostgreSQL or SQLite connection URL                                        | sqlite:/data/hibernation.db?mode=rwc |
-| DATABASE_LOGGING     | Enable SQL query logging                                                   | false                                |
-| STORAGE_PATH         | Directory for storing Nix store paths localy (only used when not using S3) | /data/storage                        |
-| S3_HOST              | S3-compatible storage host URL (e.g., MinIO)                               | -                                    |
-| S3_ACCESS_KEY        | Access key for S3 storage                                                  | -                                    |
-| S3_SECRET_KEY        | Secret key for S3 storage                                                  | -                                    |
-| S3_REGION            | Region for S3 storage                                                      | -                                    |
-| S3_BUCKET            | Bucket name for S3 storage                                                 | -                                    |
-| S3_FORCE_PATH_STYLE  | Whether to use path-style URLs for S3 (required for MinIO)                 | false                                |
-| SITE_URL             | The URL where the app is hosted. Important for Email links and Oidc.       | http://localhost:8000                |
-| VIRTUAL_HOST_ROUTING | Whether to use virtual host routing for nix cache api                      | false                                |
-| LOG_LEVEL            | Log level for the backend (e.g., info, debug)                              | info                                 |
-| METRICS_ENABLED      | Whether to enable Prometheus metrics                                       | false                                |
-| METRICS_NAME         | The name to use as the app label in Prometheus metrics                     | hibernation                          |
-| METRICS_PORT         | Use different port for metrics                                             | -                                    |
-| PORT                 | Port for the backend server to listen on                                   | 8000                                 |
+| Variable               | Description                                                                                              | Default                              |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| DB_URL                 | PostgreSQL or SQLite connection URL                                                                      | sqlite:/data/hibernation.db?mode=rwc |
+| DATABASE_LOGGING       | Enable SQL query logging                                                                                 | false                                |
+| STORAGE_PATH           | Directory for storing Nix store paths localy (only used when not using S3)                               | /data/storage                        |
+| S3_HOST                | S3-compatible storage host URL (e.g., MinIO)                                                             | -                                    |
+| S3_ACCESS_KEY          | Access key for S3 storage                                                                                | -                                    |
+| S3_SECRET_KEY          | Secret key for S3 storage                                                                                | -                                    |
+| S3_REGION              | Region for S3 storage                                                                                    | -                                    |
+| S3_BUCKET              | Bucket name for S3 storage                                                                               | -                                    |
+| S3_FORCE_PATH_STYLE    | Whether to use path-style URLs for S3 (required for MinIO)                                               | false                                |
+| SITE_URL               | The URL where the app is hosted. Important for Email links and Oidc.                                     | http://localhost:8000                |
+| VIRTUAL_HOST_ROUTING   | Whether to use virtual host routing for nix cache api                                                    | false                                |
+| LOG_LEVEL              | Log level for the backend (e.g., info, debug)                                                            | info                                 |
+| METRICS_ENABLED        | Whether to enable Prometheus metrics                                                                     | false                                |
+| METRICS_NAME           | The name to use as the app label in Prometheus metrics                                                   | hibernation                          |
+| METRICS_PORT           | Use different port for metrics                                                                           | -                                    |
+| PORT                   | Port for the backend server to listen on                                                                 | 8000                                 |
+| MAX_CONCURRENT_UPLOADS | Maximum number of NAR uploads processed at once, more uploads wait for a free slot (bounds memory usage) | 8                                    |
 
 See `backend/src/config.rs` for all non-standard configuration options.
 

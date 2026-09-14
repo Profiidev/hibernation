@@ -46,6 +46,7 @@ pub struct Config {
   pub db_url: String,
   pub admin_group: String,
   pub virtual_host_routing: bool,
+  pub max_concurrent_uploads: usize,
 }
 
 impl Default for Config {
@@ -59,6 +60,7 @@ impl Default for Config {
       db_url: "".to_string(),
       admin_group: "Admin".to_string(),
       virtual_host_routing: false,
+      max_concurrent_uploads: 8,
       metrics: MetricsConfig {
         metrics_name: "hibernation".to_string(),
         ..Default::default()
@@ -87,6 +89,10 @@ impl Config {
 
     if config.db_url.starts_with("sqlite") {
       config.db.validate_sqlite();
+    }
+
+    if config.max_concurrent_uploads == 0 {
+      panic!("MAX_CONCURRENT_UPLOADS must be greater than 0");
     }
 
     config.storage.validate();
