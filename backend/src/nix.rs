@@ -255,7 +255,7 @@ async fn nar(
   };
 
   let nar_name = format!("{}.nar", nar_id);
-  let body = storage.get_file(&nar_name, range).await?;
+  let body = storage.get_file(&nar_name.into(), range).await?;
 
   let mut headers = HeaderMap::new();
   headers.insert(header::CONTENT_TYPE, NAR_MIME.clone());
