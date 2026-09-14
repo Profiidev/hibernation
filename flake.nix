@@ -41,7 +41,7 @@
       {
         packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = "hibernation";
-          version = "0.3.4";
+          version = "0.3.5";
 
           src = nix-filter {
             root = ./.;
