@@ -1,4 +1,4 @@
-use sea_orm_migration::prelude::*;
+use sea_orm_migration::{prelude::*, sea_orm::DatabaseBackend};
 
 use crate::m20260319_194332_nar_info::NarInfo;
 
@@ -14,6 +14,11 @@ impl MigrationTrait for Migration {
         "UPDATE nar_info SET last_accessed_at = created_at WHERE last_accessed_at IS NULL",
       )
       .await?;
+
+    // SQLite can't modify columns. Inserts always set last_accessed_at, so it staying nullable there is harmless
+    if manager.get_database_backend() == DatabaseBackend::Sqlite {
+      return Ok(());
+    }
 
     manager
       .alter_table(
@@ -31,6 +36,10 @@ impl MigrationTrait for Migration {
   }
 
   async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    if manager.get_database_backend() == DatabaseBackend::Sqlite {
+      return Ok(());
+    }
+
     manager
       .alter_table(
         Table::alter()

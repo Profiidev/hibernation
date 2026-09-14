@@ -17,6 +17,7 @@ use crate::db::{
   cache::SimpleCacheInfo,
   group_ext::{CacheMapping, GroupDetails},
 };
+use crate::nix::NixCache;
 use crate::utils::{CacheEdit, UpdateMessage, Updater};
 
 pub fn router() -> ApiRouter {
@@ -77,6 +78,7 @@ async fn edit_group(
   auth: JwtAuth<GroupEdit>,
   db: Connection,
   updater: Updater,
+  nix_cache: NixCache,
   Json(data): Json<EditGroupRequest>,
 ) -> Result<()> {
   if data.name.trim().is_empty() {
@@ -150,6 +152,7 @@ async fn edit_group(
   db.group_ext()
     .update_cache_mappings(data.uuid, group.caches, data.caches)
     .await?;
+  nix_cache.clear();
 
   updater
     .broadcast(UpdateMessage::Group { uuid: data.uuid })

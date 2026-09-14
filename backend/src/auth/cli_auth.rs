@@ -1,7 +1,10 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc, time::Instant};
 
 use aide::OperationIo;
-use axum::extract::{FromRequestParts, OptionalFromRequestParts};
+use axum::{
+  Extension,
+  extract::{FromRequestParts, OptionalFromRequestParts},
+};
 use centaurus::{
   backend::{
     auth::{
@@ -14,18 +17,42 @@ use centaurus::{
   },
   bail,
   db::init::Connection,
-  error::ErrorReport,
+  error::{ErrorReport, ErrorReportStatusExt},
 };
-use chrono::Utc;
-use http::request::Parts;
+use chrono::{NaiveDateTime, Utc};
+use dashmap::DashMap;
+use http::{StatusCode, request::Parts};
+use sea_orm::DbErr;
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::{
   db::DBTrait,
-  utils::{UpdateMessage, Updater},
+  utils::{UpdateMessage, Updater, fresh},
 };
 
 pub const CLI_TOKEN_LEN: usize = 32;
+
+#[derive(Clone, Copy)]
+struct VerifiedToken {
+  id: Uuid,
+  user_id: Uuid,
+  exp: NaiveDateTime,
+}
+
+type TokenKey = ([u8; 32], &'static str);
+
+#[derive(Clone, Default, FromRequestParts, OperationIo)]
+#[from_request(via(Extension))]
+pub struct CliTokenCache {
+  tokens: Arc<DashMap<TokenKey, (Instant, VerifiedToken)>>,
+}
+
+impl CliTokenCache {
+  pub fn invalidate(&self, token_id: Uuid) {
+    self.tokens.retain(|_, (_, token)| token.id != token_id);
+  }
+}
 
 #[derive(Debug, OperationIo)]
 pub struct CliAuth<P: Permission = NoPerm> {
@@ -41,7 +68,18 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for CliAuth<P> {
 
     let db = parts.extract_state::<Connection>().await;
     let user = if token.len() == CLI_TOKEN_LEN {
-      check_token(&db, parts, token).await?
+      let cache = parts.extract_state::<CliTokenCache>().await;
+      let key = (Sha256::digest(&token).into(), P::name());
+
+      match fresh(&cache.tokens, &key) {
+        Some(token) if token.exp > Utc::now().naive_utc() => token.user_id,
+        _ => {
+          let token = check_token(&db, parts, token).await?;
+          P::check(&db, token.user_id, parts).await?;
+          cache.tokens.insert(key, (Instant::now(), token));
+          token.user_id
+        }
+      }
     } else {
       let state = parts.extract_state::<JwtState>().await;
 
@@ -50,11 +88,10 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for CliAuth<P> {
         bail!(UNAUTHORIZED, "invalid token");
       };
       state.auth.check(&db, parts, &token, &claims).await?;
+      P::check(&db, claims.sub, parts).await?;
 
       claims.sub
     };
-
-    P::check(&db, user, parts).await?;
 
     Ok(CliAuth {
       user_id: user,
@@ -72,6 +109,7 @@ impl<S: Sync, P: Permission> OptionalFromRequestParts<S> for CliAuth<P> {
   ) -> Result<Option<Self>, Self::Rejection> {
     match <Self as FromRequestParts<S>>::from_request_parts(parts, state).await {
       Ok(auth) => Ok(Some(auth)),
+      Err(err) if err.status.is_server_error() => Err(err),
       Err(_) => Ok(None),
     }
   }
@@ -81,10 +119,17 @@ async fn check_token(
   db: &Connection,
   parts: &mut Parts,
   token: String,
-) -> Result<Uuid, ErrorReport> {
+) -> Result<VerifiedToken, ErrorReport> {
   let pw = parts.extract_state::<PasswordState>().await;
-  let hash = pw.pw_hash_raw("", &token)?;
-  let record = db.token().get_by_token(&hash).await?;
+  let hash = tokio::task::spawn_blocking(move || pw.pw_hash_raw("", &token))
+    .await
+    .status(StatusCode::INTERNAL_SERVER_ERROR)??;
+
+  let record = match db.token().get_by_token(&hash).await {
+    Ok(record) => record,
+    Err(DbErr::RecordNotFound(_)) => bail!(UNAUTHORIZED, "invalid token"),
+    Err(err) => return Err(err.into()),
+  };
 
   if record.exp < Utc::now().naive_utc() {
     bail!("CLI token expired");
@@ -96,5 +141,9 @@ async fn check_token(
     .send_to(record.user_id, UpdateMessage::Token { uuid: record.id })
     .await;
 
-  Ok(record.user_id)
+  Ok(VerifiedToken {
+    id: record.id,
+    user_id: record.user_id,
+    exp: record.exp,
+  })
 }

@@ -1,18 +1,90 @@
-use aide::axum::ApiRouter;
+use std::{sync::Arc, time::Instant};
+
+use aide::{OperationIo, axum::ApiRouter};
 use axum::{
+  Extension,
   body::Body,
-  extract::Path,
+  extract::{FromRequestParts, Path},
   routing::{get, head},
 };
 use centaurus::{bail, db::init::Connection, error::Result, storage::FileStorage};
+use dashmap::DashMap;
+use entity::cache;
 use http::{HeaderMap, HeaderValue, StatusCode, header};
 use schemars::JsonSchema;
 use serde::Deserialize;
+use uuid::Uuid;
 
 use crate::{
   auth::cli_auth::CliAuth,
   db::{DBTrait, nar::NarInfoData},
+  utils::fresh,
 };
+
+/// Recent cache lookups and access checks, so bursts of narinfo requests only query the narinfo itself
+#[derive(Clone, Default, FromRequestParts, OperationIo)]
+#[from_request(via(Extension))]
+pub struct NixCache {
+  caches: Arc<DashMap<String, (Instant, cache::Model)>>,
+  access: Arc<DashMap<(Uuid, Uuid), (Instant, bool)>>,
+}
+
+impl NixCache {
+  pub fn clear(&self) {
+    self.caches.clear();
+    self.access.clear();
+  }
+}
+
+/// Resolves the cache by name and checks that the request may read it
+async fn readable_cache(
+  db: &Connection,
+  nix_cache: &NixCache,
+  name: String,
+  auth: Option<CliAuth>,
+) -> Result<cache::Model> {
+  let name = name.to_lowercase();
+  let cache = match fresh(&nix_cache.caches, &name) {
+    Some(cache) => cache,
+    None => {
+      let Some(cache) = db.cache().by_name(name.clone()).await? else {
+        bail!(NOT_FOUND, "Cache not found");
+      };
+      nix_cache
+        .caches
+        .insert(name, (Instant::now(), cache.clone()));
+      cache
+    }
+  };
+
+  if cache.public {
+    return Ok(cache);
+  }
+
+  let Some(auth) = auth else {
+    bail!(UNAUTHORIZED, "Authentication required");
+  };
+
+  let key = (auth.user_id, cache.id);
+  let allowed = match fresh(&nix_cache.access, &key) {
+    Some(allowed) => allowed,
+    None => {
+      let allowed = db
+        .cache()
+        .cache_user_access(auth.user_id, cache.id)
+        .await?
+        .is_some();
+      nix_cache.access.insert(key, (Instant::now(), allowed));
+      allowed
+    }
+  };
+
+  if !allowed {
+    bail!(FORBIDDEN, "Access denied");
+  }
+
+  Ok(cache)
+}
 
 const CACHE_INFO_MIME: HeaderValue = HeaderValue::from_static("text/x-nix-cache-info");
 const NAR_INFO_MIME: HeaderValue = HeaderValue::from_static("text/x-nix-narinfo");
@@ -35,27 +107,11 @@ struct CachePath {
 
 async fn nix_cache_info(
   db: Connection,
+  nix_cache: NixCache,
   Path(path): Path<CachePath>,
   auth: Option<CliAuth>,
 ) -> Result<(HeaderMap, String)> {
-  let Some(cache) = db.cache().by_name(path.name).await? else {
-    bail!(NOT_FOUND, "Cache not found");
-  };
-
-  if !cache.public {
-    let Some(auth) = auth else {
-      bail!(UNAUTHORIZED, "Authentication required");
-    };
-
-    if db
-      .cache()
-      .cache_user_access(auth.user_id, cache.id)
-      .await?
-      .is_none()
-    {
-      bail!(FORBIDDEN, "Access denied");
-    }
-  }
+  let cache = readable_cache(&db, &nix_cache, path.name, auth).await?;
 
   let mut headers = HeaderMap::new();
   headers.insert(header::CONTENT_TYPE, CACHE_INFO_MIME.clone());
@@ -80,6 +136,7 @@ struct NarInfoPath {
 
 async fn get_data(
   db: &Connection,
+  nix_cache: &NixCache,
   path: NarInfoPath,
   auth: Option<CliAuth>,
 ) -> Result<NarInfoData> {
@@ -87,24 +144,7 @@ async fn get_data(
     bail!(NOT_FOUND, "Invalid narinfo path");
   };
 
-  let Some(cache) = db.cache().by_name(path.name).await? else {
-    bail!(NOT_FOUND, "Cache not found");
-  };
-
-  if !cache.public {
-    let Some(auth) = auth else {
-      bail!(UNAUTHORIZED, "Authentication required");
-    };
-
-    if db
-      .cache()
-      .cache_user_access(auth.user_id, cache.id)
-      .await?
-      .is_none()
-    {
-      bail!(FORBIDDEN, "Access denied");
-    }
-  }
+  let cache = readable_cache(db, nix_cache, path.name, auth).await?;
 
   let Some(data) = db.nar().nar_info_data(cache.id, hash).await? else {
     bail!(NOT_FOUND, "Narinfo not found");
@@ -115,10 +155,11 @@ async fn get_data(
 
 async fn head_nar_info(
   db: Connection,
+  nix_cache: NixCache,
   Path(path): Path<NarInfoPath>,
   auth: Option<CliAuth>,
 ) -> Result<HeaderMap> {
-  get_data(&db, path, auth).await?;
+  get_data(&db, &nix_cache, path, auth).await?;
 
   let mut headers = HeaderMap::new();
   headers.insert(header::CONTENT_TYPE, NAR_INFO_MIME.clone());
@@ -128,10 +169,11 @@ async fn head_nar_info(
 
 async fn nar_info(
   db: Connection,
+  nix_cache: NixCache,
   Path(path): Path<NarInfoPath>,
   auth: Option<CliAuth>,
 ) -> Result<(HeaderMap, String)> {
-  let data = get_data(&db, path, auth).await?;
+  let data = get_data(&db, &nix_cache, path, auth).await?;
   let references = db.nar().nar_info_references(data.id).await?;
 
   let mut headers = HeaderMap::new();
@@ -181,6 +223,7 @@ struct NarPath {
 
 async fn nar(
   db: Connection,
+  nix_cache: NixCache,
   Path(path): Path<NarPath>,
   storage: FileStorage,
   auth: Option<CliAuth>,
@@ -191,24 +234,7 @@ async fn nar(
     bail!(NOT_FOUND, "Invalid nar path");
   };
 
-  let Some(cache) = db.cache().by_name(path.name).await? else {
-    bail!(NOT_FOUND, "Cache not found");
-  };
-
-  if !cache.public {
-    let Some(auth) = auth else {
-      bail!(UNAUTHORIZED, "Authentication required");
-    };
-
-    if db
-      .cache()
-      .cache_user_access(auth.user_id, cache.id)
-      .await?
-      .is_none()
-    {
-      bail!(FORBIDDEN, "Access denied");
-    }
-  }
+  let cache = readable_cache(&db, &nix_cache, path.name, auth).await?;
 
   let Some((nar_id, file_size)) = db.nar().get_nar(cache.id, hash, compression).await? else {
     bail!(NOT_FOUND, "Nar not found");
