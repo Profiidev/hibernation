@@ -16,7 +16,7 @@ use centaurus::{
 use dotenvy::dotenv;
 use tracing::info;
 
-use crate::{config::Config, utils::UpdateMessage};
+use crate::{auth::cli_auth::CliTokenCache, config::Config, nix::NixCache, utils::UpdateMessage};
 
 mod auth;
 mod cache;
@@ -86,5 +86,8 @@ async fn state(mut router: ApiRouter, config: Config) -> ApiRouter {
   router = cache::state(router, db.clone(), &config).await;
   router = websocket::state::<UpdateMessage>(router).await;
 
-  router.layer(Extension(db))
+  router
+    .layer(Extension(CliTokenCache::default()))
+    .layer(Extension(NixCache::default()))
+    .layer(Extension(db))
 }

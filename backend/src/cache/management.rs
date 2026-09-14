@@ -23,6 +23,7 @@ use crate::{
     cache::{CacheDetails, CacheInfo},
     nar::{SearchOrder, SearchSort},
   },
+  nix::NixCache,
   utils::CacheCreate,
   utils::{UpdateMessage, Updater},
 };
@@ -144,6 +145,7 @@ async fn delete_cache(
   auth: JwtAuth,
   db: Connection,
   updater: Updater,
+  nix_cache: NixCache,
   Json(req): Json<DeleteCacheRequest>,
 ) -> Result<()> {
   if db.cache().cache_user_access(auth.user_id, req.uuid).await? != Some(AccessType::Edit) {
@@ -151,6 +153,7 @@ async fn delete_cache(
   }
 
   db.cache().delete_cache(req.uuid).await?;
+  nix_cache.clear();
   updater
     .broadcast(UpdateMessage::Cache { uuid: req.uuid })
     .await;
@@ -221,6 +224,7 @@ struct EditCacheRequest {
   downstream_caches: Vec<Url>,
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn edit_cache(
   auth: JwtAuth,
   Path(path): Path<CachePath>,
@@ -228,6 +232,7 @@ async fn edit_cache(
   updater: Updater,
   lock: CacheEvictionState,
   regex: CacheRegex,
+  nix_cache: NixCache,
   Json(mut req): Json<EditCacheRequest>,
 ) -> Result<()> {
   if req.priority < 0 {
@@ -298,6 +303,7 @@ async fn edit_cache(
     .await?;
 
   drop(lock); // Release the cache lock as soon as possible
+  nix_cache.clear();
 
   updater
     .broadcast(UpdateMessage::Cache { uuid: path.uuid })

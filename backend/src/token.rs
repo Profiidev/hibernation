@@ -9,6 +9,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::auth::cli_auth::CliTokenCache;
 use crate::utils::{UpdateMessage, Updater};
 use crate::{cli, db::DBTrait};
 
@@ -129,9 +130,11 @@ async fn delete_token(
   auth: JwtAuth,
   db: Connection,
   updater: Updater,
+  token_cache: CliTokenCache,
   Json(req): Json<DeleteTokenRequest>,
 ) -> Result<()> {
   db.token().invalidate(auth.user_id, req.uuid).await?;
+  token_cache.invalidate(req.uuid);
   updater
     .send_to(auth.user_id, UpdateMessage::Token { uuid: req.uuid })
     .await;
@@ -168,6 +171,7 @@ async fn edit_token(
   auth: JwtAuth,
   db: Connection,
   updater: Updater,
+  token_cache: CliTokenCache,
   Json(req): Json<EditTokenRequest>,
 ) -> Result<()> {
   if req.name.trim().is_empty() {
@@ -183,6 +187,7 @@ async fn edit_token(
   db.token()
     .update(auth.user_id, req.uuid, req.name, req.exp.naive_utc())
     .await?;
+  token_cache.invalidate(req.uuid);
   updater
     .send_to(auth.user_id, UpdateMessage::Token { uuid: req.uuid })
     .await;
@@ -198,12 +203,14 @@ async fn token_regenerate(
   auth: JwtAuth,
   db: Connection,
   pw: PasswordState,
+  token_cache: CliTokenCache,
   Path(path): Path<TokenViewPath>,
 ) -> Result<Json<TokenRegenerateResponse>> {
   let token = cli::gen_token();
   let hash = pw.pw_hash_raw("", &token)?;
 
   db.token().replace(auth.user_id, path.uuid, hash).await?;
+  token_cache.invalidate(path.uuid);
 
   Ok(Json(TokenRegenerateResponse { token }))
 }

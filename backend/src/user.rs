@@ -30,6 +30,7 @@ use uuid::Uuid;
 
 use crate::{
   db::{DBTrait, cache::SimpleCacheInfo, group_ext::CacheMapping, user_ext::DetailUserInfo},
+  nix::NixCache,
   utils::{CacheEdit, UpdateMessage, Updater},
 };
 
@@ -96,6 +97,7 @@ async fn edit_user(
   auth: JwtAuth<UserEdit>,
   db: Connection,
   updater: Updater,
+  nix_cache: NixCache,
   Json(req): Json<UserEditReq>,
 ) -> Result<()> {
   if req.name.trim().is_empty() {
@@ -146,6 +148,7 @@ async fn edit_user(
   db.user_ext()
     .update_cache_mappings(req.uuid, user.caches, req.caches)
     .await?;
+  nix_cache.clear();
   updater
     .broadcast(UpdateMessage::User { uuid: req.uuid })
     .await;

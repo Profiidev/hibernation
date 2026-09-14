@@ -1,3 +1,8 @@
+use std::{
+  hash::Hash,
+  time::{Duration, Instant},
+};
+
 use centaurus::{
   UpdateMessage,
   backend::{
@@ -6,9 +11,19 @@ use centaurus::{
   },
   permission,
 };
+use dashmap::DashMap;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+pub const LOOKUP_TTL: Duration = Duration::from_secs(30);
+
+pub fn fresh<K: Eq + Hash, V: Clone>(map: &DashMap<K, (Instant, V)>, key: &K) -> Option<V> {
+  map
+    .get(key)
+    .filter(|entry| entry.0.elapsed() < LOOKUP_TTL)
+    .map(|entry| entry.1.clone())
+}
 
 pub type Updater = websocket::state::Updater<UpdateMessage>;
 
@@ -51,4 +66,20 @@ pub fn client() -> Client {
     .user_agent(format!("Hibernation v{}", env!("CARGO_PKG_VERSION")))
     .build()
     .expect("Failed to build HTTP client")
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn fresh_expires_after_ttl() {
+    let map = DashMap::new();
+    map.insert("new", (Instant::now(), 1));
+    map.insert("old", (Instant::now() - LOOKUP_TTL, 2));
+
+    assert_eq!(fresh(&map, &"new"), Some(1));
+    assert_eq!(fresh(&map, &"old"), None);
+    assert_eq!(fresh(&map, &"missing"), None);
+  }
 }
