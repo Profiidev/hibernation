@@ -41,7 +41,17 @@
           {disabled}
           onSelectChange={(selected) => {
             if (selected.length > 0) {
-              mapping.uuid = selected[0];
+              // this needs to be done to trigger reactivity
+              mappings = mappings.map((m, j) =>
+                j === i
+                  ? {
+                      ...m,
+                      uuid: selected[0],
+                      name:
+                        caches.find((c) => c.uuid === selected[0])?.name || ''
+                    }
+                  : m
+              );
             }
           }}
         />
