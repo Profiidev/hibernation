@@ -181,7 +181,9 @@ async fn nar_info(
 
   let compression = match data.compression.as_str() {
     "zst" => "zstd",
-    _ => bail!(NOT_FOUND, "Unsupported compression format"),
+    _ => {
+      bail!(NOT_FOUND, "Unsupported compression format");
+    }
   };
 
   Ok((

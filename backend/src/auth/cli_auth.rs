@@ -127,7 +127,9 @@ async fn check_token(
 
   let record = match db.token().get_by_token(&hash).await {
     Ok(record) => record,
-    Err(DbErr::RecordNotFound(_)) => bail!(UNAUTHORIZED, "invalid token"),
+    Err(DbErr::RecordNotFound(_)) => {
+      bail!(UNAUTHORIZED, "invalid token");
+    }
     Err(err) => return Err(err.into()),
   };
 
