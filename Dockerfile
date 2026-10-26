@@ -81,6 +81,8 @@ FROM node:26-slim@sha256:c0753125a3789977aefe869cbebccf70e3cfd7ea84ca48547458f02
 ENV DB_URL="sqlite:/data/hibernation.db?mode=rwc"
 ENV STORAGE_PATH="/data/storage"
 ENV SITE_URL="http://localhost:8000"
+# Fixed threshold keeps glibc from retaining freed upload chunk buffers
+ENV MALLOC_MMAP_THRESHOLD_=1048576
 
 RUN mkdir -p /data/storage \
     && groupadd -r hibernation \
