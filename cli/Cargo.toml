@@ -57,6 +57,6 @@ testcontainers-modules = { version = "=0.15.0", features = [
 e2e = ["dep:backend", "dep:base64", "dep:rsa", "dep:testcontainers-modules"]
 
 [dev-dependencies]
-tempfile = "3.27.0"
-tokio = { version = "1.52.3", features = ["test-util"] }
-wiremock = "0.6.5"
+tempfile = "=3.27.0"
+tokio = { version = "=1.54.1", features = ["test-util"] }
+wiremock = "=0.6.5"
