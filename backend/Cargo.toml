@@ -70,7 +70,7 @@ tower = { version = "=0.5.3", features = ["util"] }
 reqwest = { version = "=0.13.5", features = ["form", "json"] }
 serde_json = "=1.0.154"
 base64 = "=0.23.1"
-rsa = "=0.9.10"
+rsa = "=0.10.0"
 uuid = { version = "=1.28.0", features = ["v4"] }
 tempfile = "=3.27.0"
 wiremock = "=0.6.5"
