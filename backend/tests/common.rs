@@ -41,7 +41,7 @@ use centaurus::{
 use futures_util::StreamExt;
 use harmonia_store_core::store_path::StorePath;
 use reqwest::{Client, Method, RequestBuilder, Response, StatusCode};
-use rsa::{Pkcs1v15Encrypt, RsaPublicKey, pkcs1::DecodeRsaPublicKey, rand_core::OsRng};
+use rsa::{Pkcs1v15Encrypt, PublicKey, pkcs1::DecodeRsaPublicKey};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use shared::{api::push::CHUNK_SIZE, hash::to_nix_base32, sig::KeyPair};
@@ -430,9 +430,9 @@ impl TestServer {
     let key: Value = resp.json().await.expect("key json");
     let pem = key["key"].as_str().expect("key pem");
 
-    let public_key = RsaPublicKey::from_pkcs1_pem(pem).expect("parse rsa pub key");
+    let public_key = PublicKey::from_pkcs1_pem(pem).expect("parse rsa pub key");
     let ciphertext = public_key
-      .encrypt(&mut OsRng, Pkcs1v15Encrypt, plaintext.as_bytes())
+      .encrypt(&mut rand::rng(), Pkcs1v15Encrypt, plaintext.as_bytes())
       .expect("rsa encrypt");
     BASE64_STANDARD.encode(ciphertext)
   }

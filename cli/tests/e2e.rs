@@ -16,7 +16,7 @@ use std::{
 use backend::App;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use reqwest::{Client, StatusCode};
-use rsa::{Pkcs1v15Encrypt, RsaPublicKey, pkcs1::DecodeRsaPublicKey, rand_core::OsRng};
+use rsa::{Pkcs1v15Encrypt, PublicKey, pkcs1::DecodeRsaPublicKey};
 use serde_json::{Value, json};
 use tempfile::TempDir;
 use testcontainers_modules::{
@@ -158,9 +158,9 @@ impl Server {
       .json()
       .await
       .unwrap();
-    let public_key = RsaPublicKey::from_pkcs1_pem(key["key"].as_str().unwrap()).unwrap();
+    let public_key = PublicKey::from_pkcs1_pem(key["key"].as_str().unwrap()).unwrap();
     let password = public_key
-      .encrypt(&mut OsRng, Pkcs1v15Encrypt, b"hunter2pass")
+      .encrypt(&mut rand::rng(), Pkcs1v15Encrypt, b"hunter2pass")
       .unwrap();
     let res = server
       .post(

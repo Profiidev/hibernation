@@ -2500,6 +2500,7 @@ dependencies = [
  "harmonia-store-remote",
  "indicatif",
  "opener",
+ "rand 0.10.3",
  "reqwest",
  "rsa 0.10.0",
  "serde",
