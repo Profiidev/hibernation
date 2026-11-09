@@ -56,8 +56,14 @@
             ];
           };
 
+          nativeBuildInputs = [
+            pkgs.pkg-config
+            pkgs.rustPlatform.bindgenHook
+          ];
+
           buildInputs = [
             pkgs.aws-lc
+            pkgs.zstd
           ];
 
           RUSTFLAGS = "--cfg reqwest_unstable";
