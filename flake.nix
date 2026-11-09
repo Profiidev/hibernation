@@ -56,6 +56,10 @@
             ];
           };
 
+          buildInputs = [
+            pkgs.aws-lc
+          ];
+
           RUSTFLAGS = "--cfg reqwest_unstable";
           buildAndTestSubdir = "cli";
           # reqwest refuses to build a client without CA certificates, the sandbox has none
