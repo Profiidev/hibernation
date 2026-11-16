@@ -93,7 +93,11 @@ async fn evict_on_push(
 ) -> (Ctx, [TestNar; 3], TestNar) {
   let c = ctx(policy).await;
   let existing = [nar("a-1.0", 1), nar("b-1.0", 2), nar("c-1.0", 3)];
-  let d = nar("d-1.0", 4);
+  // d must compress larger than a, else an overflow above a's size makes the quota edit evict already
+  let d = TestNar::new(
+    "d-1.0",
+    &(0..4096).map(|i| (i % 251) as u8).collect::<Vec<_>>(),
+  );
   for (n, (created, accessed_at, accessed)) in existing.iter().zip(stats) {
     c.push(n).await;
     c.set_stats(n, created, accessed_at, accessed).await;
