@@ -61,6 +61,14 @@ pub struct NarInfoData {
   pub signature: String,
 }
 
+pub enum NarSlot {
+  /// A stored nar with the same content and a file no larger than the upload
+  Existing(nar::Model),
+  /// A placeholder for the upload was created. `replaces` are larger stored copies whose references should move to
+  /// it once it is filled, they are then removed by the orphan cleanup
+  New { replaces: Vec<Uuid> },
+}
+
 pub struct NarTable<'db> {
   db: &'db DatabaseConnection,
 }
@@ -167,23 +175,27 @@ impl<'db> NarTable<'db> {
     Ok(count > 0)
   }
 
+  /// Reuses a stored nar with the same content unless the new file is smaller. The same nar can be compressed to
+  /// files of any size (e.g. zstd skippable frames), so keeping the smaller one stops a pusher from inflating the
+  /// size other caches are charged for and download.
   pub async fn create_nar(
     &self,
     nar_id: Uuid,
     nar_hash: &str,
     nar_size: u64,
-  ) -> Result<Option<nar::Model>, DbErr> {
+    file_size: u64,
+  ) -> Result<NarSlot, DbErr> {
     // Single statement so the orphan cleanup can not delete the nar between finding and refreshing it
-    if let Some(existing) = nar::Entity::update_many()
+    let existing = nar::Entity::update_many()
       .col_expr(nar::Column::CreatedAt, Expr::value(Utc::now().naive_utc()))
       .filter(nar::Column::NarHash.eq(nar_hash))
       .filter(nar::Column::NarSize.eq(nar_size as i64))
       .exec_with_returning(self.db)
-      .await?
-      .into_iter()
-      .next()
+      .await?;
+    if let Some(smallest) = existing.iter().min_by_key(|n| (n.size, n.id))
+      && smallest.size as u64 <= file_size
     {
-      return Ok(Some(existing));
+      return Ok(NarSlot::Existing(smallest.clone()));
     }
 
     let nar = nar::ActiveModel {
@@ -196,7 +208,9 @@ impl<'db> NarTable<'db> {
     };
     nar.insert(self.db).await?;
 
-    Ok(None)
+    Ok(NarSlot::New {
+      replaces: existing.into_iter().map(|n| n.id).collect(),
+    })
   }
 
   pub async fn create_upload(
@@ -316,11 +330,12 @@ impl<'db> NarTable<'db> {
   }
 
   /// Only referenced nars, so dedupe never keeps an orphan the cleanup is about to delete.
-  /// Oldest first (v7 ids), so dedupe keeps the nar the earliest narinfo URLs point at
+  /// Smallest file first so dedupe keeps it (see `create_nar`), then oldest (v7 ids)
   pub async fn find_nars_by_nar_hash(&self, nar_hash: &str) -> Result<Vec<Uuid>, DbErr> {
     nar::Entity::find()
       .select_only()
       .column(nar::Column::Id)
+      .order_by_asc(nar::Column::Size)
       .order_by_asc(nar::Column::Id)
       .filter(nar::Column::NarHash.eq(nar_hash))
       .filter(

@@ -48,7 +48,7 @@ use uuid::Uuid;
 use crate::{
   auth::{cli_auth::CliAuth, scope::Action},
   cache::state::CacheEvictionState,
-  db::DBTrait,
+  db::{DBTrait, nar::NarSlot},
   utils::client,
 };
 
@@ -670,11 +670,15 @@ async fn upload_finish(
   };
 
   let info = upload.req;
-  let (nar_id, nar_hash, nar_size, file_hash, file_size) = match db
+  let (slot, replaces) = match db
     .nar()
-    .create_nar(upload.nar_id, &info.nar_hash, info.nar_size)
+    .create_nar(upload.nar_id, &info.nar_hash, info.nar_size, file_size)
     .await?
   {
+    NarSlot::Existing(existing) => (Some(existing), Vec::new()),
+    NarSlot::New { replaces } => (None, replaces),
+  };
+  let (nar_id, nar_hash, nar_size, file_hash, file_size) = match slot {
     Some(existing) => {
       // The verified content is already stored, keep only one copy
       storage.delete_file(&nar_name(upload.nar_id)).await?;
@@ -738,6 +742,11 @@ async fn upload_finish(
     .await?;
 
   drop(lock); // Release the cache lock as soon as possible
+
+  if !replaces.is_empty() {
+    // Every cache now uses the smaller file, the larger ones become orphans for the cleanup job
+    db.nar().replace_nar_id(&replaces, nar_id).await?;
+  }
 
   Ok(())
 }

@@ -757,6 +757,60 @@ async fn finish_after_shared_nar_deleted_stores_it_again() {
   assert_eq!(nars(&db).await.len(), 1);
 }
 
+#[tokio::test]
+async fn smaller_upload_replaces_padded_nar_everywhere() {
+  let (server, main, token) = default_setup().await;
+  let other = server.create_cache("other", &CacheOptions::default()).await;
+  let db = server.db().await;
+  let a = TestNar::new("a-1.0", b"shared contents");
+  let padded = TestNar::new("a-1.0", b"shared contents").padded(64 * 1024);
+  assert!(padded.file.len() > a.file.len());
+
+  // Someone stores a padded copy first, an honest push elsewhere must not be charged for it
+  server.push_path(&token, "main", &padded).await;
+  server.push_path(&token, "other", &a).await;
+
+  let small = nar_info_of(&db, other, &a).await.nar_id;
+  assert_eq!(nar_info_of(&db, main, &padded).await.nar_id, small);
+  for cache in ["main", "other"] {
+    assert_eq!(
+      nar_bytes(&server, cache, &a).await,
+      (StatusCode::OK, a.file.clone())
+    );
+  }
+
+  // The padded copy is an orphan now and goes with the next cleanup
+  age_nars(&db).await;
+  backend::cache::cleanup::run_cleanup(&db, &server.file_storage().await).await;
+  let kept = nars(&db).await;
+  assert_eq!(kept.len(), 1);
+  assert_eq!(kept[0].size as usize, a.file.len());
+  assert_eq!(nar_files(&server).len(), 1);
+}
+
+#[tokio::test]
+async fn larger_upload_reuses_smaller_nar() {
+  let (server, main, token) = default_setup().await;
+  let other = server.create_cache("other", &CacheOptions::default()).await;
+  let db = server.db().await;
+  let a = TestNar::new("a-1.0", b"shared contents");
+  let padded = TestNar::new("a-1.0", b"shared contents").padded(64 * 1024);
+
+  server.push_path(&token, "main", &a).await;
+  server.push_path(&token, "other", &padded).await;
+
+  assert_eq!(
+    nar_info_of(&db, main, &a).await.nar_id,
+    nar_info_of(&db, other, &padded).await.nar_id
+  );
+  assert_eq!(
+    nar_bytes(&server, "other", &a).await,
+    (StatusCode::OK, a.file.clone())
+  );
+  assert_eq!(nars(&db).await.len(), 1);
+  assert_eq!(nar_files(&server).len(), 1);
+}
+
 async fn server_cache(server: &TestServer, name: &str) -> Uuid {
   server
     .db()
