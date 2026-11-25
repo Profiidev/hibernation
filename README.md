@@ -141,6 +141,12 @@ jobs:
           hibernation push <cache-name> $RESULT_PATH
 ```
 
+### Restricted Tokens
+
+A token can be restricted to specific caches on its settings page. Each cache rule allows any of `pull`, `push` and `delete`, and can limit the store paths with regexes. The regexes match the part of a store path after the hash, e.g. `myapp-1.0` for `/nix/store/<hash>-myapp-1.0`. A path is allowed if it matches any include pattern (or there are none) and no exclude pattern. The settings page has a tester to check patterns against example names and the paths already in the cache.
+
+This lets several CI pipelines share one cache while each one can only touch its own paths. When pushing, paths the token may not push (e.g. dependencies) are skipped with a warning. Pass `--fail-on-denied` to fail instead. Delete paths with `hibernation delete <cache-name> <paths...>`.
+
 ## Deployment
 
 ### Prerequisites
