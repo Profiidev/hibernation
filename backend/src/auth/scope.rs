@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use entity::token_cache_rule;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,8 +90,11 @@ impl TokenScope {
   }
 }
 
-pub const MAX_PATTERNS: usize = 100;
-const MAX_PATTERN_LEN: usize = 1000;
+pub const MAX_PATTERNS: usize = 20;
+const MAX_PATTERN_LEN: usize = 200;
+// Bounds compile time and memory, the defaults allow ~10 MB per regex and seconds of CPU for a full rule
+const REGEX_SIZE_LIMIT: usize = 64 * 1024;
+const REGEX_DFA_SIZE_LIMIT: usize = 256 * 1024;
 
 #[derive(Debug)]
 pub struct PatternError {
@@ -119,12 +122,16 @@ fn compile(patterns: &[String]) -> Result<Vec<Regex>, PatternError> {
         pattern: p.clone(),
         message,
       };
-      if p.is_empty() || p.len() > MAX_PATTERN_LEN || p.contains('\n') {
+      if p.is_empty() || p.len() > MAX_PATTERN_LEN || p.chars().any(char::is_control) {
         return Err(err(format!(
-          "must be 1 to {MAX_PATTERN_LEN} characters without newlines"
+          "must be 1 to {MAX_PATTERN_LEN} characters without control characters"
         )));
       }
-      Regex::new(p).map_err(|e| err(e.to_string()))
+      RegexBuilder::new(p)
+        .size_limit(REGEX_SIZE_LIMIT)
+        .dfa_size_limit(REGEX_DFA_SIZE_LIMIT)
+        .build()
+        .map_err(|e| err(e.to_string()))
     })
     .collect()
 }
@@ -198,9 +205,23 @@ mod test {
     assert!(validate(&["(".into()]).is_err());
     assert!(validate(&["".into()]).is_err());
     assert!(validate(&["a\nb".into()]).is_err());
+    // `lines()` strips a trailing \r when loading, so a stored pattern would differ from the validated one
+    assert!(validate(&["\r".into()]).is_err());
+    assert!(validate(&["^x$\r".into()]).is_err());
+    assert!(validate(&vec!["a".to_string(); MAX_PATTERNS + 1]).is_err());
+    assert!(validate(&["a".repeat(MAX_PATTERN_LEN + 1)]).is_err());
     // lookaround is not supported by the regex crate
     assert!(validate(&["^(?!glibc)".into()]).is_err());
     assert!(validate(&["^myapp-.*$".into()]).is_ok());
+  }
+
+  #[test]
+  fn expensive_patterns_are_cheap_to_reject() {
+    let start = std::time::Instant::now();
+    let heavy = vec![r"\w{150}".to_string(); MAX_PATTERNS];
+    assert!(validate(&heavy).is_err());
+    assert!(validate(&[r"^myapp-\w+$".into()]).is_ok());
+    assert!(start.elapsed() < std::time::Duration::from_secs(1));
   }
 
   #[test]
