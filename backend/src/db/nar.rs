@@ -558,16 +558,17 @@ impl<'db> NarTable<'db> {
       .await
   }
 
+  /// `hash` is the nar hash (current narinfo URLs) or the file hash (URLs published before)
   pub async fn get_nar(
     &self,
     cache: Uuid,
-    file_hash: &str,
+    hash: &str,
     compression: &str,
   ) -> Result<Option<(Uuid, i64)>, DbErr> {
     nar_info::Entity::find()
       .filter(nar_info::Column::CacheId.eq(cache))
       .join(JoinType::InnerJoin, nar_info::Relation::Nar.def())
-      .filter(nar::Column::Hash.eq(file_hash))
+      .filter(nar::Column::NarHash.eq(hash).or(nar::Column::Hash.eq(hash)))
       .filter(nar_info::Column::Compression.eq(compression))
       .select_only()
       .column(nar::Column::Id)

@@ -218,6 +218,8 @@ fn format_narinfo(data: &NarInfoData, mut references: Vec<String>) -> Result<Str
   };
   references.sort_unstable();
 
+  // The URL uses the content hash, not the file hash: the stored file of a nar can be replaced by a smaller copy
+  // and clients cache narinfos for a long time. Nix verifies NarHash after download, so old narinfos keep working
   Ok(format!(
     "StorePath: /nix/store/{}
 URL: nar/{}.nar.{}
@@ -230,7 +232,7 @@ References: {}{}
 Sig: {}
 ",
     data.store_path,
-    data.hash,
+    data.nar_hash,
     data.compression,
     compression,
     data.hash,
@@ -570,7 +572,7 @@ mod test {
     assert_eq!(
       out,
       "StorePath: /nix/store/aaaa-hello
-URL: nar/filehash.nar.zst
+URL: nar/narhash.nar.zst
 Compression: zstd
 FileHash: sha256:filehash
 FileSize: 12
@@ -589,7 +591,7 @@ Sig: key:c2ln
     assert_eq!(
       out,
       "StorePath: /nix/store/aaaa-hello
-URL: nar/filehash.nar.zst
+URL: nar/narhash.nar.zst
 Compression: zstd
 FileHash: sha256:filehash
 FileSize: 12

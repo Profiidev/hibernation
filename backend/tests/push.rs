@@ -768,7 +768,29 @@ async fn smaller_upload_replaces_padded_nar_everywhere() {
 
   // Someone stores a padded copy first, an honest push elsewhere must not be charged for it
   server.push_path(&token, "main", &padded).await;
+  let narinfo = |server: &TestServer| {
+    let req = server.raw(Method::GET, &format!("/nix/main/{}.narinfo", a.hash));
+    async move { req.send().await.unwrap().text().await.unwrap() }
+  };
+  let url_line = |text: &str| {
+    text
+      .lines()
+      .find(|l| l.starts_with("URL:"))
+      .unwrap()
+      .to_string()
+  };
+  let before = narinfo(&server).await;
   server.push_path(&token, "other", &a).await;
+
+  // Clients keep narinfos cached, so the URL must survive the file being replaced
+  let after = narinfo(&server).await;
+  assert_eq!(url_line(&before), url_line(&after));
+  assert_eq!(url_line(&after), format!("URL: {}", a.nar_url()));
+  // URLs published before nar hash URLs still resolve
+  assert_eq!(
+    nar_bytes_at(&server, "main", &a.file_hash_url()).await,
+    (StatusCode::OK, a.file.clone())
+  );
 
   let small = nar_info_of(&db, other, &a).await.nar_id;
   assert_eq!(nar_info_of(&db, main, &padded).await.nar_id, small);
@@ -809,6 +831,15 @@ async fn larger_upload_reuses_smaller_nar() {
   );
   assert_eq!(nars(&db).await.len(), 1);
   assert_eq!(nar_files(&server).len(), 1);
+}
+
+async fn nar_bytes_at(server: &TestServer, cache: &str, url: &str) -> (StatusCode, Vec<u8>) {
+  let resp = server
+    .raw(Method::GET, &format!("/nix/{cache}/{url}"))
+    .send()
+    .await
+    .unwrap();
+  (resp.status(), resp.bytes().await.unwrap().to_vec())
 }
 
 async fn server_cache(server: &TestServer, name: &str) -> Uuid {

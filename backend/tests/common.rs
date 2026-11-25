@@ -776,6 +776,11 @@ impl TestNar {
 
   /// `nar/<file_hash>.nar.zst`, relative to the cache root as in the narinfo `URL:` field
   pub fn nar_url(&self) -> String {
+    format!("nar/{}.nar.zst", self.nar_hash)
+  }
+
+  /// URL format of narinfos published before URLs used the nar hash
+  pub fn file_hash_url(&self) -> String {
     format!("nar/{}.nar.zst", self.file_hash)
   }
 
