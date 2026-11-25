@@ -29,7 +29,7 @@
 
 <BaseForm {schema} onsubmit={() => onsubmit(value())} {footer} bind:isLoading>
   {#snippet children()}
-    <div class="flex flex-col gap-4">
+    <div class="flex max-h-[60vh] min-h-0 flex-col gap-4">
       <Label class="flex items-center gap-2">
         <Switch bind:checked={restricted} />
         Restrict to specific caches and paths

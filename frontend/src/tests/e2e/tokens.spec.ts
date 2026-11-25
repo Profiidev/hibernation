@@ -333,6 +333,31 @@ test.describe('token rules', () => {
     });
   });
 
+  test('scrolls only the rules, not the page', async ({ network, page }) => {
+    const many = {
+      ...restricted,
+      rules: Array.from({ length: 8 }, (_, i) => ({
+        ...restricted.rules[0],
+        cache: `cache-${i}`
+      }))
+    };
+    network.use(gen.handleTokenInfo(() => json(many)));
+    await openDetail(page);
+    await expect(page.getByPlaceholder('^myapp-')).toHaveCount(8);
+
+    const viewport = page.locator('[data-slot="scroll-area-viewport"]').last();
+    const scroll = await viewport.evaluate((el) => ({
+      client: el.clientHeight,
+      height: el.scrollHeight
+    }));
+    expect(scroll.height).toBeGreaterThan(scroll.client);
+    const doc = await page.evaluate(() => ({
+      client: document.documentElement.clientHeight,
+      height: document.documentElement.scrollHeight
+    }));
+    expect(doc.height).toBeLessThanOrEqual(doc.client);
+  });
+
   test('shows a pattern error from the tester', async ({ network, page }) => {
     network.use(
       gen.handleTokenInfo(() => json(restricted)),
