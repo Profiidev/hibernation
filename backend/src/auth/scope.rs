@@ -1,7 +1,12 @@
 use std::collections::HashMap;
 
 use entity::token_cache_rule;
-use regex::{Regex, RegexBuilder};
+use regex_automata::{
+  Input,
+  dfa::{Automaton, dense},
+  nfa::thompson,
+  util::syntax,
+};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -17,8 +22,29 @@ pub struct CacheRule {
   pull: bool,
   push: bool,
   delete: bool,
-  include: Vec<Regex>,
-  exclude: Vec<Regex>,
+  include: Vec<Pattern>,
+  exclude: Vec<Pattern>,
+}
+
+/// A fully built DFA, so matching is linear in the name length with no slow fallback. Patterns whose DFA would
+/// be too large (e.g. `a[ab]{100}c`) are rejected when compiling instead of costing CPU on every request.
+pub struct Pattern(dense::DFA<Vec<u32>>);
+
+impl std::fmt::Debug for Pattern {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str("Pattern")
+  }
+}
+
+impl Pattern {
+  /// `None` if the search gave up, which can't happen without quit bytes but is handled by callers fail-closed
+  fn is_match(&self, name: &str) -> Option<bool> {
+    self
+      .0
+      .try_search_fwd(&Input::new(name).earliest(true))
+      .ok()
+      .map(|m| m.is_some())
+  }
 }
 
 impl CacheRule {
@@ -49,8 +75,8 @@ impl CacheRule {
   /// Matches against `<name>-<version>`, the part of the store path after the hash
   pub fn path_allowed(&self, store_path: &str) -> bool {
     let name = path_name(store_path);
-    (self.include.is_empty() || self.include.iter().any(|r| r.is_match(name)))
-      && !self.exclude.iter().any(|r| r.is_match(name))
+    (self.include.is_empty() || self.include.iter().any(|r| r.is_match(name) == Some(true)))
+      && !self.exclude.iter().any(|r| r.is_match(name) != Some(false))
   }
 }
 
@@ -92,9 +118,10 @@ impl TokenScope {
 
 pub const MAX_PATTERNS: usize = 20;
 const MAX_PATTERN_LEN: usize = 200;
-// Bounds compile time and memory, the defaults allow ~10 MB per regex and seconds of CPU for a full rule
-const REGEX_SIZE_LIMIT: usize = 64 * 1024;
-const REGEX_DFA_SIZE_LIMIT: usize = 256 * 1024;
+// Bound compile time and memory. Patterns are ASCII only (store path names are ASCII), which keeps classes like
+// `\w` small enough for normal patterns to fit easily
+const NFA_SIZE_LIMIT: usize = 64 * 1024;
+const DFA_SIZE_LIMIT: usize = 256 * 1024;
 
 #[derive(Debug)]
 pub struct PatternError {
@@ -108,7 +135,21 @@ impl std::fmt::Display for PatternError {
   }
 }
 
-fn compile(patterns: &[String]) -> Result<Vec<Regex>, PatternError> {
+fn build(pattern: &str) -> Result<Pattern, String> {
+  dense::Builder::new()
+    .configure(
+      dense::Config::new()
+        .dfa_size_limit(Some(DFA_SIZE_LIMIT))
+        .determinize_size_limit(Some(DFA_SIZE_LIMIT)),
+    )
+    .syntax(syntax::Config::new().unicode(false).utf8(false))
+    .thompson(thompson::Config::new().nfa_size_limit(Some(NFA_SIZE_LIMIT)))
+    .build(pattern)
+    .map(Pattern)
+    .map_err(|e| e.to_string())
+}
+
+fn compile(patterns: &[String]) -> Result<Vec<Pattern>, PatternError> {
   if patterns.len() > MAX_PATTERNS {
     return Err(PatternError {
       pattern: String::new(),
@@ -127,11 +168,7 @@ fn compile(patterns: &[String]) -> Result<Vec<Regex>, PatternError> {
           "must be 1 to {MAX_PATTERN_LEN} characters without control characters"
         )));
       }
-      RegexBuilder::new(p)
-        .size_limit(REGEX_SIZE_LIMIT)
-        .dfa_size_limit(REGEX_DFA_SIZE_LIMIT)
-        .build()
-        .map_err(|e| err(e.to_string()))
+      build(p).map_err(err)
     })
     .collect()
 }
@@ -217,11 +254,36 @@ mod test {
 
   #[test]
   fn expensive_patterns_are_cheap_to_reject() {
+    // DFA blowup: would thrash a lazy DFA and fall back to a slow matcher on every request
     let start = std::time::Instant::now();
-    let heavy = vec![r"\w{150}".to_string(); MAX_PATTERNS];
-    assert!(validate(&heavy).is_err());
-    assert!(validate(&[r"^myapp-\w+$".into()]).is_ok());
-    assert!(start.elapsed() < std::time::Duration::from_secs(1));
+    let heavy = (0..MAX_PATTERNS)
+      .map(|i| format!("a[ab]{{150}}c{i}"))
+      .collect::<Vec<_>>();
+    for p in &heavy {
+      assert!(validate(std::slice::from_ref(p)).is_err(), "{p}");
+    }
+    let elapsed = start.elapsed();
+    assert!(elapsed < std::time::Duration::from_secs(2), "{elapsed:?}");
+  }
+
+  #[test]
+  fn common_patterns_are_accepted() {
+    for p in [
+      r"^myapp-\w+$",
+      r"\w\w",
+      r"\w+-\w+",
+      r"^\w+-\w+-\w+-\w+$",
+      r"\w{150}",
+      r"(?i)MyApp",
+      r"^[\w.-]+-dev$",
+      r"^(foo|bar|baz)-[0-9.]+(-dev)?$",
+    ] {
+      assert!(validate(&[p.into()]).is_ok(), "{p}");
+    }
+    let r = rule(&[r"(?i)^myapp-\d"], &[]);
+    assert!(r.path_allowed(&format!("{HASH}-MYAPP-1.0")));
+    // unanchored unless the pattern says otherwise
+    assert!(rule(&["app"], &[]).path_allowed(&format!("{HASH}-myapp-1.0")));
   }
 
   #[test]

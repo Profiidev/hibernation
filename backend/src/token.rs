@@ -316,6 +316,8 @@ async fn token_regenerate(
 const TEST_RULE_SCAN_LIMIT: u64 = 1000;
 const TEST_RULE_RESULT_LIMIT: usize = 50;
 const TEST_RULE_MAX_SAMPLES: usize = 100;
+// Longer than any store path (`/nix/store/` + 32 char hash + 211 char name)
+const TEST_RULE_MAX_SAMPLE_LEN: usize = 300;
 
 #[derive(Deserialize, JsonSchema)]
 struct TestRuleRequest {
@@ -349,10 +351,15 @@ async fn test_rule(
   db: Connection,
   Json(req): Json<TestRuleRequest>,
 ) -> Result<Json<TestRuleResponse>> {
-  if req.samples.len() > TEST_RULE_MAX_SAMPLES {
+  if req.samples.len() > TEST_RULE_MAX_SAMPLES
+    || req
+      .samples
+      .iter()
+      .any(|s| s.len() > TEST_RULE_MAX_SAMPLE_LEN)
+  {
     bail!(
       BAD_REQUEST,
-      "At most {TEST_RULE_MAX_SAMPLES} samples are allowed"
+      "At most {TEST_RULE_MAX_SAMPLES} samples of {TEST_RULE_MAX_SAMPLE_LEN} characters are allowed"
     );
   }
   let rule = match CacheRule::new(true, true, true, &req.include, &req.exclude) {
