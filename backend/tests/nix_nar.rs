@@ -173,7 +173,7 @@ async fn deduped_nar_is_served_from_both_caches() {
   let nar = big_nar();
   let main = server.push_path(&token, "main", &nar).await.cache.unwrap();
   let other = server.push_path(&token, "other", &nar).await;
-  assert!(other.nar_found);
+  assert!(!other.nar_found);
   let other = other.cache.unwrap();
   assert_eq!(
     nar_id(&server, main, &nar).await,

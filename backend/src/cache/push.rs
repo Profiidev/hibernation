@@ -81,7 +81,6 @@ struct PendingUpload {
   owner: (Uuid, Option<Uuid>),
   quota: u64,
   nar_id: Uuid,
-  nar_found: bool,
   /// Only set when the storage supports multipart uploads (S3), otherwise parts are stored as separate files
   multipart: Option<MultipartId>,
   parts: Vec<Option<(PartId, u64)>>,
@@ -379,32 +378,27 @@ async fn upload_path(
     }
   }
 
+  // The content is always uploaded and verified, even if the NAR is already stored. Linking an existing NAR by
+  // its declared hash would let a pusher read any NAR on the server whose hash it knows. Finish dedupes storage.
   let nar_id = Uuid::now_v7();
-  let nar_found = db
-    .nar()
-    .find_nar(&req.nar_hash, req.nar_size)
-    .await?
-    .is_some();
   let multipart = match storage.multipart() {
-    Some(multipart) if !nar_found => Some(
+    Some(multipart) => Some(
       multipart
         .create_multipart(&nar_name(nar_id))
         .await
         .status(StatusCode::INTERNAL_SERVER_ERROR)?,
     ),
-    _ => None,
+    None => None,
   };
-  if !nar_found {
-    // a crash between creating the multipart upload and this insert leaks it, add an S3 lifecycle rule
-    // for incomplete multipart uploads if that matters
-    if let Err(e) = db.nar().create_upload(nar_id, multipart.clone()).await {
-      if let (Some(id), Some(store)) = (&multipart, storage.multipart())
-        && let Err(e) = store.abort_multipart(&nar_name(nar_id), id).await
-      {
-        warn!("Failed to abort multipart upload of {nar_id}: {e}");
-      }
-      return Err(e.into());
+  // a crash between creating the multipart upload and this insert leaks it, add an S3 lifecycle rule
+  // for incomplete multipart uploads if that matters
+  if let Err(e) = db.nar().create_upload(nar_id, multipart.clone()).await {
+    if let (Some(id), Some(store)) = (&multipart, storage.multipart())
+      && let Err(e) = store.abort_multipart(&nar_name(nar_id), id).await
+    {
+      warn!("Failed to abort multipart upload of {nar_id}: {e}");
     }
+    return Err(e.into());
   }
 
   let upload_id = Uuid::new_v4();
@@ -415,7 +409,6 @@ async fn upload_path(
       owner: (auth.user_id, auth.token_id),
       quota: cache.quota as u64,
       nar_id,
-      nar_found,
       multipart,
       parts: Vec::new(),
       touched: Instant::now(),
@@ -424,7 +417,7 @@ async fn upload_path(
 
   Ok(Json(UploadPathResponse {
     uuid: upload_id,
-    nar_found,
+    nar_found: false,
   }))
 }
 
@@ -506,9 +499,7 @@ async fn upload_chunk(
       .filter(|(i, _)| *i != path.part)
       .filter_map(|(_, p)| p.as_ref().map(|(_, size)| *size))
       .sum::<u64>();
-    (upload.owner == (auth.user_id, auth.token_id)
-      && !upload.nar_found
-      && others + chunk.len() as u64 <= upload.quota)
+    (upload.owner == (auth.user_id, auth.token_id) && others + chunk.len() as u64 <= upload.quota)
       .then(|| (upload.nar_id, upload.multipart.clone()))
   }) else {
     bail!("Invalid upload session or file size exceeds cache quota");
@@ -665,37 +656,28 @@ async fn upload_finish(
     .await
     .context("Upload limiter closed")?;
 
-  let stored = if upload.nar_found {
-    None
-  } else {
-    // Keeps the cleanup job away while the file is assembled and verified
-    db.nar().touch_upload(upload.nar_id).await?;
-    match store_upload(&storage, &upload, &req).await {
-      Ok(stored) => Some(stored),
-      Err(e) => {
-        if let Err(e) =
-          cleanup_upload(&storage, &db, upload.nar_id, upload.multipart.as_ref()).await
-        {
-          warn!("Failed to clean up upload {}: {e:?}", upload.nar_id);
-        }
-        return Err(e);
+  // Keeps the cleanup job away while the file is assembled and verified
+  db.nar().touch_upload(upload.nar_id).await?;
+  let (file_hash, file_size) = match store_upload(&storage, &upload, &req).await {
+    Ok(stored) => stored,
+    Err(e) => {
+      if let Err(e) = cleanup_upload(&storage, &db, upload.nar_id, upload.multipart.as_ref()).await
+      {
+        warn!("Failed to clean up upload {}: {e:?}", upload.nar_id);
       }
+      return Err(e);
     }
   };
 
-  let uploaded = stored.is_some();
   let info = upload.req;
-  let (nar_id, nar_hash, nar_size, file_hash, file_size) = match (
-    db.nar()
-      .create_nar(upload.nar_id, &info.nar_hash, info.nar_size)
-      .await?,
-    stored,
-  ) {
-    (Some(existing), _) => {
-      if uploaded {
-        // Someone else uploaded the same NAR in the meantime
-        storage.delete_file(&nar_name(upload.nar_id)).await?;
-      }
+  let (nar_id, nar_hash, nar_size, file_hash, file_size) = match db
+    .nar()
+    .create_nar(upload.nar_id, &info.nar_hash, info.nar_size)
+    .await?
+  {
+    Some(existing) => {
+      // The verified content is already stored, keep only one copy
+      storage.delete_file(&nar_name(upload.nar_id)).await?;
       (
         existing.id,
         existing.nar_hash,
@@ -704,21 +686,16 @@ async fn upload_finish(
         existing.size as u64,
       )
     }
-    (None, Some((file_hash, file_size))) => (
+    None => (
       upload.nar_id,
       info.nar_hash,
       info.nar_size,
       file_hash,
       file_size,
     ),
-    (None, None) => {
-      bail!("NAR no longer exists on the server, retry the upload");
-    }
   };
-  if uploaded {
-    // The file is now owned by the nar entry
-    db.nar().delete_upload(upload.nar_id).await?;
-  }
+  // The file is now owned by the nar entry, or deleted as a duplicate
+  db.nar().delete_upload(upload.nar_id).await?;
 
   let lock = lock.lock_cache(info.cache).await;
   let Some(cache) = db.cache().by_id(info.cache).await? else {
@@ -875,7 +852,6 @@ mod tests {
       owner: (Uuid::nil(), None),
       quota: u64::MAX,
       nar_id: Uuid::new_v4(),
-      nar_found: false,
       multipart: None,
       parts: vec![
         Some((

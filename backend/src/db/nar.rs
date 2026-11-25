@@ -167,14 +167,6 @@ impl<'db> NarTable<'db> {
     Ok(count > 0)
   }
 
-  pub async fn find_nar(&self, nar_hash: &str, nar_size: u64) -> Result<Option<nar::Model>, DbErr> {
-    nar::Entity::find()
-      .filter(nar::Column::NarHash.eq(nar_hash))
-      .filter(nar::Column::NarSize.eq(nar_size as i64))
-      .one(self.db)
-      .await
-  }
-
   pub async fn create_nar(
     &self,
     nar_id: Uuid,

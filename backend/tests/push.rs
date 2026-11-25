@@ -422,18 +422,19 @@ async fn upload_reuses_nar_across_caches() {
   let a = TestNar::new("a-1.0", b"shared contents");
   server.push_path(&token, "main", &a).await;
 
+  // A known nar still has to be uploaded, linking by the declared hash would let a pusher read any nar
   let (upload_id, nar_found) = start_upload(&server, &token, other, &a).await;
-  assert!(nar_found);
+  assert!(!nar_found);
   let db = server.db().await;
-  assert!(
-    uploads(&db).await.is_empty(),
-    "no upload row for a found nar"
+  let resp = finish(&server, &token, upload_id, &a.finish_request()).await;
+  assert_eq!(
+    resp.status(),
+    StatusCode::BAD_REQUEST,
+    "finish without content"
   );
 
-  // A found nar needs no chunks
-  let resp = chunk(&server, &token, upload_id, 0, a.file.clone()).await;
-  assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-
+  let (upload_id, _) = start_upload(&server, &token, other, &a).await;
+  send_chunks(&server, &token, upload_id, &a).await;
   let resp = finish(&server, &token, upload_id, &a.finish_request()).await;
   assert_eq!(resp.status(), StatusCode::OK);
   assert_eq!(
@@ -728,13 +729,13 @@ async fn finish_after_concurrent_upload_of_same_nar() {
 }
 
 #[tokio::test]
-async fn finish_found_nar_deleted_in_between() {
+async fn finish_after_shared_nar_deleted_stores_it_again() {
   let (server, _, token) = default_setup().await;
   let other = server.create_cache("other", &CacheOptions::default()).await;
   let a = TestNar::new("a-1.0", b"shared contents");
   server.push_path(&token, "main", &a).await;
-  let (upload_id, nar_found) = start_upload(&server, &token, other, &a).await;
-  assert!(nar_found);
+  let (upload_id, _) = start_upload(&server, &token, other, &a).await;
+  send_chunks(&server, &token, upload_id, &a).await;
 
   // The only reference goes away and the orphan cleanup removes the nar
   let db = server.db().await;
@@ -746,12 +747,14 @@ async fn finish_found_nar_deleted_in_between() {
   backend::cache::cleanup::run_cleanup(&db, &server.file_storage().await).await;
   assert!(nars(&db).await.is_empty());
 
+  // The upload carries the content, so the nar is simply stored again
   let resp = finish(&server, &token, upload_id, &a.finish_request()).await;
-  assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+  assert_eq!(resp.status(), StatusCode::OK);
   assert_eq!(
-    narinfo_status(&server, "other", &a).await,
-    StatusCode::NOT_FOUND
+    nar_bytes(&server, "other", &a).await,
+    (StatusCode::OK, a.file.clone())
   );
+  assert_eq!(nars(&db).await.len(), 1);
 }
 
 async fn server_cache(server: &TestServer, name: &str) -> Uuid {

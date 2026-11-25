@@ -244,7 +244,7 @@ async fn evicting_shared_nar_keeps_it_for_other_caches() {
   let a = nar("a-1.0", 1);
   c.push(&a).await;
   let pushed = c.server.push_path(&c.token, "other", &a).await;
-  assert!(pushed.nar_found);
+  assert!(!pushed.nar_found);
 
   c.set_quota(0, "LeastRecentlyUsed").await;
   assert!(!c.present(&a).await);

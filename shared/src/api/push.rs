@@ -51,7 +51,7 @@ pub struct UploadPathRequest {
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct UploadPathResponse {
   pub uuid: Uuid,
-  /// The NAR already exists on the server, no chunks need to be uploaded
+  /// Always `false`, the content is always uploaded. Kept for older clients
   pub nar_found: bool,
 }
 

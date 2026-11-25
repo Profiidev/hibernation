@@ -530,9 +530,14 @@ async fn pg_push_info_nar_reuse_references_and_multipart() {
   // finish reuses the nar via UPDATE .. RETURNING, refreshing its created_at
   age_nars(&db).await;
   let (upload, found) = start_upload(&server, &token, other, &a).await;
-  assert!(found);
+  assert!(!found);
   assert!(nars(&db).await[0].created_at < ago(60));
-  assert!(uploads(&db).await.is_empty());
+  assert_eq!(
+    chunk(&server, &token, upload, 0, a.file.clone())
+      .await
+      .status(),
+    StatusCode::OK
+  );
   assert_eq!(
     finish(&server, &token, upload, &a.finish_request())
       .await
@@ -1071,7 +1076,7 @@ async fn pg_quota_edit_evicts_with_new_policy_and_keeps_shared_nar() {
   let b = TestNar::new("b-1.0", &[2; 4096]);
   server.push_path(&token, "main", &a).await;
   server.push_path(&token, "main", &b).await;
-  assert!(server.push_path(&token, "other", &a).await.nar_found);
+  assert!(!server.push_path(&token, "other", &a).await.nar_found);
   let now = ago(0);
   for (n, created, accessed_at) in [(&a, 1000, 1), (&b, 10, 1000)] {
     let mut row = nar_info_of(&db, cache, n).await.into_active_model();
