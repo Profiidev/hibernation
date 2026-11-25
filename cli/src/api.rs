@@ -15,7 +15,8 @@ use reqwest::{
 };
 use serde::Deserialize;
 use shared::api::push::{
-  UploadFinishRequest, UploadInfoResponse, UploadPathRequest, UploadPathResponse,
+  DeletePathsRequest, DeletePathsResponse, UploadFinishRequest, UploadInfoResponse,
+  UploadPathRequest, UploadPathResponse,
 };
 use tokio_util::io::{InspectReader, ReaderStream};
 use tracing::warn;
@@ -163,6 +164,28 @@ impl ApiClient {
         Ok(PushInfoResult::Success(res))
       }
     }
+  }
+
+  pub async fn delete_paths(
+    &self,
+    cache: String,
+    paths: Vec<String>,
+  ) -> Result<DeletePathsResponse> {
+    let res = self
+      .req("/api/cache/push/path", Method::DELETE)?
+      .json(&DeletePathsRequest { cache, paths })
+      .send()
+      .await?;
+    if res.status() == reqwest::StatusCode::NOT_FOUND {
+      bail!("Cache not found or token is not allowed to delete from it.");
+    }
+    Ok(
+      res
+        .error_for_status()?
+        .json()
+        .await
+        .context("Failed to parse delete response")?,
+    )
   }
 
   pub async fn upload_path(&self, info: &UploadPathRequest) -> Result<UploadPathResponse> {

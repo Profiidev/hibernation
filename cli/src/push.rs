@@ -61,15 +61,26 @@ struct PathInfo {
   references: Vec<StorePath>,
 }
 
+pub struct PushOptions {
+  pub no_deps: bool,
+  pub force: bool,
+  /// Abort before uploading anything if the token may not push some paths
+  pub fail_on_denied: bool,
+}
+
 pub async fn push_paths(
   api: ApiClient,
   cache: String,
   paths: &[String],
-  no_deps: bool,
-  force: bool,
+  opts: PushOptions,
   signing_key: KeyPair,
   threads: usize,
 ) -> Result<()> {
+  let PushOptions {
+    no_deps,
+    force,
+    fail_on_denied,
+  } = opts;
   info!("Collecting paths for push");
   let store_dir = StoreDir::default();
   let mut conn = DaemonClient::builder()
@@ -130,6 +141,16 @@ pub async fn push_paths(
       bail!("Force push not allowed by the cache.");
     }
   };
+
+  for path in &res.denied {
+    warn!("Token is not allowed to push {path}, skipping.");
+  }
+  if fail_on_denied && !res.denied.is_empty() {
+    bail!(
+      "Token is not allowed to push {} paths, nothing was pushed.",
+      res.denied.len()
+    );
+  }
 
   let path_infos = path_infos
     .into_iter()

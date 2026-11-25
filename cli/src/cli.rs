@@ -7,7 +7,7 @@ use centaurus::{
 };
 use clap::{Parser, Subcommand};
 use shared::sig::KeyPair;
-use tracing::info;
+use tracing::{info, warn};
 use url::Url;
 
 use crate::{api::ApiClient, config::Config, push};
@@ -69,6 +69,17 @@ pub enum AuthenticatedCommand {
     /// Number of upload threads to use. Defaults to 5.
     #[arg(long, default_value_t = 5)]
     threads: usize,
+    /// Fail instead of skipping paths the token is not allowed to push.
+    #[arg(long)]
+    fail_on_denied: bool,
+  },
+  /// Delete the given paths from the given cache on the Hibernation server.
+  Delete {
+    /// The cache to delete from.
+    cache: String,
+    /// The store paths to delete, dependencies are not deleted.
+    #[arg(required = true)]
+    paths: Vec<String>,
   },
 }
 
@@ -135,11 +146,42 @@ impl AuthenticatedCommand {
         force,
         key,
         threads,
+        fail_on_denied,
       } => {
         let signing_key = load_signing_key(key)
           .await
           .context("Failed to load signing key")?;
-        push::push_paths(client, cache, &paths, no_deps, force, signing_key, threads).await?;
+        push::push_paths(
+          client,
+          cache,
+          &paths,
+          push::PushOptions {
+            no_deps,
+            force,
+            fail_on_denied,
+          },
+          signing_key,
+          threads,
+        )
+        .await?;
+      }
+      AuthenticatedCommand::Delete { cache, paths } => {
+        let res = client
+          .delete_paths(cache, paths)
+          .await
+          .context("Failed to delete paths")?;
+        for path in &res.deleted {
+          info!("Deleted {path}");
+        }
+        for path in &res.not_found {
+          warn!("{path} is not in the cache");
+        }
+        for path in &res.denied {
+          warn!("Token is not allowed to delete {path}");
+        }
+        if !res.denied.is_empty() {
+          bail!("{} paths could not be deleted", res.denied.len());
+        }
       }
     }
     Ok(())
@@ -240,13 +282,14 @@ mod test {
       force,
       key,
       threads,
+      fail_on_denied,
     }) = parse(&["push", "main"]).command
     else {
       panic!("expected push");
     };
     assert_eq!(cache, "main");
     assert!(paths.is_empty());
-    assert!(!no_deps && !force);
+    assert!(!no_deps && !force && !fail_on_denied);
     assert!(key.is_none());
     assert_eq!(threads, 5);
   }
@@ -260,6 +303,7 @@ mod test {
       force,
       key,
       threads,
+      fail_on_denied,
     }) = parse(&[
       "push",
       "main",
@@ -271,6 +315,7 @@ mod test {
       "key.sec",
       "--threads",
       "2",
+      "--fail-on-denied",
     ])
     .command
     else {
@@ -278,7 +323,7 @@ mod test {
     };
     assert_eq!(cache, "main");
     assert_eq!(paths, ["/nix/store/a", "/nix/store/b"]);
-    assert!(no_deps && force);
+    assert!(no_deps && force && fail_on_denied);
     assert_eq!(key, Some(PathBuf::from("key.sec")));
     assert_eq!(threads, 2);
 
@@ -290,6 +335,21 @@ mod test {
     assert_eq!(
       parse_err(&["push", "main", "--threads", "-1"]),
       ErrorKind::UnknownArgument
+    );
+  }
+
+  #[test]
+  fn parses_delete() {
+    let Commands::AuthenticatedCommand(AuthenticatedCommand::Delete { cache, paths }) =
+      parse(&["delete", "main", "/nix/store/a", "b"]).command
+    else {
+      panic!("expected delete");
+    };
+    assert_eq!(cache, "main");
+    assert_eq!(paths, ["/nix/store/a", "b"]);
+    assert_eq!(
+      parse_err(&["delete", "main"]),
+      ErrorKind::MissingRequiredArgument
     );
   }
 
