@@ -70,6 +70,8 @@ pub fn router() -> ApiRouter {
 
 struct PendingUpload {
   req: UploadPathRequest,
+  /// Only the user and token that started the upload may continue it
+  owner: (Uuid, Option<Uuid>),
   quota: u64,
   nar_id: Uuid,
   nar_found: bool,
@@ -384,6 +386,7 @@ async fn upload_path(
     upload_id,
     PendingUpload {
       req,
+      owner: (auth.user_id, auth.token_id),
       quota: cache.quota as u64,
       nar_id,
       nar_found,
@@ -406,7 +409,7 @@ struct UploadChunkPath {
 }
 
 async fn upload_chunk(
-  _auth: CliAuth,
+  auth: CliAuth,
   db: Connection,
   state: PushState,
   storage: FileStorage,
@@ -434,7 +437,9 @@ async fn upload_chunk(
       .filter(|(i, _)| *i != path.part)
       .filter_map(|(_, p)| p.as_ref().map(|(_, size)| *size))
       .sum::<u64>();
-    (!upload.nar_found && others + chunk.len() as u64 <= upload.quota)
+    (upload.owner == (auth.user_id, auth.token_id)
+      && !upload.nar_found
+      && others + chunk.len() as u64 <= upload.quota)
       .then(|| (upload.nar_id, upload.multipart.clone()))
   }) else {
     bail!("Invalid upload session or file size exceeds cache quota");
@@ -571,7 +576,7 @@ async fn verify_nar<R: AsyncRead + Unpin + Send>(
 }
 
 async fn upload_finish(
-  _auth: CliAuth,
+  auth: CliAuth,
   db: Connection,
   state: PushState,
   storage: FileStorage,
@@ -579,7 +584,10 @@ async fn upload_finish(
   Path(uuid): Path<Uuid>,
   Json(req): Json<UploadFinishRequest>,
 ) -> Result<()> {
-  let Some((_, upload)) = state.pending_uploads.remove(&uuid) else {
+  let Some((_, upload)) = state
+    .pending_uploads
+    .remove_if(&uuid, |_, u| u.owner == (auth.user_id, auth.token_id))
+  else {
     bail!("Invalid upload session");
   };
   let _permit = state
@@ -795,6 +803,7 @@ mod tests {
         references: Vec::new(),
         signature: String::new(),
       },
+      owner: (Uuid::nil(), None),
       quota: u64::MAX,
       nar_id: Uuid::new_v4(),
       nar_found: false,

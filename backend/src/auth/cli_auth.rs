@@ -61,6 +61,8 @@ impl CliTokenCache {
 #[derive(Debug, OperationIo)]
 pub struct CliAuth<P: Permission = NoPerm> {
   pub user_id: Uuid,
+  /// `None` for web sessions
+  pub token_id: Option<Uuid>,
   _perm: PhantomData<P>,
 }
 
@@ -71,19 +73,20 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for CliAuth<P> {
     let token = jwt_from_request(parts, JWT_COOKIE_NAME).await?;
 
     let db = parts.extract_state::<Connection>().await;
-    let user = if token.len() == CLI_TOKEN_LEN {
+    let (user, token_id) = if token.len() == CLI_TOKEN_LEN {
       let cache = parts.extract_state::<CliTokenCache>().await;
       let key = (Sha256::digest(&token).into(), P::name());
 
-      match fresh(&cache.tokens, &key) {
-        Some(token) if token.exp > Utc::now().naive_utc() => token.user_id,
+      let token = match fresh(&cache.tokens, &key) {
+        Some(token) if token.exp > Utc::now().naive_utc() => token,
         _ => {
           let token = check_token(&db, parts, token).await?;
           P::check(&db, token.user_id, parts).await?;
           cache.tokens.insert(key, (Instant::now(), token));
-          token.user_id
+          token
         }
-      }
+      };
+      (token.user_id, Some(token.id))
     } else {
       let state = parts.extract_state::<JwtState>().await;
 
@@ -94,11 +97,12 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for CliAuth<P> {
       state.auth.check(&db, parts, &token, &claims).await?;
       P::check(&db, claims.sub, parts).await?;
 
-      claims.sub
+      (claims.sub, None)
     };
 
     Ok(CliAuth {
       user_id: user,
+      token_id,
       _perm: PhantomData,
     })
   }
