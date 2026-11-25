@@ -9,6 +9,7 @@ pub use auth::state;
 use crate::utils::UpdateMessage;
 
 pub mod cli_auth;
+pub mod scope;
 mod test_token;
 
 pub fn router(rate_limiter: &mut RateLimiter) -> ApiRouter {

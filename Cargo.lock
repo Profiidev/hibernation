@@ -599,6 +599,7 @@ dependencies = [
  "object_store",
  "rand 0.10.4",
  "regex",
+ "regex-automata",
  "reqwest",
  "rsa",
  "schemars 1.2.3",

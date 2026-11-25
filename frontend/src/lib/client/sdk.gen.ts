@@ -67,6 +67,9 @@ import type {
   DeletePathData,
   DeletePathErrors,
   DeletePathResponses,
+  DeletePathsData,
+  DeletePathsErrors,
+  DeletePathsResponses,
   DeleteTokenData,
   DeleteTokenErrors,
   DeleteTokenResponses,
@@ -176,6 +179,9 @@ import type {
   TestMailResponses,
   TestResponses,
   TestTokenData,
+  TestTokenRuleData,
+  TestTokenRuleErrors,
+  TestTokenRuleResponses,
   TokenInfoData,
   TokenInfoErrors,
   TokenInfoResponses,
@@ -993,6 +999,22 @@ export const uploadPath = <ThrowOnError extends boolean = false>(
     }
   });
 
+export const deletePaths = <ThrowOnError extends boolean = false>(
+  options: Options<DeletePathsData, ThrowOnError>
+): RequestResult<DeletePathsResponses, DeletePathsErrors, ThrowOnError> =>
+  (options.client ?? client).delete<
+    DeletePathsResponses,
+    DeletePathsErrors,
+    ThrowOnError
+  >({
+    url: '/api/cache/push/path',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
+  });
+
 export const uploadChunk = <ThrowOnError extends boolean = false>(
   options: Options<UploadChunkData, ThrowOnError>
 ): RequestResult<UploadChunkResponses, UploadChunkErrors, ThrowOnError> =>
@@ -1099,6 +1121,22 @@ export const deleteExpiredTokens = <ThrowOnError extends boolean = false>(
     DeleteExpiredTokensErrors,
     ThrowOnError
   >({ url: '/api/token/expired', ...options });
+
+export const testTokenRule = <ThrowOnError extends boolean = false>(
+  options: Options<TestTokenRuleData, ThrowOnError>
+): RequestResult<TestTokenRuleResponses, TestTokenRuleErrors, ThrowOnError> =>
+  (options.client ?? client).post<
+    TestTokenRuleResponses,
+    TestTokenRuleErrors,
+    ThrowOnError
+  >({
+    url: '/api/token/test-rule',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
+  });
 
 export const tokenInfo = <ThrowOnError extends boolean = false>(
   options: Options<TokenInfoData, ThrowOnError>

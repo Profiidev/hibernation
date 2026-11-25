@@ -8,6 +8,7 @@ mod m20260320_164249_cache_access;
 mod m20260806_134347_nar_info_last_accessed_not_null;
 mod m20261017_120000_nar_upload;
 mod m20261017_130000_nar_info_unique_store_path;
+mod m20261125_120000_token_scope;
 
 pub struct Migrator;
 
@@ -30,6 +31,7 @@ impl MigratorTrait for Migrator {
       Box::new(m20260806_134347_nar_info_last_accessed_not_null::Migration),
       Box::new(m20261017_120000_nar_upload::Migration),
       Box::new(m20261017_130000_nar_info_unique_store_path::Migration),
+      Box::new(m20261125_120000_token_scope::Migration),
     ]
   }
 }

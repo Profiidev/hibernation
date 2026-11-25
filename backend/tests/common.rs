@@ -753,6 +753,18 @@ impl TestNar {
     self.nar.len() as u64
   }
 
+  /// Same nar, compressed file inflated by a zstd skippable frame of `padding` bytes
+  pub fn padded(mut self, padding: usize) -> Self {
+    let mut file = Vec::with_capacity(padding + 8 + self.file.len());
+    file.extend_from_slice(&0x184D_2A50u32.to_le_bytes());
+    file.extend_from_slice(&(padding as u32).to_le_bytes());
+    file.resize(8 + padding, 0);
+    file.extend_from_slice(&self.file);
+    self.file_hash = to_nix_base32(&Sha256::digest(&file));
+    self.file = file;
+    self
+  }
+
   pub fn file_size(&self) -> u64 {
     self.file.len() as u64
   }
@@ -764,6 +776,11 @@ impl TestNar {
 
   /// `nar/<file_hash>.nar.zst`, relative to the cache root as in the narinfo `URL:` field
   pub fn nar_url(&self) -> String {
+    format!("nar/{}.nar.zst", self.nar_hash)
+  }
+
+  /// URL format of narinfos published before URLs used the nar hash
+  pub fn file_hash_url(&self) -> String {
     format!("nar/{}.nar.zst", self.file_hash)
   }
 

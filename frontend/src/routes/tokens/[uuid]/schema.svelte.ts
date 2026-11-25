@@ -1,4 +1,4 @@
-import type { EditTokenRequest, TokenInfo } from '$lib/client';
+import type { EditTokenRequest, TokenDetails, TokenRule } from '$lib/client';
 import type { FormValue } from '@profidev/pleiades/components/form/types';
 import { z } from 'zod';
 
@@ -12,15 +12,19 @@ export const tokenSettings = z.object({
 
 export const reformatData = (
   data: FormValue<typeof tokenSettings>,
-  uuid: string
+  uuid: string,
+  restricted: boolean,
+  rules: TokenRule[]
 ): EditTokenRequest => ({
   exp: data.exp,
   name: data.name,
+  restricted,
+  rules: restricted ? rules : [],
   uuid
 });
 
 export const formatData = (
-  user: TokenInfo
+  user: TokenDetails
 ): FormValue<typeof tokenSettings> => ({
   exp: new Date(user.exp),
   name: user.name

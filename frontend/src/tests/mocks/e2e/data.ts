@@ -227,12 +227,16 @@ export const tokens = {
       exp: '2099-01-01T00:00:00Z',
       last_used: '2026-01-01T00:00:00Z',
       name: 'ci',
+      restricted: false,
+      rules: [],
       uuid: 'token-ci'
     },
     {
       exp: '2020-01-01T00:00:00Z',
       last_used: null,
       name: 'old',
+      restricted: false,
+      rules: [],
       uuid: 'token-old'
     }
   ],

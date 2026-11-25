@@ -200,7 +200,7 @@ async fn narinfo_same_path_in_two_caches_is_independent() {
   let nar = TestNar::new("shared-1.0", b"shared");
   server.push_path(&token, "main", &nar).await;
   // same NAR, deduped on the server
-  assert!(server.push_path(&token, "other", &nar).await.nar_found);
+  assert!(!server.push_path(&token, "other", &nar).await.nar_found);
 
   for cache in ["main", "other"] {
     let body = narinfo(&server, cache, &nar.hash)

@@ -56,7 +56,7 @@ impl MigrationTrait for Migration {
 
 #[allow(clippy::enum_variant_names)]
 #[derive(DeriveIden)]
-enum Token {
+pub enum Token {
   Table,
   Id,
   UserId,

@@ -72,7 +72,7 @@ async fn push_serve_evict_dedupe() {
 
   // Same NAR under another store path reuses the stored nar (create_nar UPDATE ... RETURNING)
   let dup = TestNar::new("hello-copy-1.0", b"hello world");
-  assert!(server.push_path(&token, "main", &dup).await.nar_found);
+  assert!(!server.push_path(&token, "main", &dup).await.nar_found);
   let db = server.db().await;
   assert!(db.nar().find_duplicate_nars().await.unwrap().is_empty());
   backend::cache::dedupe::run_dedupe(&db).await;

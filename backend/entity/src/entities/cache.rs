@@ -23,6 +23,8 @@ pub struct Model {
   pub downstream_caches: HasMany<super::downstream_cache::Entity>,
   #[sea_orm(has_many)]
   pub nar_infos: HasMany<super::nar_info::Entity>,
+  #[sea_orm(has_many)]
+  pub token_cache_rules: HasMany<super::token_cache_rule::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

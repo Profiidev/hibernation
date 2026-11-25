@@ -135,9 +135,8 @@ async fn nar_missing_and_malformed_paths_are_not_found() {
     format!("nar/{}.nar.zstd", nar.file_hash),
     format!("nar/{}.nar.zst.nar.zst", nar.file_hash),
     format!("nar/{}.nar.zst", nar.file_hash.to_uppercase()),
-    // the store path hash or nar hash is not the file hash
+    // the store path hash names no nar (nar and file hash both do)
     format!("nar/{}.nar.zst", nar.hash),
-    format!("nar/{}.nar.zst", nar.nar_hash),
     "nar/.nar.zst".to_string(),
     "nar/.nar.".to_string(),
   ] {
@@ -173,7 +172,7 @@ async fn deduped_nar_is_served_from_both_caches() {
   let nar = big_nar();
   let main = server.push_path(&token, "main", &nar).await.cache.unwrap();
   let other = server.push_path(&token, "other", &nar).await;
-  assert!(other.nar_found);
+  assert!(!other.nar_found);
   let other = other.cache.unwrap();
   assert_eq!(
     nar_id(&server, main, &nar).await,

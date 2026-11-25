@@ -164,7 +164,10 @@ async fn info_returns_only_missing_paths() {
   .await;
   assert_eq!(resp.status(), StatusCode::OK);
   let body: Value = resp.json().await.unwrap();
-  assert_eq!(body, json!({ "paths": [b.store_path], "cache": cache }));
+  assert_eq!(
+    body,
+    json!({ "paths": [b.store_path], "cache": cache, "denied": [] })
+  );
 
   let resp = info(&server, &token, "main", &[&a.store_path], false).await;
   assert_eq!(resp.status(), StatusCode::NO_CONTENT);
@@ -419,18 +422,19 @@ async fn upload_reuses_nar_across_caches() {
   let a = TestNar::new("a-1.0", b"shared contents");
   server.push_path(&token, "main", &a).await;
 
+  // A known nar still has to be uploaded, linking by the declared hash would let a pusher read any nar
   let (upload_id, nar_found) = start_upload(&server, &token, other, &a).await;
-  assert!(nar_found);
+  assert!(!nar_found);
   let db = server.db().await;
-  assert!(
-    uploads(&db).await.is_empty(),
-    "no upload row for a found nar"
+  let resp = finish(&server, &token, upload_id, &a.finish_request()).await;
+  assert_eq!(
+    resp.status(),
+    StatusCode::BAD_REQUEST,
+    "finish without content"
   );
 
-  // A found nar needs no chunks
-  let resp = chunk(&server, &token, upload_id, 0, a.file.clone()).await;
-  assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-
+  let (upload_id, _) = start_upload(&server, &token, other, &a).await;
+  send_chunks(&server, &token, upload_id, &a).await;
   let resp = finish(&server, &token, upload_id, &a.finish_request()).await;
   assert_eq!(resp.status(), StatusCode::OK);
   assert_eq!(
@@ -725,13 +729,13 @@ async fn finish_after_concurrent_upload_of_same_nar() {
 }
 
 #[tokio::test]
-async fn finish_found_nar_deleted_in_between() {
+async fn finish_after_shared_nar_deleted_stores_it_again() {
   let (server, _, token) = default_setup().await;
   let other = server.create_cache("other", &CacheOptions::default()).await;
   let a = TestNar::new("a-1.0", b"shared contents");
   server.push_path(&token, "main", &a).await;
-  let (upload_id, nar_found) = start_upload(&server, &token, other, &a).await;
-  assert!(nar_found);
+  let (upload_id, _) = start_upload(&server, &token, other, &a).await;
+  send_chunks(&server, &token, upload_id, &a).await;
 
   // The only reference goes away and the orphan cleanup removes the nar
   let db = server.db().await;
@@ -743,12 +747,99 @@ async fn finish_found_nar_deleted_in_between() {
   backend::cache::cleanup::run_cleanup(&db, &server.file_storage().await).await;
   assert!(nars(&db).await.is_empty());
 
+  // The upload carries the content, so the nar is simply stored again
   let resp = finish(&server, &token, upload_id, &a.finish_request()).await;
-  assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+  assert_eq!(resp.status(), StatusCode::OK);
   assert_eq!(
-    narinfo_status(&server, "other", &a).await,
-    StatusCode::NOT_FOUND
+    nar_bytes(&server, "other", &a).await,
+    (StatusCode::OK, a.file.clone())
   );
+  assert_eq!(nars(&db).await.len(), 1);
+}
+
+#[tokio::test]
+async fn smaller_upload_replaces_padded_nar_everywhere() {
+  let (server, main, token) = default_setup().await;
+  let other = server.create_cache("other", &CacheOptions::default()).await;
+  let db = server.db().await;
+  let a = TestNar::new("a-1.0", b"shared contents");
+  let padded = TestNar::new("a-1.0", b"shared contents").padded(64 * 1024);
+  assert!(padded.file.len() > a.file.len());
+
+  // Someone stores a padded copy first, an honest push elsewhere must not be charged for it
+  server.push_path(&token, "main", &padded).await;
+  let narinfo = |server: &TestServer| {
+    let req = server.raw(Method::GET, &format!("/nix/main/{}.narinfo", a.hash));
+    async move { req.send().await.unwrap().text().await.unwrap() }
+  };
+  let url_line = |text: &str| {
+    text
+      .lines()
+      .find(|l| l.starts_with("URL:"))
+      .unwrap()
+      .to_string()
+  };
+  let before = narinfo(&server).await;
+  server.push_path(&token, "other", &a).await;
+
+  // Clients keep narinfos cached, so the URL must survive the file being replaced
+  let after = narinfo(&server).await;
+  assert_eq!(url_line(&before), url_line(&after));
+  assert_eq!(url_line(&after), format!("URL: {}", a.nar_url()));
+  // URLs published before nar hash URLs still resolve
+  assert_eq!(
+    nar_bytes_at(&server, "main", &a.file_hash_url()).await,
+    (StatusCode::OK, a.file.clone())
+  );
+
+  let small = nar_info_of(&db, other, &a).await.nar_id;
+  assert_eq!(nar_info_of(&db, main, &padded).await.nar_id, small);
+  for cache in ["main", "other"] {
+    assert_eq!(
+      nar_bytes(&server, cache, &a).await,
+      (StatusCode::OK, a.file.clone())
+    );
+  }
+
+  // The padded copy is an orphan now and goes with the next cleanup
+  age_nars(&db).await;
+  backend::cache::cleanup::run_cleanup(&db, &server.file_storage().await).await;
+  let kept = nars(&db).await;
+  assert_eq!(kept.len(), 1);
+  assert_eq!(kept[0].size as usize, a.file.len());
+  assert_eq!(nar_files(&server).len(), 1);
+}
+
+#[tokio::test]
+async fn larger_upload_reuses_smaller_nar() {
+  let (server, main, token) = default_setup().await;
+  let other = server.create_cache("other", &CacheOptions::default()).await;
+  let db = server.db().await;
+  let a = TestNar::new("a-1.0", b"shared contents");
+  let padded = TestNar::new("a-1.0", b"shared contents").padded(64 * 1024);
+
+  server.push_path(&token, "main", &a).await;
+  server.push_path(&token, "other", &padded).await;
+
+  assert_eq!(
+    nar_info_of(&db, main, &a).await.nar_id,
+    nar_info_of(&db, other, &padded).await.nar_id
+  );
+  assert_eq!(
+    nar_bytes(&server, "other", &a).await,
+    (StatusCode::OK, a.file.clone())
+  );
+  assert_eq!(nars(&db).await.len(), 1);
+  assert_eq!(nar_files(&server).len(), 1);
+}
+
+async fn nar_bytes_at(server: &TestServer, cache: &str, url: &str) -> (StatusCode, Vec<u8>) {
+  let resp = server
+    .raw(Method::GET, &format!("/nix/{cache}/{url}"))
+    .send()
+    .await
+    .unwrap();
+  (resp.status(), resp.bytes().await.unwrap().to_vec())
 }
 
 async fn server_cache(server: &TestServer, name: &str) -> Uuid {

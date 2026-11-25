@@ -5,7 +5,7 @@ import {
   reformatData,
   tokenSettings
 } from '$routes/tokens/[uuid]/schema.svelte';
-import type { TokenInfo } from '$lib/client';
+import type { TokenDetails } from '$lib/client';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -57,7 +57,7 @@ describe('token formatData / reformatData', () => {
     const token = {
       exp: '2030-05-06T07:08:09.000Z',
       name: 'ci'
-    } as unknown as TokenInfo;
+    } as unknown as TokenDetails;
     const form = formatData(token);
     expect(form.name).toBe('ci');
     expect(form.exp).toEqual(new Date('2030-05-06T07:08:09.000Z'));
@@ -65,10 +65,32 @@ describe('token formatData / reformatData', () => {
 
   it('builds the edit request with the uuid', () => {
     const exp = new Date('2030-01-01');
-    expect(reformatData({ exp, name: 'ci' }, 't1')).toEqual({
+    expect(reformatData({ exp, name: 'ci' }, 't1', false, [])).toEqual({
       exp,
       name: 'ci',
+      restricted: false,
+      rules: [],
       uuid: 't1'
     });
+  });
+
+  it('sends rules only for restricted tokens', () => {
+    const exp = new Date('2030-01-01');
+    const rules = [
+      {
+        cache: 'c1',
+        delete: false,
+        exclude: ['-dev$'],
+        include: ['^myapp-'],
+        pull: true,
+        push: true
+      }
+    ];
+    expect(reformatData({ exp, name: 'ci' }, 't1', true, rules).rules).toEqual(
+      rules
+    );
+    expect(reformatData({ exp, name: 'ci' }, 't1', false, rules).rules).toEqual(
+      []
+    );
   });
 });

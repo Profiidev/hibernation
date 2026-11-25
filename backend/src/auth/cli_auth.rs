@@ -27,17 +27,20 @@ use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::{
+  auth::scope::{Action, TokenScope},
   db::DBTrait,
-  utils::{UpdateMessage, Updater, fresh},
+  utils::{LOOKUP_TTL, UpdateMessage, Updater, fresh},
 };
 
 pub const CLI_TOKEN_LEN: usize = 32;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct VerifiedToken {
   id: Uuid,
   user_id: Uuid,
   exp: NaiveDateTime,
+  /// Only set for restricted tokens
+  scope: Option<Arc<TokenScope>>,
 }
 
 type TokenKey = ([u8; 32], &'static str);
@@ -61,7 +64,32 @@ impl CliTokenCache {
 #[derive(Debug, OperationIo)]
 pub struct CliAuth<P: Permission = NoPerm> {
   pub user_id: Uuid,
+  /// `None` for web sessions
+  pub token_id: Option<Uuid>,
+  scope: Option<Arc<TokenScope>>,
   _perm: PhantomData<P>,
+}
+
+impl<P: Permission> CliAuth<P> {
+  pub fn restricted(&self) -> bool {
+    self.scope.is_some()
+  }
+
+  /// Token scope check only, the user's own cache access must be checked separately
+  pub fn can(&self, cache: Uuid, action: Action) -> bool {
+    self
+      .scope
+      .as_ref()
+      .is_none_or(|s| s.rule(cache, action).is_some())
+  }
+
+  /// Like [`Self::can`], also requires the store path name to match the rule's patterns
+  pub fn can_path(&self, cache: Uuid, action: Action, store_path: &str) -> bool {
+    self.scope.as_ref().is_none_or(|s| {
+      s.rule(cache, action)
+        .is_some_and(|r| r.path_allowed(store_path))
+    })
+  }
 }
 
 impl<S: Sync, P: Permission> FromRequestParts<S> for CliAuth<P> {
@@ -71,19 +99,29 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for CliAuth<P> {
     let token = jwt_from_request(parts, JWT_COOKIE_NAME).await?;
 
     let db = parts.extract_state::<Connection>().await;
-    let user = if token.len() == CLI_TOKEN_LEN {
+    if token.len() == CLI_TOKEN_LEN {
       let cache = parts.extract_state::<CliTokenCache>().await;
       let key = (Sha256::digest(&token).into(), P::name());
 
-      match fresh(&cache.tokens, &key) {
-        Some(token) if token.exp > Utc::now().naive_utc() => token.user_id,
+      let token = match fresh(&cache.tokens, &key) {
+        Some(token) if token.exp > Utc::now().naive_utc() => token,
         _ => {
           let token = check_token(&db, parts, token).await?;
           P::check(&db, token.user_id, parts).await?;
-          cache.tokens.insert(key, (Instant::now(), token));
-          token.user_id
+          // Entries hold compiled rules, drop expired ones instead of keeping them until overwritten
+          cache
+            .tokens
+            .retain(|_, (checked, _)| checked.elapsed() < LOOKUP_TTL);
+          cache.tokens.insert(key, (Instant::now(), token.clone()));
+          token
         }
-      }
+      };
+      Ok(CliAuth {
+        user_id: token.user_id,
+        token_id: Some(token.id),
+        scope: token.scope,
+        _perm: PhantomData,
+      })
     } else {
       let state = parts.extract_state::<JwtState>().await;
 
@@ -94,13 +132,13 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for CliAuth<P> {
       state.auth.check(&db, parts, &token, &claims).await?;
       P::check(&db, claims.sub, parts).await?;
 
-      claims.sub
-    };
-
-    Ok(CliAuth {
-      user_id: user,
-      _perm: PhantomData,
-    })
+      Ok(CliAuth {
+        user_id: claims.sub,
+        token_id: None,
+        scope: None,
+        _perm: PhantomData,
+      })
+    }
   }
 }
 
@@ -147,9 +185,21 @@ async fn check_token(
     .send_to(record.user_id, UpdateMessage::Token { uuid: record.id })
     .await;
 
+  let scope = if record.restricted {
+    let rules = db.token().rules(record.id).await?;
+    // Compiling is CPU bound, keep it off the async workers
+    let scope = tokio::task::spawn_blocking(|| TokenScope::from_models(rules))
+      .await
+      .status(StatusCode::INTERNAL_SERVER_ERROR)?;
+    Some(Arc::new(scope))
+  } else {
+    None
+  };
+
   Ok(VerifiedToken {
     id: record.id,
     user_id: record.user_id,
     exp: record.exp,
+    scope,
   })
 }

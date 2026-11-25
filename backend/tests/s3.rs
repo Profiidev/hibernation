@@ -307,14 +307,20 @@ async fn nar_reuse_and_concurrent_duplicate() {
   assert!(server.s3_multipart_uploads().await.is_empty());
   assert!(uploads(&db).await.is_empty());
 
-  // A known NAR: no multipart upload, no upload row
+  // A known NAR is uploaded again, finish keeps only one object
   let (up_c, nar_found) = start_upload(&server, &token, cache, &c).await;
-  assert!(nar_found);
-  assert!(server.s3_multipart_uploads().await.is_empty());
-  assert!(uploads(&db).await.is_empty());
+  assert!(!nar_found);
+  assert_eq!(
+    chunk(&server, &token, up_c, 0, c.file.clone())
+      .await
+      .status(),
+    StatusCode::OK
+  );
   let resp = finish(&server, &token, up_c, &c.finish_request()).await;
   assert_eq!(resp.status(), StatusCode::OK);
   assert_eq!(server.storage_files().await.len(), 1);
+  assert!(server.s3_multipart_uploads().await.is_empty());
+  assert!(uploads(&db).await.is_empty());
   for nar in [&a, &b, &c] {
     assert_eq!(nar_info_of(&db, cache, nar).await.nar_id, kept[0].id);
     assert_eq!(
@@ -336,7 +342,7 @@ async fn evicted_and_deleted_paths_lose_their_objects() {
   let dropped = TestNar::new("dropped-1.0", b"dropped");
   server.push_path(&token, "main", &shared).await;
   server.push_path(&token, "main", &evicted).await;
-  assert!(server.push_path(&token, "other", &shared).await.nar_found);
+  assert!(!server.push_path(&token, "other", &shared).await.nar_found);
   server.push_path(&token, "other", &deleted).await;
   server.push_path(&token, "third", &dropped).await;
   let id_of = |infos: Vec<nar_info::Model>, nar: &TestNar| {

@@ -61,6 +61,14 @@ pub struct NarInfoData {
   pub signature: String,
 }
 
+pub enum NarSlot {
+  /// A stored nar with the same content and a file no larger than the upload
+  Existing(nar::Model),
+  /// A placeholder for the upload was created. `replaces` are larger stored copies whose references should move to
+  /// it once it is filled, they are then removed by the orphan cleanup
+  New { replaces: Vec<Uuid> },
+}
+
 pub struct NarTable<'db> {
   db: &'db DatabaseConnection,
 }
@@ -167,31 +175,27 @@ impl<'db> NarTable<'db> {
     Ok(count > 0)
   }
 
-  pub async fn find_nar(&self, nar_hash: &str, nar_size: u64) -> Result<Option<nar::Model>, DbErr> {
-    nar::Entity::find()
-      .filter(nar::Column::NarHash.eq(nar_hash))
-      .filter(nar::Column::NarSize.eq(nar_size as i64))
-      .one(self.db)
-      .await
-  }
-
+  /// Reuses a stored nar with the same content unless the new file is smaller. The same nar can be compressed to
+  /// files of any size (e.g. zstd skippable frames), so keeping the smaller one stops a pusher from inflating the
+  /// size other caches are charged for and download.
   pub async fn create_nar(
     &self,
     nar_id: Uuid,
     nar_hash: &str,
     nar_size: u64,
-  ) -> Result<Option<nar::Model>, DbErr> {
+    file_size: u64,
+  ) -> Result<NarSlot, DbErr> {
     // Single statement so the orphan cleanup can not delete the nar between finding and refreshing it
-    if let Some(existing) = nar::Entity::update_many()
+    let existing = nar::Entity::update_many()
       .col_expr(nar::Column::CreatedAt, Expr::value(Utc::now().naive_utc()))
       .filter(nar::Column::NarHash.eq(nar_hash))
       .filter(nar::Column::NarSize.eq(nar_size as i64))
       .exec_with_returning(self.db)
-      .await?
-      .into_iter()
-      .next()
+      .await?;
+    if let Some(smallest) = existing.iter().min_by_key(|n| (n.size, n.id))
+      && smallest.size as u64 <= file_size
     {
-      return Ok(Some(existing));
+      return Ok(NarSlot::Existing(smallest.clone()));
     }
 
     let nar = nar::ActiveModel {
@@ -204,7 +208,9 @@ impl<'db> NarTable<'db> {
     };
     nar.insert(self.db).await?;
 
-    Ok(None)
+    Ok(NarSlot::New {
+      replaces: existing.into_iter().map(|n| n.id).collect(),
+    })
   }
 
   pub async fn create_upload(
@@ -324,11 +330,12 @@ impl<'db> NarTable<'db> {
   }
 
   /// Only referenced nars, so dedupe never keeps an orphan the cleanup is about to delete.
-  /// Oldest first (v7 ids), so dedupe keeps the nar the earliest narinfo URLs point at
+  /// Smallest file first so dedupe keeps it (see `create_nar`), then oldest (v7 ids)
   pub async fn find_nars_by_nar_hash(&self, nar_hash: &str) -> Result<Vec<Uuid>, DbErr> {
     nar::Entity::find()
       .select_only()
       .column(nar::Column::Id)
+      .order_by_asc(nar::Column::Size)
       .order_by_asc(nar::Column::Id)
       .filter(nar::Column::NarHash.eq(nar_hash))
       .filter(
@@ -481,14 +488,40 @@ impl<'db> NarTable<'db> {
       .await
   }
 
-  pub async fn delete_path(&self, cache: Uuid, store_path: &str) -> Result<(), DbErr> {
-    nar_info::Entity::delete_many()
+  /// Returns `false` if the path was not in the cache
+  pub async fn delete_path(&self, cache: Uuid, store_path: &str) -> Result<bool, DbErr> {
+    let res = nar_info::Entity::delete_many()
       .filter(nar_info::Column::CacheId.eq(cache))
       .filter(nar_info::Column::StorePath.eq(store_path.to_string()))
       .exec(self.db)
       .await?;
 
-    Ok(())
+    Ok(res.rows_affected > 0)
+  }
+
+  /// Most recently accessed store paths of a cache
+  pub async fn store_paths(&self, cache: Uuid, limit: u64) -> Result<Vec<String>, DbErr> {
+    nar_info::Entity::find()
+      .filter(nar_info::Column::CacheId.eq(cache))
+      .order_by_desc(nar_info::Column::LastAccessedAt)
+      .select_only()
+      .column(nar_info::Column::StorePath)
+      .limit(limit)
+      .into_tuple()
+      .all(self.db)
+      .await
+  }
+
+  /// Store paths in a cache that are served by a nar
+  pub async fn nar_store_paths(&self, cache: Uuid, nar_id: Uuid) -> Result<Vec<String>, DbErr> {
+    nar_info::Entity::find()
+      .filter(nar_info::Column::CacheId.eq(cache))
+      .filter(nar_info::Column::NarId.eq(nar_id))
+      .select_only()
+      .column(nar_info::Column::StorePath)
+      .into_tuple()
+      .all(self.db)
+      .await
   }
 
   pub async fn nar_info_data(
@@ -525,16 +558,17 @@ impl<'db> NarTable<'db> {
       .await
   }
 
+  /// `hash` is the nar hash (current narinfo URLs) or the file hash (URLs published before)
   pub async fn get_nar(
     &self,
     cache: Uuid,
-    file_hash: &str,
+    hash: &str,
     compression: &str,
   ) -> Result<Option<(Uuid, i64)>, DbErr> {
     nar_info::Entity::find()
       .filter(nar_info::Column::CacheId.eq(cache))
       .join(JoinType::InnerJoin, nar_info::Relation::Nar.def())
-      .filter(nar::Column::Hash.eq(file_hash))
+      .filter(nar::Column::NarHash.eq(hash).or(nar::Column::Hash.eq(hash)))
       .filter(nar_info::Column::Compression.eq(compression))
       .select_only()
       .column(nar::Column::Id)
