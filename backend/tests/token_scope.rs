@@ -228,6 +228,34 @@ async fn upload_session_bound_to_token() {
 }
 
 #[tokio::test]
+async fn finish_rechecks_rules_changed_during_upload() {
+  let (server, cache, _) = setup().await;
+  let (token, id) = scoped_token(&server, json!([rule(cache, &["push"], &[], &[])])).await;
+  let app = TestNar::new("myapp-1.0", b"app");
+  let (upload, _) = start_upload(&server, &token, cache, &app).await;
+  assert_eq!(
+    chunk(&server, &token, upload, 0, app.file.clone())
+      .await
+      .status(),
+    StatusCode::OK
+  );
+
+  let exp = chrono::Utc::now() + chrono::Duration::days(1);
+  let resp = server
+    .put(
+      "/token",
+      json!({ "uuid": id, "name": "narrowed", "exp": exp, "restricted": true,
+              "rules": [rule(cache, &["push"], &["^other-"], &[])] }),
+    )
+    .await;
+  assert_eq!(resp.status(), StatusCode::OK);
+
+  let resp = finish(&server, &token, upload, &app.finish_request()).await;
+  assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+  assert!(nar_infos(&*server.db().await, cache).await.is_empty());
+}
+
+#[tokio::test]
 async fn pull_filters_by_pattern() {
   let (server, cache, admin) = setup().await;
   let app = TestNar::new("myapp-1.0", b"app");
@@ -492,4 +520,13 @@ async fn test_rule_endpoint() {
     .unwrap();
   assert!(body["error"].as_str().unwrap().contains("("));
   assert_eq!(body["samples"], json!([]));
+  for samples in [vec!["a".repeat(301)], vec!["a".to_string(); 101]] {
+    let resp = server
+      .post(
+        "/token/test-rule",
+        json!({ "include": [], "exclude": [], "samples": samples }),
+      )
+      .await;
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+  }
 }

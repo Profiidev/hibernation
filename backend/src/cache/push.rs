@@ -656,6 +656,24 @@ async fn upload_finish(
     .await
     .context("Upload limiter closed")?;
 
+  // Access or token rules may have changed while the chunks were uploaded
+  let cache = upload.req.cache;
+  if db
+    .cache()
+    .by_id_filtered(cache, auth.user_id, AccessType::Edit)
+    .await?
+    .is_none()
+    || !auth.can_path(cache, Action::Push, &upload.req.store_path)
+  {
+    if let Err(e) = cleanup_upload(&storage, &db, upload.nar_id, upload.multipart.as_ref()).await {
+      warn!("Failed to clean up upload {}: {e:?}", upload.nar_id);
+    }
+    bail!(
+      FORBIDDEN,
+      "Cache access or token rules changed during the upload"
+    );
+  }
+
   // Keeps the cleanup job away while the file is assembled and verified
   db.nar().touch_upload(upload.nar_id).await?;
   let (file_hash, file_size) = match store_upload(&storage, &upload, &req).await {
