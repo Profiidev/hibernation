@@ -164,7 +164,10 @@ async fn info_returns_only_missing_paths() {
   .await;
   assert_eq!(resp.status(), StatusCode::OK);
   let body: Value = resp.json().await.unwrap();
-  assert_eq!(body, json!({ "paths": [b.store_path], "cache": cache }));
+  assert_eq!(
+    body,
+    json!({ "paths": [b.store_path], "cache": cache, "denied": [] })
+  );
 
   let resp = info(&server, &token, "main", &[&a.store_path], false).await;
   assert_eq!(resp.status(), StatusCode::NO_CONTENT);

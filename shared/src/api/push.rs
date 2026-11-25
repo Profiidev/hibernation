@@ -16,6 +16,24 @@ pub struct UploadInfoRequest {
 pub struct UploadInfoResponse {
   pub paths: Vec<String>,
   pub cache: Uuid,
+  /// Paths the token is not allowed to push, they are not part of `paths`
+  #[serde(default)]
+  pub denied: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, JsonSchema)]
+pub struct DeletePathsRequest {
+  pub cache: String,
+  pub paths: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, JsonSchema)]
+pub struct DeletePathsResponse {
+  pub deleted: Vec<String>,
+  /// Paths that were not in the cache
+  pub not_found: Vec<String>,
+  /// Paths the token is not allowed to delete
+  pub denied: Vec<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, JsonSchema)]

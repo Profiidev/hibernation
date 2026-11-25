@@ -16,7 +16,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-  auth::cli_auth::CliAuth,
+  auth::{cli_auth::CliAuth, scope::Action},
   db::{DBTrait, nar::NarInfoData},
   utils::fresh,
 };
@@ -42,7 +42,7 @@ async fn readable_cache(
   nix_cache: &NixCache,
   name: String,
   auth: Option<CliAuth>,
-) -> Result<cache::Model> {
+) -> Result<(cache::Model, Option<CliAuth>)> {
   let name = name.to_lowercase();
   let cache = match fresh(&nix_cache.caches, &name) {
     Some(cache) => cache,
@@ -57,8 +57,9 @@ async fn readable_cache(
     }
   };
 
+  // Anyone can read a public cache, so token scopes don't apply
   if cache.public {
-    return Ok(cache);
+    return Ok((cache, None));
   }
 
   let Some(auth) = auth else {
@@ -79,11 +80,11 @@ async fn readable_cache(
     }
   };
 
-  if !allowed {
+  if !allowed || !auth.can(cache.id, Action::Pull) {
     bail!(FORBIDDEN, "Access denied");
   }
 
-  Ok(cache)
+  Ok((cache, Some(auth)))
 }
 
 const CACHE_INFO_MIME: HeaderValue = HeaderValue::from_static("text/x-nix-cache-info");
@@ -121,7 +122,7 @@ async fn nix_cache_info(
   Path(path): Path<CachePath>,
   auth: Option<CliAuth>,
 ) -> Result<(HeaderMap, String)> {
-  let cache = readable_cache(&db, &nix_cache, path.name, auth).await?;
+  let (cache, _) = readable_cache(&db, &nix_cache, path.name, auth).await?;
 
   let mut headers = HeaderMap::new();
   headers.insert(header::CONTENT_TYPE, CACHE_INFO_MIME.clone());
@@ -164,11 +165,16 @@ async fn get_data(
     bail!(NOT_FOUND, "Invalid narinfo path");
   };
 
-  let cache = readable_cache(db, nix_cache, path.name, auth).await?;
+  let (cache, auth) = readable_cache(db, nix_cache, path.name, auth).await?;
 
   let Some(data) = db.nar().nar_info_data(cache.id, hash).await? else {
     bail!(NOT_FOUND, "Narinfo not found");
   };
+  if let Some(auth) = auth
+    && !auth.can_path(cache.id, Action::Pull, &data.store_path)
+  {
+    bail!(NOT_FOUND, "Narinfo not found");
+  }
 
   Ok(data)
 }
@@ -258,11 +264,23 @@ async fn find_nar(
     bail!(NOT_FOUND, "Invalid nar path");
   };
 
-  let cache = readable_cache(db, nix_cache, path.name, auth).await?;
+  let (cache, auth) = readable_cache(db, nix_cache, path.name, auth).await?;
 
   let Some((nar_id, file_size)) = db.nar().get_nar(cache.id, hash, compression).await? else {
     bail!(NOT_FOUND, "Nar not found");
   };
+  // A nar can back several store paths, it's readable if any of them is
+  if let Some(auth) = auth
+    && auth.restricted()
+    && !db
+      .nar()
+      .nar_store_paths(cache.id, nar_id)
+      .await?
+      .iter()
+      .any(|p| auth.can_path(cache.id, Action::Pull, p))
+  {
+    bail!(NOT_FOUND, "Nar not found");
+  }
 
   Ok((cache.id, nar_id, file_size as u64))
 }

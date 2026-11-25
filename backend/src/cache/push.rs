@@ -1,4 +1,4 @@
-use aide::axum::routing::{post_with, put_with};
+use aide::axum::routing::{delete_with, post_with, put_with};
 use std::{
   io::Write,
   sync::Arc,
@@ -28,8 +28,8 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use shared::{
   api::push::{
-    CHUNK_SIZE, UploadFinishRequest, UploadInfoRequest, UploadInfoResponse, UploadPathRequest,
-    UploadPathResponse,
+    CHUNK_SIZE, DeletePathsRequest, DeletePathsResponse, UploadFinishRequest, UploadInfoRequest,
+    UploadInfoResponse, UploadPathRequest, UploadPathResponse,
   },
   hash::to_nix_base32,
   pool::FuturePool,
@@ -46,7 +46,10 @@ use url::Url;
 use uuid::Uuid;
 
 use crate::{
-  auth::cli_auth::CliAuth, cache::state::CacheEvictionState, db::DBTrait, utils::client,
+  auth::{cli_auth::CliAuth, scope::Action},
+  cache::state::CacheEvictionState,
+  db::DBTrait,
+  utils::client,
 };
 
 /// S3 allows at most 10000 parts per multipart upload
@@ -58,6 +61,10 @@ pub fn router() -> ApiRouter {
   ApiRouter::new()
     .api_route("/info", post_with(upload_info, |op| op.id("uploadInfo")))
     .api_route("/", post_with(upload_path, |op| op.id("uploadPath")))
+    .api_route(
+      "/path",
+      delete_with(delete_paths, |op| op.id("deletePaths")),
+    )
     .api_route(
       "/{uuid}/{part}",
       post_with(upload_chunk, |op| op.id("uploadChunk")),
@@ -219,20 +226,32 @@ async fn upload_info(
   else {
     bail!(NOT_FOUND, "Cache not found or access denied");
   };
+  if !auth.can(cache.id, Action::Push) {
+    bail!(NOT_FOUND, "Cache not found or access denied");
+  }
 
   if !cache.allow_force_push && req.force {
     bail!(NOT_ACCEPTABLE, "Force push is not allowed for this cache");
   }
 
+  let (paths, denied): (Vec<_>, Vec<_>) = paths
+    .into_iter()
+    .partition(|p| auth.can_path(cache.id, Action::Push, &p.to_string()));
+  let denied = denied
+    .into_iter()
+    .map(|p| p.to_string())
+    .collect::<Vec<_>>();
+
   let mut missing_paths = db.nar().missing_paths(cache.id, paths).await?;
-  if missing_paths.is_empty() {
+  if missing_paths.is_empty() && denied.is_empty() {
     bail!(NO_CONTENT, "All paths are already present in the cache");
   }
 
-  if req.force {
+  if req.force || missing_paths.is_empty() {
     return Ok(Json(UploadInfoResponse {
       paths: missing_paths.into_iter().map(|p| p.to_string()).collect(),
       cache: cache.id,
+      denied,
     }));
   }
 
@@ -269,18 +288,22 @@ async fn upload_info(
       }
     }
 
-    if remaining_missing.is_empty() {
+    if remaining_missing.is_empty() && denied.is_empty() {
       bail!(
         NO_CONTENT,
         "All paths are already present in the downstream cache"
       );
     }
     missing_paths = remaining_missing;
+    if missing_paths.is_empty() {
+      break;
+    }
   }
 
   Ok(Json(UploadInfoResponse {
     paths: missing_paths.into_iter().map(|p| p.to_string()).collect(),
     cache: cache.id,
+    denied,
   }))
 }
 
@@ -313,6 +336,9 @@ async fn upload_path(
   else {
     bail!("Cache not found or access denied");
   };
+  if !auth.can_path(cache.id, Action::Push, &req.store_path) {
+    bail!(FORBIDDEN, "Token is not allowed to push this store path");
+  }
 
   if !cache.allow_force_push && req.force {
     bail!("Force push is not allowed for this cache");
@@ -400,6 +426,49 @@ async fn upload_path(
     uuid: upload_id,
     nar_found,
   }))
+}
+
+async fn delete_paths(
+  auth: CliAuth,
+  db: Connection,
+  Json(req): Json<DeletePathsRequest>,
+) -> Result<Json<DeletePathsResponse>> {
+  let Some(cache) = db
+    .cache()
+    .by_name_filtered(req.cache, auth.user_id, AccessType::Edit)
+    .await?
+  else {
+    bail!(NOT_FOUND, "Cache not found or access denied");
+  };
+  if !auth.can(cache.id, Action::Delete) {
+    bail!(NOT_FOUND, "Cache not found or access denied");
+  }
+
+  let mut res = DeletePathsResponse {
+    deleted: Vec::new(),
+    not_found: Vec::new(),
+    denied: Vec::new(),
+  };
+  // Stored paths are base paths, accept full ones from the cli too
+  let paths = req
+    .paths
+    .iter()
+    .map(|p| p.rsplit('/').next().unwrap_or(p).to_string())
+    .collect::<Vec<_>>();
+  if let Some(path) = paths.iter().find(|p| StorePath::from_base_path(p).is_err()) {
+    bail!(UNPROCESSABLE_ENTITY, "Invalid store path: {path}");
+  }
+  for path in paths {
+    if !auth.can_path(cache.id, Action::Delete, &path) {
+      res.denied.push(path);
+    } else if db.nar().delete_path(cache.id, &path).await? {
+      res.deleted.push(path);
+    } else {
+      res.not_found.push(path);
+    }
+  }
+
+  Ok(Json(res))
 }
 
 #[derive(Deserialize, Clone, Copy, JsonSchema)]

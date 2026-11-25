@@ -481,14 +481,40 @@ impl<'db> NarTable<'db> {
       .await
   }
 
-  pub async fn delete_path(&self, cache: Uuid, store_path: &str) -> Result<(), DbErr> {
-    nar_info::Entity::delete_many()
+  /// Returns `false` if the path was not in the cache
+  pub async fn delete_path(&self, cache: Uuid, store_path: &str) -> Result<bool, DbErr> {
+    let res = nar_info::Entity::delete_many()
       .filter(nar_info::Column::CacheId.eq(cache))
       .filter(nar_info::Column::StorePath.eq(store_path.to_string()))
       .exec(self.db)
       .await?;
 
-    Ok(())
+    Ok(res.rows_affected > 0)
+  }
+
+  /// Most recently accessed store paths of a cache
+  pub async fn store_paths(&self, cache: Uuid, limit: u64) -> Result<Vec<String>, DbErr> {
+    nar_info::Entity::find()
+      .filter(nar_info::Column::CacheId.eq(cache))
+      .order_by_desc(nar_info::Column::LastAccessedAt)
+      .select_only()
+      .column(nar_info::Column::StorePath)
+      .limit(limit)
+      .into_tuple()
+      .all(self.db)
+      .await
+  }
+
+  /// Store paths in a cache that are served by a nar
+  pub async fn nar_store_paths(&self, cache: Uuid, nar_id: Uuid) -> Result<Vec<String>, DbErr> {
+    nar_info::Entity::find()
+      .filter(nar_info::Column::CacheId.eq(cache))
+      .filter(nar_info::Column::NarId.eq(nar_id))
+      .select_only()
+      .column(nar_info::Column::StorePath)
+      .into_tuple()
+      .all(self.db)
+      .await
   }
 
   pub async fn nar_info_data(

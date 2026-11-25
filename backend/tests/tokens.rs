@@ -48,7 +48,10 @@ async fn create_lists_and_gets_token() {
 
   let resp = server.get(&format!("/token/{id}")).await;
   assert_eq!(resp.status(), StatusCode::OK);
-  let info: Value = resp.json().await.unwrap();
+  let mut info: Value = resp.json().await.unwrap();
+  // details add the rules of a restricted token to the listed info
+  assert_eq!(info["rules"], serde_json::json!([]));
+  info.as_object_mut().unwrap().remove("rules");
   assert_eq!(info, tokens[0]);
 }
 

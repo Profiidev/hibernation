@@ -18,5 +18,6 @@ pub mod sea_orm_active_enums;
 pub mod settings;
 pub mod setup;
 pub mod token;
+pub mod token_cache_rule;
 pub mod user;
 pub mod user_avatar;

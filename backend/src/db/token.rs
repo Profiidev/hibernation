@@ -1,6 +1,36 @@
 use chrono::Utc;
-use entity::{prelude::*, token};
-use sea_orm::{ActiveValue::Set, IntoActiveModel, prelude::*};
+use entity::{prelude::*, token, token_cache_rule};
+use schemars::JsonSchema;
+use sea_orm::{ActiveValue::Set, IntoActiveModel, TransactionTrait, prelude::*};
+use serde::{Deserialize, Serialize};
+
+use crate::auth::scope::{join_patterns, split_patterns};
+
+/// Per cache permissions of a restricted token
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
+pub struct TokenRule {
+  pub cache: Uuid,
+  pub pull: bool,
+  pub push: bool,
+  pub delete: bool,
+  /// Regexes matched against `<name>-<version>` of a store path, empty allows every path
+  pub include: Vec<String>,
+  /// Regexes matched against `<name>-<version>`, a match denies the path
+  pub exclude: Vec<String>,
+}
+
+impl From<token_cache_rule::Model> for TokenRule {
+  fn from(m: token_cache_rule::Model) -> Self {
+    Self {
+      cache: m.cache_id,
+      pull: m.pull,
+      push: m.push,
+      delete: m.delete,
+      include: split_patterns(&m.include),
+      exclude: split_patterns(&m.exclude),
+    }
+  }
+}
 
 pub struct TokenTable<'db> {
   db: &'db DatabaseConnection,
@@ -24,6 +54,7 @@ impl<'db> TokenTable<'db> {
       name: Set(name),
       exp: Set(exp),
       token: Set(token),
+      restricted: Set(false),
       ..Default::default()
     };
     active_model.insert(self.db).await
@@ -130,5 +161,55 @@ impl<'db> TokenTable<'db> {
       .exec(self.db)
       .await?;
     Ok(res.rows_affected > 0)
+  }
+
+  pub async fn rules(&self, token: Uuid) -> Result<Vec<token_cache_rule::Model>, DbErr> {
+    TokenCacheRule::find()
+      .filter(token_cache_rule::Column::TokenId.eq(token))
+      .all(self.db)
+      .await
+  }
+
+  /// Replaces the restriction flag and all rules of a token
+  pub async fn set_scope(
+    &self,
+    token: Uuid,
+    restricted: bool,
+    rules: Vec<TokenRule>,
+  ) -> Result<(), DbErr> {
+    self
+      .db
+      .transaction::<_, (), DbErr>(|db| {
+        Box::pin(async move {
+          Token::update_many()
+            .col_expr(token::Column::Restricted, Expr::value(restricted))
+            .filter(token::Column::Id.eq(token))
+            .exec(db)
+            .await?;
+          TokenCacheRule::delete_many()
+            .filter(token_cache_rule::Column::TokenId.eq(token))
+            .exec(db)
+            .await?;
+          if !rules.is_empty() {
+            TokenCacheRule::insert_many(rules.into_iter().map(|r| token_cache_rule::ActiveModel {
+              id: Set(Uuid::now_v7()),
+              token_id: Set(token),
+              cache_id: Set(r.cache),
+              pull: Set(r.pull),
+              push: Set(r.push),
+              delete: Set(r.delete),
+              include: Set(join_patterns(&r.include)),
+              exclude: Set(join_patterns(&r.exclude)),
+            }))
+            .exec(db)
+            .await?;
+          }
+          Ok(())
+        })
+      })
+      .await
+      .map_err(|e| match e {
+        sea_orm::TransactionError::Connection(e) | sea_orm::TransactionError::Transaction(e) => e,
+      })
   }
 }

@@ -14,6 +14,7 @@ pub struct Model {
   pub exp: DateTime,
   pub token: String,
   pub last_used: Option<DateTime>,
+  pub restricted: bool,
   #[sea_orm(
     belongs_to,
     from = "user_id",
@@ -22,6 +23,8 @@ pub struct Model {
     on_delete = "Cascade"
   )]
   pub user: BelongsTo<super::user::Entity>,
+  #[sea_orm(has_many)]
+  pub token_cache_rules: HasMany<super::token_cache_rule::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}
