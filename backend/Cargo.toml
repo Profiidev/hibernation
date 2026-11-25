@@ -40,7 +40,12 @@ migration = { path = "migration" }
 object_store = { version = "0.14.2", default-features = false }
 rand = "0.10.2"
 regex = "1.13.1"
-regex-automata = { version = "0.4.19", default-features = false, features = ["std", "syntax", "dfa-build", "dfa-search"] }
+regex-automata = { version = "0.4.19", default-features = false, features = [
+  "std",
+  "syntax",
+  "dfa-build",
+  "dfa-search"
+] }
 reqwest = { version = "0.13.4", features = ["form", "http3", "json"] }
 schemars = { version = "1.2.2", features = ["chrono04", "url2", "uuid1"] }
 sea-orm = { version = "2.0.1", features = [
