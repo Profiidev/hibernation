@@ -121,7 +121,10 @@ const MAX_PATTERN_LEN: usize = 200;
 // Bound compile time and memory. Patterns are ASCII only (store path names are ASCII), which keeps classes like
 // `\w` small enough for normal patterns to fit easily
 const NFA_SIZE_LIMIT: usize = 64 * 1024;
-const DFA_SIZE_LIMIT: usize = 256 * 1024;
+// Compile time grows with the DFA size, 64 KiB keeps the worst accepted pattern at a few ms
+const DFA_SIZE_LIMIT: usize = 64 * 1024;
+/// Compiled rules are kept in memory for every token in use, cap them per token
+pub const TOKEN_PATTERN_MEMORY_LIMIT: usize = 1024 * 1024;
 
 #[derive(Debug)]
 pub struct PatternError {
@@ -173,9 +176,9 @@ fn compile(patterns: &[String]) -> Result<Vec<Pattern>, PatternError> {
     .collect()
 }
 
-/// Validates patterns without keeping the compiled regexes
-pub fn validate(patterns: &[String]) -> Result<(), PatternError> {
-  compile(patterns).map(|_| ())
+/// Validates patterns without keeping the compiled regexes, returns the memory they would use
+pub fn validate(patterns: &[String]) -> Result<usize, PatternError> {
+  Ok(compile(patterns)?.iter().map(|p| p.0.memory_usage()).sum())
 }
 
 pub fn join_patterns(patterns: &[String]) -> String {

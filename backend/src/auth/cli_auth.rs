@@ -29,7 +29,7 @@ use uuid::Uuid;
 use crate::{
   auth::scope::{Action, TokenScope},
   db::DBTrait,
-  utils::{UpdateMessage, Updater, fresh},
+  utils::{LOOKUP_TTL, UpdateMessage, Updater, fresh},
 };
 
 pub const CLI_TOKEN_LEN: usize = 32;
@@ -108,6 +108,10 @@ impl<S: Sync, P: Permission> FromRequestParts<S> for CliAuth<P> {
         _ => {
           let token = check_token(&db, parts, token).await?;
           P::check(&db, token.user_id, parts).await?;
+          // Entries hold compiled rules, drop expired ones instead of keeping them until overwritten
+          cache
+            .tokens
+            .retain(|_, (checked, _)| checked.elapsed() < LOOKUP_TTL);
           cache.tokens.insert(key, (Instant::now(), token.clone()));
           token
         }
@@ -183,7 +187,11 @@ async fn check_token(
 
   let scope = if record.restricted {
     let rules = db.token().rules(record.id).await?;
-    Some(Arc::new(TokenScope::from_models(rules)))
+    // Compiling is CPU bound, keep it off the async workers
+    let scope = tokio::task::spawn_blocking(|| TokenScope::from_models(rules))
+      .await
+      .status(StatusCode::INTERNAL_SERVER_ERROR)?;
+    Some(Arc::new(scope))
   } else {
     None
   };

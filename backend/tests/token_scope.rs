@@ -446,6 +446,16 @@ async fn invalid_rules_are_rejected() {
     create(json!([rule(Uuid::new_v4(), &["pull"], &[], &[])])).await,
     StatusCode::BAD_REQUEST
   );
+  // each pattern is fine alone, together they exceed the compiled size a token may keep in memory
+  let heavy = [".{0,30}a.{0,30}"; 20];
+  assert_eq!(
+    create(json!([rule(cache, &["push"], &heavy[..10], &[])])).await,
+    StatusCode::OK
+  );
+  assert_eq!(
+    create(json!([rule(cache, &["push"], &heavy, &heavy[..5])])).await,
+    StatusCode::BAD_REQUEST
+  );
 }
 
 #[tokio::test]

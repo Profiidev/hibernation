@@ -15,10 +15,12 @@ use entity::sea_orm_active_enums::AccessType;
 use harmonia_store_core::store_path::StorePath;
 
 use crate::auth::cli_auth::CliTokenCache;
-use crate::auth::scope::{CacheRule, validate};
+use crate::auth::scope::{CacheRule, PatternError, TOKEN_PATTERN_MEMORY_LIMIT, validate};
 use crate::db::token::TokenRule;
 use crate::utils::{UpdateMessage, Updater};
 use crate::{cli, db::DBTrait};
+use centaurus::error::ErrorReportStatusExt;
+use http::StatusCode;
 
 pub fn router() -> ApiRouter {
   ApiRouter::new()
@@ -101,13 +103,35 @@ async fn token_info(
 
 /// Rejects rules the user could not use themselves, a token never exceeds its user's access
 async fn validate_rules(db: &Connection, user: Uuid, rules: &[TokenRule]) -> Result<()> {
+  // Compiling is CPU bound, keep it off the async workers
+  let patterns = rules
+    .iter()
+    .map(|r| (r.include.clone(), r.exclude.clone()))
+    .collect::<Vec<_>>();
+  let memory = tokio::task::spawn_blocking(move || {
+    patterns.iter().try_fold(0, |sum, (include, exclude)| {
+      Ok::<_, PatternError>(sum + validate(include)? + validate(exclude)?)
+    })
+  })
+  .await
+  .status(StatusCode::INTERNAL_SERVER_ERROR)?;
+  let memory = match memory {
+    Ok(memory) => memory,
+    Err(e) => {
+      bail!(BAD_REQUEST, "{e}");
+    }
+  };
+  if memory > TOKEN_PATTERN_MEMORY_LIMIT {
+    bail!(
+      BAD_REQUEST,
+      "The patterns of this token are too complex, simplify or remove some"
+    );
+  }
+
   let mut seen = HashSet::new();
   for rule in rules {
     if !seen.insert(rule.cache) {
       bail!(BAD_REQUEST, "Only one rule per cache is allowed");
-    }
-    if let Err(e) = validate(&rule.include).and_then(|_| validate(&rule.exclude)) {
-      bail!(BAD_REQUEST, "{e}");
     }
     // Global cache permissions grant access to any id, so check the cache exists
     if db.cache().by_id(rule.cache).await?.is_none() {
@@ -362,7 +386,12 @@ async fn test_rule(
       "At most {TEST_RULE_MAX_SAMPLES} samples of {TEST_RULE_MAX_SAMPLE_LEN} characters are allowed"
     );
   }
-  let rule = match CacheRule::new(true, true, true, &req.include, &req.exclude) {
+  let (include, exclude) = (req.include, req.exclude);
+  let rule =
+    tokio::task::spawn_blocking(move || CacheRule::new(true, true, true, &include, &exclude))
+      .await
+      .status(StatusCode::INTERNAL_SERVER_ERROR)?;
+  let rule = match rule {
     Ok(rule) => rule,
     Err(e) => {
       return Ok(Json(TestRuleResponse {
