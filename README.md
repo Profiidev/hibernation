@@ -147,6 +147,8 @@ A token can be restricted to specific caches on its settings page. Each cache ru
 
 This lets several CI pipelines share one cache while each one can only touch its own paths. When pushing, paths the token may not push (e.g. dependencies) are skipped with a warning. Pass `--fail-on-denied` to fail instead. Delete paths with `hibernation delete <cache-name> <paths...>`.
 
+Rules limit what a token can push and delete directly, but a cache's quota is shared. When a push needs more space than is left, the oldest or least used paths are evicted according to the cache's eviction policy, no matter which token pushed them. A token that may only push can therefore still cause other tokens' paths to be evicted. Give each pipeline its own cache if that is not acceptable. Pull rules only apply to private caches, public caches stay readable by everyone.
+
 ## Deployment
 
 ### Prerequisites
