@@ -5,12 +5,14 @@ import { goto } from '$app/navigation';
 const api = {
   deleteToken: vi.fn(),
   editToken: vi.fn(),
+  testTokenRule: vi.fn(),
   tokenRegenerate: vi.fn()
 };
 vi.mock('$lib/client', async (orig) => ({
   ...(await orig<object>()),
   deleteToken: (...a: unknown[]) => api.deleteToken(...a),
   editToken: (...a: unknown[]) => api.editToken(...a),
+  testTokenRule: (...a: unknown[]) => api.testTokenRule(...a),
   tokenRegenerate: (...a: unknown[]) => api.tokenRegenerate(...a)
 }));
 const toastSuccess = vi.fn();
@@ -27,8 +29,13 @@ vi.mock('svelte-sonner', async (orig) => ({
 const Page = (await import('$routes/tokens/[uuid]/+page.svelte')).default;
 
 const exp = new Date(Date.now() + 5 * 86_400_000).toISOString();
-const data = (res: object = { data: { exp, name: 'ci', uuid: 't1' } }) =>
-  ({ tokenRes: Promise.resolve(res), uuid: 't1' }) as never;
+const token = { exp, name: 'ci', restricted: false, rules: [], uuid: 't1' };
+const data = (res: object = { data: token }) =>
+  ({
+    cachesRes: Promise.resolve({ data: [{ name: 'main', uuid: 'c1' }] }),
+    tokenRes: Promise.resolve(res),
+    uuid: 't1'
+  }) as never;
 const loaded = async () =>
   vi.waitFor(() =>
     expect(screen.getByLabelText('Token Name')).toHaveValue('ci')
@@ -81,7 +88,13 @@ describe('token detail page', () => {
     );
     await vi.waitFor(() =>
       expect(api.editToken).toHaveBeenCalledWith({
-        body: { exp: new Date(exp), name: 'ci2', uuid: 't1' }
+        body: {
+          exp: new Date(exp),
+          name: 'ci2',
+          restricted: false,
+          rules: [],
+          uuid: 't1'
+        }
       })
     );
     expect(toastSuccess).toHaveBeenCalledWith('Token ci updated successfully');
@@ -158,5 +171,76 @@ describe('token detail page', () => {
     await vi.waitFor(() =>
       expect(sonnerError).toHaveBeenCalledWith('Failed to delete token')
     );
+  });
+
+  it('shows and saves the rules of a restricted token', async () => {
+    const rule = {
+      cache: 'c1',
+      delete: false,
+      exclude: ['-dev$'],
+      include: ['^myapp-'],
+      pull: true,
+      push: true
+    };
+    api.editToken.mockResolvedValue({ data: {} });
+    render(Page, {
+      data: data({ data: { ...token, restricted: true, rules: [rule] } })
+    });
+    await loaded();
+    expect(screen.getByDisplayValue('^myapp-')).toBeInTheDocument();
+    await fireEvent.click(
+      screen.getByRole('button', { name: /save changes/i })
+    );
+    await vi.waitFor(() =>
+      expect(api.editToken).toHaveBeenCalledWith({
+        body: expect.objectContaining({ restricted: true, rules: [rule] })
+      })
+    );
+  });
+
+  it('tests patterns against the backend', async () => {
+    api.testTokenRule.mockResolvedValue({
+      data: {
+        allowed: ['h-myapp-1.0'],
+        denied: ['h-glibc-2.40'],
+        error: null,
+        samples: [{ allowed: false, path: 'glibc-2.40' }]
+      }
+    });
+    render(Page, {
+      data: data({
+        data: {
+          ...token,
+          restricted: true,
+          rules: [
+            {
+              cache: 'c1',
+              delete: false,
+              exclude: [],
+              include: ['^myapp-'],
+              pull: true,
+              push: false
+            }
+          ]
+        }
+      })
+    });
+    await loaded();
+    await fireEvent.input(screen.getByPlaceholderText('myapp-1.0'), {
+      target: { value: 'glibc-2.40' }
+    });
+    await fireEvent.click(
+      screen.getByRole('button', { name: /test patterns/i })
+    );
+    expect(await screen.findByText('denied: glibc-2.40')).toBeInTheDocument();
+    expect(screen.getByText('h-myapp-1.0')).toBeInTheDocument();
+    expect(api.testTokenRule).toHaveBeenCalledWith({
+      body: {
+        cache: 'c1',
+        exclude: [],
+        include: ['^myapp-'],
+        samples: ['glibc-2.40']
+      }
+    });
   });
 });

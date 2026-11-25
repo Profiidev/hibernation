@@ -39,6 +39,8 @@ import type {
   DeleteGroupResponses,
   DeletePathData,
   DeletePathResponses,
+  DeletePathsData,
+  DeletePathsResponses,
   DeleteTokenData,
   DeleteTokenResponses,
   DeleteUserData,
@@ -90,6 +92,8 @@ import type {
   StartEmailChangeResponses,
   TestMailResponses,
   TestResponses,
+  TestTokenRuleData,
+  TestTokenRuleResponses,
   TokenInfoResponses,
   TokenRegenerateResponses,
   UpdateAccountData,
@@ -2173,6 +2177,42 @@ export function handleUploadPath(
   );
 }
 
+export type HandleDeletePathsResponse = {
+  body: DeletePathsResponses[200];
+  status?: 200;
+};
+
+/**
+ * Handler for the `DELETE /api/cache/push/path` operation.
+ */
+export function handleDeletePaths(
+  response?:
+    | HandleDeletePathsResponse
+    | HttpResponseResolver<never, DeletePathsData['body']>,
+  options?: RequestHandlerOptions
+): HttpHandler {
+  return http.delete<never, DeletePathsData['body']>(
+    `${options?.baseUrl ?? '*'}/api/cache/push/path`,
+    (info) => {
+      if (typeof response === 'function') {
+        return response(info);
+      }
+      const body = response?.body;
+      if (body !== undefined) {
+        return HttpResponse.json(body, { status: response?.status ?? 200 });
+      }
+      if (options?.responseFallback === 'passthrough') {
+        return;
+      }
+      return new Response('Not Implemented', {
+        status: 501,
+        statusText: 'Not Implemented'
+      });
+    },
+    options
+  );
+}
+
 export type HandleUploadChunkResponse = {
   body: UploadChunkResponses[200];
   status?: 200;
@@ -2449,6 +2489,42 @@ export function handleDeleteExpiredTokens(
 ): HttpHandler {
   return http.delete<never, never>(
     `${options?.baseUrl ?? '*'}/api/token/expired`,
+    (info) => {
+      if (typeof response === 'function') {
+        return response(info);
+      }
+      const body = response?.body;
+      if (body !== undefined) {
+        return HttpResponse.json(body, { status: response?.status ?? 200 });
+      }
+      if (options?.responseFallback === 'passthrough') {
+        return;
+      }
+      return new Response('Not Implemented', {
+        status: 501,
+        statusText: 'Not Implemented'
+      });
+    },
+    options
+  );
+}
+
+export type HandleTestTokenRuleResponse = {
+  body: TestTokenRuleResponses[200];
+  status?: 200;
+};
+
+/**
+ * Handler for the `POST /api/token/test-rule` operation.
+ */
+export function handleTestTokenRule(
+  response?:
+    | HandleTestTokenRuleResponse
+    | HttpResponseResolver<never, TestTokenRuleData['body']>,
+  options?: RequestHandlerOptions
+): HttpHandler {
+  return http.post<never, TestTokenRuleData['body']>(
+    `${options?.baseUrl ?? '*'}/api/token/test-rule`,
     (info) => {
       if (typeof response === 'function') {
         return response(info);
@@ -2787,6 +2863,10 @@ export type MswHandlerFactories = {
    */
   uploadPath: typeof handleUploadPath;
   /**
+   * Handler for the `DELETE /api/cache/push/path` operation.
+   */
+  deletePaths: typeof handleDeletePaths;
+  /**
    * Handler for the `POST /api/cache/push/{uuid}/{part}` operation.
    */
   uploadChunk: typeof handleUploadChunk;
@@ -2818,6 +2898,10 @@ export type MswHandlerFactories = {
    * Handler for the `DELETE /api/token/expired` operation.
    */
   deleteExpiredTokens: typeof handleDeleteExpiredTokens;
+  /**
+   * Handler for the `POST /api/token/test-rule` operation.
+   */
+  testTokenRule: typeof handleTestTokenRule;
   /**
    * Handler for the `GET /api/token/{uuid}` operation.
    */
@@ -2906,6 +2990,7 @@ export function createMswHandlers(
     deletePath: wrap(handleDeletePath),
     uploadInfo: wrap(handleUploadInfo),
     uploadPath: wrap(handleUploadPath),
+    deletePaths: wrap(handleDeletePaths),
     uploadChunk: wrap(handleUploadChunk),
     uploadFinish: wrap(handleUploadFinish),
     test: wrap(handleTest),
@@ -2914,6 +2999,7 @@ export function createMswHandlers(
     createToken: wrap(handleCreateToken),
     editToken: wrap(handleEditToken),
     deleteExpiredTokens: wrap(handleDeleteExpiredTokens),
+    testTokenRule: wrap(handleTestTokenRule),
     tokenInfo: wrap(handleTokenInfo),
     tokenRegenerate: wrap(handleTokenRegenerate)
   };
@@ -2947,6 +3033,7 @@ export function createMswHandlers(
       invoke(pick.resetPassword, overrides.resetPassword),
       invoke(pick.cacheOverview, overrides.cacheOverview),
       invoke(pick.uploadInfo, overrides.uploadInfo),
+      invoke(pick.deletePaths, overrides.deletePaths),
       invoke(pick.userInfoDetail, overrides.userInfoDetail),
       invoke(pick.clearCache, overrides.clearCache),
       invoke(pick.cacheDetails, overrides.cacheDetails),
@@ -2978,6 +3065,7 @@ export function createMswHandlers(
       invoke(pick.uploadPath, overrides.uploadPath),
       invoke(pick.test, overrides.test),
       invoke(pick.deleteExpiredTokens, overrides.deleteExpiredTokens),
+      invoke(pick.testTokenRule, overrides.testTokenRule),
       invoke(pick.groupInfo, overrides.groupInfo),
       invoke(pick.tokenInfo, overrides.tokenInfo),
       invoke(pick.tokenRegenerate, overrides.tokenRegenerate),

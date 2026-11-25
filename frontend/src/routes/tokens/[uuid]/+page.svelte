@@ -24,8 +24,12 @@
     deleteToken,
     editToken,
     tokenRegenerate,
-    type TokenInfo
+    type CacheInfo,
+    type TokenDetails,
+    type TokenRule
   } from '$lib/client';
+  import { Switch } from '@profidev/pleiades/components/ui/switch';
+  import TokenRules from '../TokenRules.svelte';
   import { Skeleton } from '@profidev/pleiades/components/ui/skeleton';
 
   const { data } = $props();
@@ -34,7 +38,10 @@
   let regenerateOpen = $state(false);
   let isLoading = $state(false);
   let token = $state<string>();
-  let tokenInfo: TokenInfo | undefined = $state();
+  let tokenInfo: TokenDetails | undefined = $state();
+  let restricted = $state(false);
+  let rules: TokenRule[] = $state([]);
+  let caches: CacheInfo[] = $state([]);
   let form: BaseForm<typeof tokenSettings> | undefined = $state();
   let readonly = $derived(!tokenInfo);
 
@@ -58,7 +65,15 @@
       }
 
       tokenInfo = res.data;
+      restricted = res.data.restricted;
+      rules = res.data.rules;
       form?.setValue(formatData(tokenInfo));
+    });
+  });
+
+  $effect(() => {
+    data.cachesRes.then((res) => {
+      caches = res.data ?? [];
     });
   });
 
@@ -96,7 +111,7 @@
 
   const onsubmit = async (form: FormValue<typeof tokenSettings>) => {
     if (!tokenInfo) return;
-    let newToken = reformatData(form, tokenInfo.uuid);
+    let newToken = reformatData(form, tokenInfo.uuid, restricted, rules);
     let res = await editToken({ body: newToken });
 
     if (res.error) {
@@ -105,6 +120,10 @@
           error: 'This token name is already in use',
           field: 'name'
         } as const;
+      } else if (res.response?.status === 400) {
+        return {
+          error: 'Invalid rules, check the patterns with the tester'
+        };
       } else {
         return { error: 'Failed to update token' };
       }
@@ -196,6 +215,20 @@
                   Regenerate
                 </Button>
               </div>
+            </div>
+            <Separator orientation="vertical" class="hidden lg:block" />
+            <div class="flex flex-col gap-4">
+              <Label class="flex items-center gap-2">
+                <Switch bind:checked={restricted} disabled={readonly} />
+                Restrict to specific caches and paths
+              </Label>
+              {#if restricted}
+                <TokenRules {caches} bind:rules disabled={readonly} />
+              {:else}
+                <p class="text-muted-foreground text-sm">
+                  This token has the same cache access as your account.
+                </p>
+              {/if}
             </div>
           </div>
         {/snippet}

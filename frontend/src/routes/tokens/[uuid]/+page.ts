@@ -1,5 +1,5 @@
 import type { PageLoad } from './$types';
-import { tokenInfo } from '$lib/client';
+import { listCaches, tokenInfo } from '$lib/client';
 
 export const load: PageLoad = ({ params, fetch }) => {
   const res = tokenInfo({
@@ -8,6 +8,7 @@ export const load: PageLoad = ({ params, fetch }) => {
   });
 
   return {
+    cachesRes: listCaches({ fetch }),
     tokenRes: res,
     uuid: params.uuid
   };

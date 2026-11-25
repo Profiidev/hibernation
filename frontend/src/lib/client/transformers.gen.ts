@@ -58,9 +58,17 @@ export const listTokensResponseTransformer = async (
   return data;
 };
 
+const tokenDetailsSchemaResponseTransformer = (data: any) => {
+  data.exp = new Date(data.exp);
+  if (data.last_used) {
+    data.last_used = new Date(data.last_used);
+  }
+  return data;
+};
+
 export const tokenInfoResponseTransformer = async (
   data: any
 ): Promise<TokenInfoResponse> => {
-  data = tokenInfoSchemaResponseTransformer(data);
+  data = tokenDetailsSchemaResponseTransformer(data);
   return data;
 };

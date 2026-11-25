@@ -4,12 +4,18 @@
   import type { Stage } from '@profidev/pleiades/components/form/types';
   import MultiStepForm from '@profidev/pleiades/components/form/multistep-form.svelte';
   import Information from './Information.svelte';
+  import Access from './Access.svelte';
   import { createToken } from '$lib/client';
 
   let stages: Stage[] = [
     {
       title: 'Create Token',
       content: Information,
+      data: {}
+    },
+    {
+      title: 'Cache Access',
+      content: Access,
       data: {}
     }
   ];
@@ -21,10 +27,8 @@
 
     if (!res.data) {
       if (res.response?.status === 409) {
-        return {
-          error: 'A token with this name already exists.',
-          field: 'name'
-        };
+        // The name field is on the first stage, show it on the current one
+        return { error: 'A token with this name already exists.' };
       } else {
         return { error: 'Error creating token.' };
       }

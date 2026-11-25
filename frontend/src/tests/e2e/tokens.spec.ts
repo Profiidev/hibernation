@@ -178,12 +178,18 @@ test.describe('token create', () => {
     await expectNoHorizontalOverflow(page);
 
     await page.getByPlaceholder('Enter name').fill('deploy');
+    await page.getByRole('button', { name: 'Next' }).click();
+    await expectNoHorizontalOverflow(page);
     await page.getByRole('button', { name: 'Create' }).click();
 
     await expect(page).toHaveURL(/\/tokens\/token-new$/);
     await expect(page.getByText('secret-token')).toBeVisible();
     await expect(page.getByText('(Can not be viewed again!)')).toBeVisible();
-    expect(body?.name).toBe('deploy');
+    expect(body).toMatchObject({
+      name: 'deploy',
+      restricted: false,
+      rules: []
+    });
     // Defaults to ~30 days from now, sent as an ISO timestamp.
     const days =
       (new Date(String(body?.exp)).getTime() - Date.now()) / (24 * 3600 * 1000);
@@ -204,7 +210,7 @@ test.describe('token create', () => {
 
     await page.getByPlaceholder('Enter name').fill('x');
     await page.getByPlaceholder('Enter name').fill('');
-    await page.getByRole('button', { name: 'Create' }).click();
+    await page.getByRole('button', { name: 'Next' }).click();
 
     await expect(page.getByText('Name is required')).toBeVisible();
     await expect(page).toHaveURL(/\/tokens\/create$/);
@@ -219,11 +225,130 @@ test.describe('token create', () => {
       await gotoReady(page, '/tokens/create');
 
       await page.getByPlaceholder('Enter name').fill('deploy');
+      await page.getByRole('button', { name: 'Next' }).click();
       await page.getByRole('button', { name: 'Create' }).click();
 
       await expect(page.getByText(message)).toBeVisible();
     });
   }
+});
+
+test.describe('token create restricted', () => {
+  test('sends a rule for the chosen cache', async ({ network, page }) => {
+    let body = undefined as Record<string, unknown> | undefined;
+    network.use(
+      gen.handleCreateToken(async ({ request }) => {
+        body = await request.json();
+        return json({ token: 'secret-token', uuid: 'token-new' });
+      })
+    );
+    await gotoReady(page, '/tokens/create');
+    await page.getByPlaceholder('Enter name').fill('deploy');
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    await page.getByRole('switch').click();
+    await page.getByRole('button', { name: 'Add rule' }).click();
+    await page.getByLabel('push').click();
+    await page.getByPlaceholder('^myapp-').fill('^deploy-');
+    await page.getByPlaceholder('^myapp-').blur();
+    await expectNoHorizontalOverflow(page);
+    await page.getByRole('button', { name: 'Create' }).click();
+
+    await expect(page).toHaveURL(/\/tokens\/token-new$/);
+    expect(body).toMatchObject({
+      restricted: true,
+      rules: [
+        {
+          cache: 'cache-main',
+          delete: false,
+          exclude: [],
+          include: ['^deploy-'],
+          pull: true,
+          push: true
+        }
+      ]
+    });
+  });
+});
+
+test.describe('token rules', () => {
+  const restricted = {
+    exp: '2099-01-01T00:00:00Z',
+    last_used: null,
+    name: 'ci',
+    restricted: true,
+    rules: [
+      {
+        cache: 'cache-main',
+        delete: false,
+        exclude: ['-dev$'],
+        include: ['^myapp-'],
+        pull: true,
+        push: true
+      }
+    ],
+    uuid: 'token-ci'
+  };
+
+  test('edits rules and tests patterns', async ({ network, page }) => {
+    let edit = undefined as Record<string, unknown> | undefined;
+    let testBody = undefined as Record<string, unknown> | undefined;
+    network.use(
+      gen.handleTokenInfo(() => json(restricted)),
+      gen.handleEditToken(async ({ request }) => {
+        edit = await request.json();
+        return json({});
+      }),
+      gen.handleTestTokenRule(async ({ request }) => {
+        testBody = await request.json();
+        return json({
+          allowed: ['aaaa-myapp-1.0'],
+          denied: ['bbbb-glibc-2.40'],
+          error: null,
+          samples: [{ allowed: false, path: 'glibc-2.40' }]
+        });
+      })
+    );
+    await openDetail(page);
+    await expect(page.getByPlaceholder('^myapp-')).toHaveValue('^myapp-');
+    await expectNoHorizontalOverflow(page);
+
+    await page.getByPlaceholder('myapp-1.0').fill('glibc-2.40');
+    await page.getByRole('button', { name: 'Test patterns' }).click();
+    await expect(page.getByText('denied: glibc-2.40')).toBeVisible();
+    await expect(page.getByText('aaaa-myapp-1.0')).toBeVisible();
+    expect(testBody).toMatchObject({
+      cache: 'cache-main',
+      exclude: ['-dev$'],
+      include: ['^myapp-'],
+      samples: ['glibc-2.40']
+    });
+
+    await page.getByLabel('delete').click();
+    await page.getByRole('button', { name: 'Save Changes' }).click();
+    await expect(page.getByText('Token ci updated successfully')).toBeVisible();
+    expect(edit).toMatchObject({
+      restricted: true,
+      rules: [{ ...restricted.rules[0], delete: true }]
+    });
+  });
+
+  test('shows a pattern error from the tester', async ({ network, page }) => {
+    network.use(
+      gen.handleTokenInfo(() => json(restricted)),
+      gen.handleTestTokenRule(() =>
+        json({
+          allowed: [],
+          denied: [],
+          error: "Invalid pattern '(': unclosed group",
+          samples: []
+        })
+      )
+    );
+    await openDetail(page);
+    await page.getByRole('button', { name: 'Test patterns' }).click();
+    await expect(page.getByText("Invalid pattern '('")).toBeVisible();
+  });
 });
 
 test.describe('token detail', () => {
