@@ -1,38 +1,38 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { createRawSnippet } from "svelte";
-import { fireEvent, render, screen } from "@testing-library/svelte";
-import { beforeNavigate, goto } from "$app/navigation";
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createRawSnippet } from 'svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
+import { beforeNavigate, goto } from '$app/navigation';
 
 const state = vi.hoisted(() => {
-  const route: { id: string | null } = { id: "/caches" };
+  const route: { id: string | null } = { id: '/caches' };
   return {
-    page: { route, url: new URL("http://x/caches?q=1") },
-    updated: { current: false },
+    page: { route, url: new URL('http://x/caches?q=1') },
+    updated: { current: false }
   };
 });
-vi.mock("$app/state", () => state);
+vi.mock('$app/state', () => state);
 const api = { logout: vi.fn(), testToken: vi.fn() };
-vi.mock("#lib/client/index.ts", async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   logout: (...a: unknown[]) => api.logout(...a),
-  testToken: (...a: unknown[]) => api.testToken(...a),
+  testToken: (...a: unknown[]) => api.testToken(...a)
 }));
 const ws = { connectWebsocket: vi.fn(), disconnectWebsocket: vi.fn() };
-vi.mock("#lib/backend/updater.svelte.ts", () => ({
+vi.mock('#lib/backend/updater.svelte.ts', () => ({
   connectWebsocket: (u: string) => ws.connectWebsocket(u),
-  disconnectWebsocket: () => ws.disconnectWebsocket(),
+  disconnectWebsocket: () => ws.disconnectWebsocket()
 }));
 
-const Layout = (await import("#routes/+layout.svelte")).default;
-const children = createRawSnippet(() => ({ render: () => "<p>child</p>" }));
+const Layout = (await import('#routes/+layout.svelte')).default;
+const children = createRawSnippet(() => ({ render: () => '<p>child</p>' }));
 
-const user = { email: "b@x", name: "Bob", permissions: [], uuid: "u1" };
+const user = { email: 'b@x', name: 'Bob', permissions: [], uuid: 'u1' };
 const data = (setup: object = { data: { is_setup: true } }) =>
   ({
     setupStatus: Promise.resolve(setup),
-    user: Promise.resolve(user),
+    user: Promise.resolve(user)
   }) as never;
-const at = (id: string | null, url = `http://x${id ?? "/"}`) => {
+const at = (id: string | null, url = `http://x${id ?? '/'}`) => {
   state.page.route.id = id;
   state.page.url = new URL(url);
 };
@@ -42,114 +42,114 @@ afterEach(() => {
   api.testToken.mockReset();
   ws.connectWebsocket.mockReset();
   ws.disconnectWebsocket.mockReset();
-  at("/caches", "http://x/caches?q=1");
+  at('/caches', 'http://x/caches?q=1');
   state.updated.current = false;
 });
 
-describe("root layout", () => {
-  it("connects the websocket for a valid token and renders the sidebar", async () => {
+describe('root layout', () => {
+  it('connects the websocket for a valid token and renders the sidebar', async () => {
     api.testToken.mockResolvedValue({ data: { valid: true } });
     render(Layout, { children, data: data() });
-    expect(screen.getByText("child")).toBeInTheDocument();
-    expect(await screen.findByText("Hibernation")).toBeInTheDocument();
+    expect(screen.getByText('child')).toBeInTheDocument();
+    expect(await screen.findByText('Hibernation')).toBeInTheDocument();
     await vi.waitFor(() =>
-      expect(ws.connectWebsocket).toHaveBeenCalledWith("u1"),
+      expect(ws.connectWebsocket).toHaveBeenCalledWith('u1')
     );
     expect(goto).not.toHaveBeenCalled();
   });
 
-  it.each([{ data: { valid: false } }, { error: "x" }])(
-    "redirects to login with the current path on an invalid token (%#)",
+  it.each([{ data: { valid: false } }, { error: 'x' }])(
+    'redirects to login with the current path on an invalid token (%#)',
     async (result) => {
       api.testToken.mockResolvedValue(result);
       render(Layout, { children, data: data() });
       await vi.waitFor(() =>
-        expect(goto).toHaveBeenCalledWith("/login?redirect=%2Fcaches%3Fq%3D1"),
+        expect(goto).toHaveBeenCalledWith('/login?redirect=%2Fcaches%3Fq%3D1')
       );
       expect(ws.connectWebsocket).not.toHaveBeenCalled();
-    },
+    }
   );
 
-  it("does not redirect public paths and hides the sidebar there", async () => {
-    at("/login");
+  it('does not redirect public paths and hides the sidebar there', async () => {
+    at('/login');
     api.testToken.mockResolvedValue({ data: { valid: false } });
     render(Layout, { children, data: data() });
-    expect(screen.getByText("child")).toBeInTheDocument();
+    expect(screen.getByText('child')).toBeInTheDocument();
     await new Promise((r) => setTimeout(r, 10));
-    expect(screen.queryByText("Hibernation")).toBeNull();
+    expect(screen.queryByText('Hibernation')).toBeNull();
     expect(goto).not.toHaveBeenCalled();
   });
 
-  it("sends an unconfigured instance to /setup instead of /login", async () => {
+  it('sends an unconfigured instance to /setup instead of /login', async () => {
     let finishToken: (v: unknown) => void = () => {};
     api.testToken.mockReturnValue(new Promise((r) => (finishToken = r)));
     // Navigating lands on /setup, a public path.
-    vi.mocked(goto).mockImplementationOnce(async () => at("/setup"));
+    vi.mocked(goto).mockImplementationOnce(async () => at('/setup'));
     render(Layout, { children, data: data({ data: { is_setup: false } }) });
-    await vi.waitFor(() => expect(goto).toHaveBeenCalledWith("/setup"));
+    await vi.waitFor(() => expect(goto).toHaveBeenCalledWith('/setup'));
     finishToken({ data: { valid: false } });
     await new Promise((r) => setTimeout(r, 10));
     expect(goto).toHaveBeenCalledTimes(1);
   });
 
-  it("stays on /setup and ignores setup errors", async () => {
+  it('stays on /setup and ignores setup errors', async () => {
     api.testToken.mockResolvedValue({ data: { valid: true } });
-    at("/setup");
+    at('/setup');
     render(Layout, { children, data: data({ data: { is_setup: false } }) });
     await new Promise((r) => setTimeout(r, 10));
     expect(goto).not.toHaveBeenCalled();
-    at("/caches");
-    render(Layout, { children, data: data({ error: "x" }) });
+    at('/caches');
+    render(Layout, { children, data: data({ error: 'x' }) });
     await new Promise((r) => setTimeout(r, 10));
-    expect(goto).not.toHaveBeenCalledWith("/setup");
+    expect(goto).not.toHaveBeenCalledWith('/setup');
   });
 
   it.each([
     [{ data: {} }, 1],
-    [{ error: "x" }, 0],
-  ])("logs out and disconnects only on success (%#)", async (result, calls) => {
+    [{ error: 'x' }, 0]
+  ])('logs out and disconnects only on success (%#)', async (result, calls) => {
     api.testToken.mockResolvedValue({ data: { valid: true } });
     api.logout.mockResolvedValue(result);
     render(Layout, { children, data: data() });
-    await screen.findByText("Bob");
-    await fireEvent.click(screen.getAllByText("Bob")[0]);
+    await screen.findByText('Bob');
+    await fireEvent.click(screen.getAllByText('Bob')[0]);
     await fireEvent.click(await screen.findByText(/log ?out/i));
     await vi.waitFor(() => expect(api.logout).toHaveBeenCalledOnce());
     await vi.waitFor(() =>
-      expect(ws.disconnectWebsocket).toHaveBeenCalledTimes(calls),
+      expect(ws.disconnectWebsocket).toHaveBeenCalledTimes(calls)
     );
   });
 
-  it("shows the update banner only when an update is pending and hides it on Later", async () => {
+  it('shows the update banner only when an update is pending and hides it on Later', async () => {
     api.testToken.mockResolvedValue({ data: { valid: true } });
     render(Layout, { children, data: data() });
-    expect(screen.queryByText("Update available")).toBeNull();
+    expect(screen.queryByText('Update available')).toBeNull();
     state.updated.current = true;
     render(Layout, { children, data: data() });
-    expect(screen.getByText("Update available")).toBeInTheDocument();
-    await fireEvent.click(screen.getByText("Later"));
-    expect(screen.queryByText("Update available")).toBeNull();
+    expect(screen.getByText('Update available')).toBeInTheDocument();
+    await fireEvent.click(screen.getByText('Later'));
+    expect(screen.queryByText('Update available')).toBeNull();
   });
 
-  it("turns client navigation into a full load only when an update is pending", () => {
+  it('turns client navigation into a full load only when an update is pending', () => {
     api.testToken.mockResolvedValue({ data: { valid: true } });
     const hrefSet = vi.fn();
-    vi.spyOn(window, "location", "get").mockReturnValue({
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
       set href(v: string) {
         hrefSet(v);
-      },
+      }
     } as Location);
     render(Layout, { children, data: data() });
     const guard = vi.mocked(beforeNavigate).mock.calls.at(-1)![0];
     const nav = (willUnload: boolean) =>
-      guard({ willUnload, to: { url: new URL("http://x/caches") } } as never);
+      guard({ to: { url: new URL('http://x/caches') }, willUnload } as never);
     nav(false);
     expect(hrefSet).not.toHaveBeenCalled();
     state.updated.current = true;
     nav(true);
     expect(hrefSet).not.toHaveBeenCalled();
     nav(false);
-    expect(hrefSet).toHaveBeenCalledWith("http://x/caches");
+    expect(hrefSet).toHaveBeenCalledWith('http://x/caches');
     vi.restoreAllMocks();
   });
 });
