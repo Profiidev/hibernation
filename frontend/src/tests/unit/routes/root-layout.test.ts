@@ -1,11 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRawSnippet } from 'svelte';
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { goto } from '$app/navigation';
+import { beforeNavigate, goto } from '$app/navigation';
 
 const state = vi.hoisted(() => {
   const route: { id: string | null } = { id: '/caches' };
-  return { page: { route, url: new URL('http://x/caches?q=1') } };
+  return {
+    page: { route, url: new URL('http://x/caches?q=1') },
+    updated: { current: false }
+  };
 });
 vi.mock('$app/state', () => state);
 const api = { logout: vi.fn(), testToken: vi.fn() };
@@ -40,6 +43,7 @@ afterEach(() => {
   ws.connectWebsocket.mockReset();
   ws.disconnectWebsocket.mockReset();
   at('/caches', 'http://x/caches?q=1');
+  state.updated.current = false;
 });
 
 describe('root layout', () => {
@@ -114,5 +118,38 @@ describe('root layout', () => {
     await vi.waitFor(() =>
       expect(ws.disconnectWebsocket).toHaveBeenCalledTimes(calls)
     );
+  });
+
+  it('shows the update banner only when an update is pending and hides it on Later', async () => {
+    api.testToken.mockResolvedValue({ data: { valid: true } });
+    render(Layout, { children, data: data() });
+    expect(screen.queryByText('Update available')).toBeNull();
+    state.updated.current = true;
+    render(Layout, { children, data: data() });
+    expect(screen.getByText('Update available')).toBeInTheDocument();
+    await fireEvent.click(screen.getByText('Later'));
+    expect(screen.queryByText('Update available')).toBeNull();
+  });
+
+  it('turns client navigation into a full load only when an update is pending', () => {
+    api.testToken.mockResolvedValue({ data: { valid: true } });
+    const hrefSet = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      set href(v: string) {
+        hrefSet(v);
+      }
+    } as Location);
+    render(Layout, { children, data: data() });
+    const [guard] = vi.mocked(beforeNavigate).mock.calls.at(-1)!;
+    const nav = (willUnload: boolean) =>
+      guard({ to: { url: new URL('http://x/caches') }, willUnload } as never);
+    nav(false);
+    expect(hrefSet).not.toHaveBeenCalled();
+    state.updated.current = true;
+    nav(true);
+    expect(hrefSet).not.toHaveBeenCalled();
+    nav(false);
+    expect(hrefSet).toHaveBeenCalledWith('http://x/caches');
+    vi.restoreAllMocks();
   });
 });

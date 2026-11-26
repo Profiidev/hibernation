@@ -9,7 +9,7 @@ license = "GPL-2.0-only"
 [dependencies]
 async-compression = { version = "0.4.54", features = ["tokio", "zstd"] }
 bytes = "1.12.2"
-centaurus = { version = "0.17.10", default-features = false, features = [
+centaurus = { version = "0.17.11", default-features = false, features = [
   "error",
   "logging",
   "reqwest",
