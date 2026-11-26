@@ -1,5 +1,5 @@
 import type { PageLoad } from './$types';
-import { listCaches, tokenInfo } from '$lib/client';
+import { listCaches, tokenInfo } from '#lib/client/index.ts';
 
 export const load: PageLoad = ({ params, fetch }) => {
   const res = tokenInfo({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { information } from '$routes/caches/create/schema.svelte';
+import { information } from '#routes/caches/create/schema.svelte.ts';
 
 const base = { name: 'cache', public: true, quota: 5, sig_key: 'key' };
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { load } from '$routes/login/+page';
-import { jsonFetch, runLoad } from '$test_helpers/load';
+import { load } from '#routes/login/+page.ts';
+import { jsonFetch, runLoad } from '#test_helpers/load.ts';
 
 describe('login load', () => {
   // Regression: the auth config used to be skipped on `?error=`, which showed

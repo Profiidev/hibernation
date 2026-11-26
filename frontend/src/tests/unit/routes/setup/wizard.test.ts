@@ -4,7 +4,7 @@ import { goto, invalidate } from '$app/navigation';
 
 const completeSetup = vi.fn();
 const initOidc = vi.fn();
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   completeSetup: (...a: unknown[]) => completeSetup(...a),
   initOidc: (...a: unknown[]) => initOidc(...a)
@@ -17,16 +17,16 @@ vi.mock('svelte-sonner', async (orig) => ({
 const encrypt = { encrypt: (s: string) => `enc(${s})` };
 const getEncrypt = vi.fn((): typeof encrypt | undefined => encrypt);
 const getOidcUrl = vi.fn(async (): Promise<string | undefined> => undefined);
-vi.mock('$lib/backend/auth.svelte', () => ({
+vi.mock('#lib/backend/auth.svelte.ts', () => ({
   getEncrypt: () => getEncrypt(),
   getOidcUrl: async () => getOidcUrl()
 }));
 const connectWebsocket = vi.fn();
-vi.mock('$lib/backend/updater.svelte', () => ({
+vi.mock('#lib/backend/updater.svelte.ts', () => ({
   connectWebsocket: (u: string) => connectWebsocket(u)
 }));
 
-const Page = (await import('$routes/setup/+page.svelte')).default;
+const Page = (await import('#routes/setup/+page.svelte')).default;
 
 const data = (configured = false, from_env: string[] = []) =>
   ({

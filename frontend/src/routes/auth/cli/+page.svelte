@@ -4,8 +4,8 @@
   import { Input } from '@profidev/pleiades/components/ui/input';
   import { Button } from '@profidev/pleiades/components/ui/button';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
-  import { newCode } from '$lib/client';
-  import { sendCliCode } from '$lib/backend/util.svelte.js';
+  import { newCode } from '#lib/client/index.ts';
+  import { sendCliCode } from '#lib/backend/util.svelte.js';
 
   type CliAuthStatus =
     | 'Requesting'

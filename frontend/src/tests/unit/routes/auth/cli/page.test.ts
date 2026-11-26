@@ -2,16 +2,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 
 const newCode = vi.fn();
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   newCode: () => newCode()
 }));
 const sendCliCode = vi.fn();
-vi.mock('$lib/backend/util.svelte.js', () => ({
+vi.mock('#lib/backend/util.svelte.js', () => ({
   sendCliCode: (c: string) => sendCliCode(c)
 }));
 
-const Page = (await import('$routes/auth/cli/+page.svelte')).default;
+const Page = (await import('#routes/auth/cli/+page.svelte')).default;
 
 const close = vi.spyOn(window, 'close').mockImplementation(() => {});
 

@@ -5,7 +5,7 @@
   import MultiStepForm from '@profidev/pleiades/components/form/multistep-form.svelte';
   import Information from './Information.svelte';
   import Access from './Access.svelte';
-  import { createToken } from '$lib/client';
+  import { createToken } from '#lib/client/index.ts';
 
   let stages: Stage[] = [
     {

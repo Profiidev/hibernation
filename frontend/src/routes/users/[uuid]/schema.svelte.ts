@@ -1,4 +1,8 @@
-import type { CacheMapping, DetailUserInfo, UserEditReq } from '$lib/client';
+import type {
+  CacheMapping,
+  DetailUserInfo,
+  UserEditReq
+} from '#lib/client/index.ts';
 import type { FormValue } from '@profidev/pleiades/components/form/types';
 import { z } from 'zod';
 

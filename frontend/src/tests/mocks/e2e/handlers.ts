@@ -1,5 +1,5 @@
 import { HttpResponse, http, ws } from 'msw';
-import * as gen from '$lib/client/msw.gen';
+import * as gen from '#lib/client/msw.gen.ts';
 import * as data from './data';
 
 /**

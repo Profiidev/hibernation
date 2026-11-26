@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test';
-import * as gen from '$lib/client/msw.gen';
-import { fail, json, test } from '$test_helpers/e2e-fixture';
-import { seedAnonymous } from '$test_helpers/session';
-import { expectNoHorizontalOverflow, gotoReady } from '$test_helpers/layout';
+import * as gen from '#lib/client/msw.gen.ts';
+import { fail, json, test } from '#test_helpers/e2e-fixture.ts';
+import { seedAnonymous } from '#test_helpers/session.ts';
+import { expectNoHorizontalOverflow, gotoReady } from '#test_helpers/layout.ts';
 
 test.beforeEach(async ({ context }) => seedAnonymous(context));
 

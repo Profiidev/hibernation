@@ -1,6 +1,6 @@
 <script lang="ts">
-  import * as Code from '$lib/components/code';
-  import type { RootProps } from '$lib/components/code';
+  import * as Code from '#lib/components/code/index.ts';
+  import type { RootProps } from '#lib/components/code/index.ts';
 
   let { overflow = false, ...props }: RootProps & { overflow?: boolean } =
     $props();

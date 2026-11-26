@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { invalidate } from '$app/navigation';
-import { Permission } from '$lib/permissions.svelte';
-import { iconButtons } from '$test_helpers/load';
+import { Permission } from '#lib/permissions.svelte.ts';
+import { iconButtons } from '#test_helpers/load.ts';
 
 vi.mock('$app/navigation', async () =>
-  (await import('$test_helpers/load')).navigationMock()
+  (await import('#test_helpers/load.ts')).navigationMock()
 );
 const api = {
   deleteExpiredTokens: vi.fn(),
@@ -13,7 +13,7 @@ const api = {
   deleteToken: vi.fn(),
   deleteUser: vi.fn()
 };
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   deleteExpiredTokens: (...a: unknown[]) => api.deleteExpiredTokens(...a),
   deleteGroup: (...a: unknown[]) => api.deleteGroup(...a),
@@ -34,10 +34,10 @@ vi.mock('svelte-sonner', async (orig) => ({
   toast: { error: (m: string) => sonnerError(m) }
 }));
 
-const Groups = (await import('$routes/groups/+page.svelte')).default;
-const Users = (await import('$routes/users/+page.svelte')).default;
-const Tokens = (await import('$routes/tokens/+page.svelte')).default;
-const Caches = (await import('$routes/caches/+page.svelte')).default;
+const Groups = (await import('#routes/groups/+page.svelte')).default;
+const Users = (await import('#routes/users/+page.svelte')).default;
+const Tokens = (await import('#routes/tokens/+page.svelte')).default;
+const Caches = (await import('#routes/caches/+page.svelte')).default;
 
 const me = async (...permissions: string[]) =>
   Promise.resolve({ name: 'Me', permissions, uuid: 'me' });

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 
 const api = { updateAccount: vi.fn(), updateAvatar: vi.fn() };
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   updateAccount: (...a: unknown[]) => api.updateAccount(...a),
   updateAvatar: (...a: unknown[]) => api.updateAvatar(...a)
@@ -33,7 +33,7 @@ vi.mock('@profidev/pleiades/components/ui-extra/image-cropper', async () => {
   };
 });
 
-const Page = (await import('$routes/account/general/+page.svelte')).default;
+const Page = (await import('#routes/account/general/+page.svelte')).default;
 
 const data = () =>
   ({ user: Promise.resolve({ name: 'Bob', uuid: 'u1' }) }) as never;

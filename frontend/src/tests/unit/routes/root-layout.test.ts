@@ -9,18 +9,18 @@ const state = vi.hoisted(() => {
 });
 vi.mock('$app/state', () => state);
 const api = { logout: vi.fn(), testToken: vi.fn() };
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   logout: (...a: unknown[]) => api.logout(...a),
   testToken: (...a: unknown[]) => api.testToken(...a)
 }));
 const ws = { connectWebsocket: vi.fn(), disconnectWebsocket: vi.fn() };
-vi.mock('$lib/backend/updater.svelte', () => ({
+vi.mock('#lib/backend/updater.svelte.ts', () => ({
   connectWebsocket: (u: string) => ws.connectWebsocket(u),
   disconnectWebsocket: () => ws.disconnectWebsocket()
 }));
 
-const Layout = (await import('$routes/+layout.svelte')).default;
+const Layout = (await import('#routes/+layout.svelte')).default;
 const children = createRawSnippet(() => ({ render: () => '<p>child</p>' }));
 
 const user = { email: 'b@x', name: 'Bob', permissions: [], uuid: 'u1' };

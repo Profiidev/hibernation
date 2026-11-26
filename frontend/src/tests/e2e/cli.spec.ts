@@ -1,8 +1,8 @@
 import { type Page, expect } from '@playwright/test';
-import * as gen from '$lib/client/msw.gen';
-import { fail, json, test } from '$test_helpers/e2e-fixture';
-import { seedAnonymous, setupSession } from '$test_helpers/session';
-import { gotoReady } from '$test_helpers/layout';
+import * as gen from '#lib/client/msw.gen.ts';
+import { fail, json, test } from '#test_helpers/e2e-fixture.ts';
+import { seedAnonymous, setupSession } from '#test_helpers/session.ts';
+import { gotoReady } from '#test_helpers/layout.ts';
 
 // The page hands the code to the CLI's local callback server.
 const CLI_SERVER = 'http://localhost:16401/**';

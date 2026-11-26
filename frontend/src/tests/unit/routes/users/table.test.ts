@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { columns, searchable } from '$routes/users/table.svelte';
-import { renderCell } from '$test_helpers/load';
+import { columns, searchable } from '#routes/users/table.svelte.ts';
+import { renderCell } from '#test_helpers/load.ts';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const cellProps = (cols: any[], key: string, original: unknown) =>

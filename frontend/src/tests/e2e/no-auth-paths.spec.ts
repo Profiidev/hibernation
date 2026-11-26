@@ -1,15 +1,15 @@
 import { expect } from '@playwright/test';
-import { test } from '$test_helpers/e2e-fixture';
+import { test } from '#test_helpers/e2e-fixture.ts';
 import {
   seedAnonymous,
   seedSetupPending,
   setupSession
-} from '$test_helpers/session';
-import { gotoReady } from '$test_helpers/layout';
+} from '#test_helpers/session.ts';
+import { gotoReady } from '#test_helpers/layout.ts';
 
 const pathname = (page: { url: () => string }) => new URL(page.url()).pathname;
 
-// Public paths from `noAuthPaths` (`$lib/components/nav.svelte`). /password
+// Public paths from `noAuthPaths` (`#lib/components/nav.svelte.ts`). /password
 // Always forwards to /password/forgot; /setup only stays put while setup is
 // Pending (otherwise it bounces to /).
 const publicCases: { path: string; expected: string; pending?: boolean }[] = [

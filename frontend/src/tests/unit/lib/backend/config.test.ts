@@ -2,11 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const load = async (browser: boolean) => {
   vi.resetModules();
-  vi.doMock('$app/environment', () => ({ browser }));
-  return (await import('$lib/backend/config')).createClientConfig;
+  vi.doMock('$app/env', () => ({ browser }));
+  return (await import('#lib/backend/config.ts')).createClientConfig;
 };
 
-afterEach(() => vi.doUnmock('$app/environment'));
+afterEach(() => vi.doUnmock('$app/env'));
 
 describe('createClientConfig', () => {
   it('keeps relative urls in the browser', async () => {

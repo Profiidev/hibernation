@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { goto } from '$app/navigation';
-import { Permission } from '$lib/permissions.svelte';
+import { Permission } from '#lib/permissions.svelte.ts';
 
 const api = { deleteGroup: vi.fn(), editGroup: vi.fn() };
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   deleteGroup: (...a: unknown[]) => api.deleteGroup(...a),
   editGroup: (...a: unknown[]) => api.editGroup(...a)
@@ -20,7 +20,7 @@ vi.mock('svelte-sonner', async (orig) => ({
   toast: { error: (m: string) => sonnerError(m) }
 }));
 
-const Page = (await import('$routes/groups/[uuid]/+page.svelte')).default;
+const Page = (await import('#routes/groups/[uuid]/+page.svelte')).default;
 
 const group = {
   caches: [{ access_type: 'View', name: 'c', uuid: 'c1' }],

@@ -75,7 +75,7 @@ export const iconButtons = (icon: string): HTMLButtonElement[] =>
 /**
  * A `$app/navigation` mock whose `afterNavigate` runs its callback at once,
  * for pages that read `?error=` there. Use as
- * `vi.mock('$app/navigation', async () => (await import('$test_helpers/load')).navigationMock())`.
+ * `vi.mock('$app/navigation', async () => (await import('#test_helpers/load.ts')).navigationMock())`.
  */
 export const navigationMock = async () => {
   const { vi } = await import('vitest');
@@ -90,6 +90,7 @@ export const navigationMock = async () => {
     preloadCode: vi.fn(async () => Promise.resolve()),
     preloadData: vi.fn(async () => Promise.resolve()),
     pushState: vi.fn(),
+    refreshAll: vi.fn(async () => Promise.resolve()),
     replaceState: vi.fn()
   };
 };

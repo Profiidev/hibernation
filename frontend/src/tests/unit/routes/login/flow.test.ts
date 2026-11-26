@@ -3,10 +3,10 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { goto, invalidate } from '$app/navigation';
 
 vi.mock('$app/navigation', async () =>
-  (await import('$test_helpers/load')).navigationMock()
+  (await import('#test_helpers/load.ts')).navigationMock()
 );
 const authenticate = vi.fn();
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   authenticate: (...a: unknown[]) => authenticate(...a)
 }));
@@ -25,16 +25,16 @@ const getEncrypt = vi.fn((): typeof encrypt | undefined => encrypt);
 const getOidcUrl = vi.fn(
   async (_r?: string): Promise<string | undefined> => undefined
 );
-vi.mock('$lib/backend/auth.svelte', () => ({
+vi.mock('#lib/backend/auth.svelte.ts', () => ({
   getEncrypt: () => getEncrypt(),
   getOidcUrl: async (r?: string) => getOidcUrl(r)
 }));
 const connectWebsocket = vi.fn();
-vi.mock('$lib/backend/updater.svelte', () => ({
+vi.mock('#lib/backend/updater.svelte.ts', () => ({
   connectWebsocket: (u: string) => connectWebsocket(u)
 }));
 
-const Page = (await import('$routes/login/+page.svelte')).default;
+const Page = (await import('#routes/login/+page.svelte')).default;
 
 const config = async (over: object = {}) =>
   Promise.resolve({

@@ -3,7 +3,7 @@
   import SimpleSidebar from '@profidev/pleiades/components/nav/simple-sidebar.svelte';
   import { Button } from '@profidev/pleiades/components/ui/button';
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
-  import type { CacheDetails } from '$lib/client/types.gen.js';
+  import type { CacheDetails } from '#lib/client/types.gen.js';
   import { goto } from '$app/navigation';
   import { Skeleton } from '@profidev/pleiades/components/ui/skeleton';
 

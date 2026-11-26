@@ -13,7 +13,7 @@
     type CacheInfo,
     type TestRuleResponse,
     type TokenRule
-  } from '$lib/client';
+  } from '#lib/client/index.ts';
   import { linesToPatterns, patternsToLines } from './rules';
 
   interface Props {

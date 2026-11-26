@@ -1,6 +1,5 @@
 import { beforeAll, vi } from 'vitest';
-import type { Writable } from 'svelte/store';
-import { client as appClient } from '$lib/client/client.gen';
+import { client as appClient } from '#lib/client/client.gen.ts';
 
 // In the browser the client uses relative `/api/...` URLs, but Node's `fetch`
 // (used under jsdom) rejects relative URLs, so requests must be absolute. Pin a
@@ -16,47 +15,16 @@ beforeAll(() => {
 });
 
 // Superforms (SPA mode) finishes a submit with `applyAction(result)`, which in
-// A real app writes the result into the page; superforms subscribes to it to
-// Apply returned errors (`$app/stores` in v2, `$app/state` in v3). Re-mock
-// `$app/stores` with a writable `page` and make `applyAction` feed both, so
+// A real app writes the result into the page; superforms reads `$app/state` to
+// Apply returned errors. Make `applyAction` feed the mocked page state, so
 // Field errors reach the DOM.
-vi.mock('$app/stores', async () => {
-  const { readable, writable } = await import('svelte/store');
-  const page = writable({
-    data: {},
-    error: null,
-    form: null,
-    params: {},
-    route: { id: null },
-    status: 200,
-    url: new URL('http://localhost/')
-  });
-  const navigating = readable(null);
-  const updated = {
-    check: async () => Promise.resolve(false),
-    subscribe: readable(false).subscribe
-  };
-  return {
-    getStores: () => ({ navigating, page, updated }),
-    navigating,
-    page,
-    updated
-  };
-});
-
 vi.mock('$app/forms', async (importOriginal) => {
-  const { page } = await import('$app/stores');
   const state = await import('../setup/app-state.svelte');
   return {
     ...(await importOriginal<object>()),
     applyAction: vi.fn(
       async (result: { type: string; status?: number; data?: unknown }) => {
         if (result.type === 'success' || result.type === 'failure') {
-          (page as unknown as Writable<object>).update((p) => ({
-            ...p,
-            form: result.data,
-            status: result.status ?? 200
-          }));
           state.page.form = result.data;
           state.page.status = result.status ?? 200;
         }

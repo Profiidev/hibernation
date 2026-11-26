@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { goto } from '$app/navigation';
 
 const createToken = vi.fn();
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   createToken: (...a: unknown[]) => createToken(...a),
   listCaches: async () => ({ data: [{ name: 'main', uuid: 'c1' }] })
@@ -19,7 +19,7 @@ vi.mock('svelte-sonner', async (orig) => ({
   toast: { error: (m: string) => toastError(m) }
 }));
 
-const Page = (await import('$routes/tokens/create/+page.svelte')).default;
+const Page = (await import('#routes/tokens/create/+page.svelte')).default;
 
 const submit = async (name: string, restrict = false) => {
   render(Page);

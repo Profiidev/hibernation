@@ -3,7 +3,7 @@ import {
   type TableColumnDef,
   createColumn
 } from '@profidev/pleiades/components/table/helpers.svelte';
-import type { TokenInfo } from '$lib/client';
+import type { TokenInfo } from '#lib/client/index.ts';
 import Actions from '@profidev/pleiades/components/table/actions.svelte';
 
 export const columns = ({

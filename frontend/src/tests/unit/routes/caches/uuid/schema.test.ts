@@ -3,8 +3,8 @@ import {
   cacheSchema,
   keySchema,
   quotaSchema
-} from '$routes/caches/[uuid]/settings/schema.svelte';
-import { EvictionPolicy } from '$lib/client';
+} from '#routes/caches/[uuid]/settings/schema.svelte.ts';
+import { EvictionPolicy } from '#lib/client/index.ts';
 
 const base = { name: 'cache', priority: 0 };
 

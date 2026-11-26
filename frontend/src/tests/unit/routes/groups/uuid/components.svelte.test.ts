@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { Permission } from '$lib/permissions.svelte';
-import type { CacheMapping, UserInfo } from '$lib/client';
-import CacheAccess from '$routes/groups/[uuid]/CacheAccess.svelte';
+import { Permission } from '#lib/permissions.svelte.ts';
+import type { CacheMapping, UserInfo } from '#lib/client/index.ts';
+import CacheAccess from '#routes/groups/[uuid]/CacheAccess.svelte';
 import Harness from './PermissionsHarness.svelte';
 
 const user = (...permissions: Permission[]) =>

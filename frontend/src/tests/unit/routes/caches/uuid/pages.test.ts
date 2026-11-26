@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRawSnippet } from 'svelte';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { goto } from '$app/navigation';
-import { iconButtons } from '$test_helpers/load';
+import { iconButtons } from '#test_helpers/load.ts';
 
 const api = {
   clearCache: vi.fn(),
@@ -11,7 +11,7 @@ const api = {
   editCache: vi.fn(),
   searchStorePaths: vi.fn()
 };
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   clearCache: (...a: unknown[]) => api.clearCache(...a),
   deleteCache: (...a: unknown[]) => api.deleteCache(...a),
@@ -33,11 +33,11 @@ vi.mock('svelte-sonner', async (orig) => ({
   toast: { error: (m: string) => sonnerError(m) }
 }));
 
-const Layout = (await import('$routes/caches/[uuid]/+layout.svelte')).default;
-const Overview = (await import('$routes/caches/[uuid]/+page.svelte')).default;
-const Search = (await import('$routes/caches/[uuid]/search/+page.svelte'))
+const Layout = (await import('#routes/caches/[uuid]/+layout.svelte')).default;
+const Overview = (await import('#routes/caches/[uuid]/+page.svelte')).default;
+const Search = (await import('#routes/caches/[uuid]/search/+page.svelte'))
   .default;
-const Settings = (await import('$routes/caches/[uuid]/settings/+page.svelte'))
+const Settings = (await import('#routes/caches/[uuid]/settings/+page.svelte'))
   .default;
 
 const MiB = 1024 ** 2;

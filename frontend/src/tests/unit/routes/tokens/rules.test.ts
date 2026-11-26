@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { linesToPatterns, patternsToLines } from '$routes/tokens/rules';
+import { linesToPatterns, patternsToLines } from '#routes/tokens/rules.ts';
 
 describe('token rule patterns', () => {
   it('splits lines and drops blanks', () => {

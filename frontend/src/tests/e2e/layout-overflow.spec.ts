@@ -1,11 +1,11 @@
 import type { Locator, Page } from '@playwright/test';
-import { test } from '$test_helpers/e2e-fixture';
+import { test } from '#test_helpers/e2e-fixture.ts';
 import {
   seedAnonymous,
   seedSetupPending,
   setupSession
-} from '$test_helpers/session';
-import { expectPageFits } from '$test_helpers/layout';
+} from '#test_helpers/session.ts';
+import { expectPageFits } from '#test_helpers/layout.ts';
 
 /**
  * Systematic horizontal-overflow sweep. Every Playwright project (desktop +

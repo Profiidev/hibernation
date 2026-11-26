@@ -12,7 +12,7 @@
     deleteExpiredTokens,
     deleteToken,
     type TokenInfo
-  } from '$lib/client';
+  } from '#lib/client/index.ts';
 
   const { data } = $props();
 
@@ -100,14 +100,11 @@
       variant="destructive"
       disabled={expiredCount === 0}
       onclick={() => (deleteExpiredOpen = true)}
+      ><Trash /> Delete Expired</Button
     >
-      <Trash />
-      Delete Expired
-    </Button>
-    <Button class="cursor-pointer" href="/tokens/create">
-      <Plus />
-      Create
-    </Button>
+
+    <Button class="cursor-pointer" href="/tokens/create"><Plus /> Create</Button
+    >
   </div>
   <Table
     data={data.tokens}

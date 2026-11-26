@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { information } from '$routes/tokens/create/schema.svelte';
+import { information } from '#routes/tokens/create/schema.svelte.ts';
 import {
   formatData,
   reformatData,
   tokenSettings
-} from '$routes/tokens/[uuid]/schema.svelte';
-import type { TokenDetails } from '$lib/client';
+} from '#routes/tokens/[uuid]/schema.svelte.ts';
+import type { TokenDetails } from '#lib/client/index.ts';
 
 const DAY = 24 * 60 * 60 * 1000;
 

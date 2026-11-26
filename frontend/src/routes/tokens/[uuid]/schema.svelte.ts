@@ -1,4 +1,8 @@
-import type { EditTokenRequest, TokenDetails, TokenRule } from '$lib/client';
+import type {
+  EditTokenRequest,
+  TokenDetails,
+  TokenRule
+} from '#lib/client/index.ts';
 import type { FormValue } from '@profidev/pleiades/components/form/types';
 import { z } from 'zod';
 

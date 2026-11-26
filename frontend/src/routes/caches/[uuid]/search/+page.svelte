@@ -11,7 +11,7 @@
     searchStorePaths,
     type CacheDetails,
     type SearchResult
-  } from '$lib/client';
+  } from '#lib/client/index.ts';
 
   let { data } = $props();
 

@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { goto } from '$app/navigation';
 
 const createCache = vi.fn();
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   createCache: (...a: unknown[]) => createCache(...a)
 }));
@@ -18,7 +18,7 @@ vi.mock('svelte-sonner', async (orig) => ({
   toast: { error: (m: string) => toastError(m) }
 }));
 
-const Page = (await import('$routes/caches/create/+page.svelte')).default;
+const Page = (await import('#routes/caches/create/+page.svelte')).default;
 
 const fill = async (fields: Record<string, string>) => {
   render(Page);
