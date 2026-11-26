@@ -155,7 +155,7 @@ describe('group CacheAccess', () => {
 
   it('switches the mapped cache through the cache picker', async () => {
     const props = setup([{ access_type: 'Edit', name: 'alpha', uuid: 'a' }]);
-    await fireEvent.click(screen.getByRole('combobox'));
+    await fireEvent.click(screen.getByText('alpha').closest('button')!);
     await fireEvent.click(await screen.findByRole('option', { name: 'beta' }));
     expect(props.mappings).toEqual([
       { access_type: 'Edit', name: 'beta', uuid: 'b' }

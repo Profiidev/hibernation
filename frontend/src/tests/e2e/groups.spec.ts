@@ -281,7 +281,9 @@ test.describe('group detail (regular group)', () => {
     await page.keyboard.press('Escape');
 
     await cacheAccess(page).getByRole('button').last().click();
-    await expect(cacheAccess(page).getByRole('combobox')).toContainText('main');
+    await expect(cacheAccess(page).getByRole('combobox').first()).toContainText(
+      'main'
+    );
 
     await page
       .getByRole('button', { name: 'Save Changes' })

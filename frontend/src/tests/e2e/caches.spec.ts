@@ -307,11 +307,11 @@ test.describe('cache search', () => {
     await page.getByPlaceholder('Search...').fill('hello');
     await expect.poll(() => bodies.at(-1)?.query).toBe('hello');
 
-    await page.getByRole('button', { name: 'StorePath' }).click();
+    await page.getByRole('combobox').filter({ hasText: 'StorePath' }).click();
     await page.getByRole('option', { name: 'Size' }).click();
     await expect.poll(() => bodies.at(-1)?.sort).toBe('Size');
 
-    await page.getByRole('button', { name: 'Asc' }).click();
+    await page.getByRole('combobox').filter({ hasText: 'Asc' }).click();
     await page.getByRole('option', { name: 'Desc' }).click();
     await expect
       .poll(() => bodies.at(-1))

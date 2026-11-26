@@ -5,13 +5,13 @@ edition = "2024"
 
 [dependencies]
 harmonia-store-core = { git = "https://github.com/nix-community/harmonia", rev = "harmonia-v3.0.0" }
-serde = { version = "1.0.228", features = ["derive"] }
-uuid = { version = "1.23.1", features = ["v4", "serde"] }
-tokio = { version = "1.52.3", features = [] }
-itoa = "1.0.18"
-ed25519-compact = "2.2.0"
-base64 = "0.23.0"
-schemars = { version = "1.2.1", features = ["uuid1", "chrono04", "url2"] }
+serde = { version = "1.0.229", features = ["derive"] }
+uuid = { version = "1.29.3", features = ["v4", "serde"] }
+tokio = { version = "1.54.1", features = [] }
+itoa = "1.0.19"
+ed25519-compact = "2.6.1"
+base64 = "0.23.1"
+schemars = { version = "1.2.3", features = ["uuid1", "chrono04", "url2"] }
 
 [lib]
 path = "src/lib.rs"
