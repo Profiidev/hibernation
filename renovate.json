@@ -2,6 +2,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["github>profiidev/renovate-config"],
   "ignoreDeps": [
+    "@playwright/test",
     "harmonia-store-remote",
     "harmonia-store-core",
     "harmonia-protocol"
