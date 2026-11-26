@@ -16,9 +16,10 @@ beforeAll(() => {
 });
 
 // Superforms (SPA mode) finishes a submit with `applyAction(result)`, which in
-// A real app writes the result into the `page` store; superforms subscribes to
-// That store to apply returned errors. Re-mock `$app/stores` with a writable
-// `page` and make `applyAction` feed it, so field errors reach the DOM.
+// A real app writes the result into the page; superforms subscribes to it to
+// Apply returned errors (`$app/stores` in v2, `$app/state` in v3). Re-mock
+// `$app/stores` with a writable `page` and make `applyAction` feed both, so
+// Field errors reach the DOM.
 vi.mock('$app/stores', async () => {
   const { readable, writable } = await import('svelte/store');
   const page = writable({
@@ -45,6 +46,7 @@ vi.mock('$app/stores', async () => {
 
 vi.mock('$app/forms', async (importOriginal) => {
   const { page } = await import('$app/stores');
+  const state = await import('../setup/app-state.svelte');
   return {
     ...(await importOriginal<object>()),
     applyAction: vi.fn(
@@ -55,6 +57,8 @@ vi.mock('$app/forms', async (importOriginal) => {
             form: result.data,
             status: result.status ?? 200
           }));
+          state.page.form = result.data;
+          state.page.status = result.status ?? 200;
         }
       }
     )

@@ -43,16 +43,4 @@ vi.mock('$app/stores', async () => {
   };
 });
 
-vi.mock('$app/state', () => ({
-  navigating: { complete: Promise.resolve(), from: null, to: null, type: null },
-  page: {
-    data: {},
-    error: null,
-    form: null,
-    params: {},
-    route: { id: null },
-    status: 200,
-    url: new URL('http://localhost/')
-  },
-  updated: { current: false }
-}));
+vi.mock('$app/state', async () => import('./app-state.svelte'));

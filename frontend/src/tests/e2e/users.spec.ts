@@ -353,11 +353,12 @@ test.describe('user detail', () => {
     const access = cacheAccess(page);
 
     // Upgrade the existing mapping to Edit.
-    await access.getByRole('button', { name: 'View' }).click();
+    await access.getByRole('combobox').filter({ hasText: 'View' }).click();
     await page.getByRole('option', { name: 'Edit' }).click();
     // Add a mapping for the remaining cache (defaults to View).
     await access.getByRole('button').last().click();
-    await expect(access.getByRole('combobox').nth(1)).toContainText('private');
+    // Each mapping has a cache picker and an access select, both comboboxes.
+    await expect(access.getByRole('combobox').nth(2)).toContainText('private');
 
     await page.getByRole('button', { name: 'Save Changes' }).click();
     await expect(
