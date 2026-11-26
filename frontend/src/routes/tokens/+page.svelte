@@ -100,11 +100,14 @@
       variant="destructive"
       disabled={expiredCount === 0}
       onclick={() => (deleteExpiredOpen = true)}
-      ><Trash /> Delete Expired</Button
     >
-
-    <Button class="cursor-pointer" href="/tokens/create"><Plus /> Create</Button
-    >
+      <Trash />
+      Delete Expired
+    </Button>
+    <Button class="cursor-pointer" href="/tokens/create">
+      <Plus />
+      Create
+    </Button>
   </div>
   <Table
     data={data.tokens}
