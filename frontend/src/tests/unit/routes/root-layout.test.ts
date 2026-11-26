@@ -140,7 +140,7 @@ describe('root layout', () => {
       }
     } as Location);
     render(Layout, { children, data: data() });
-    const guard = vi.mocked(beforeNavigate).mock.calls.at(-1)![0];
+    const [guard] = vi.mocked(beforeNavigate).mock.calls.at(-1)!;
     const nav = (willUnload: boolean) =>
       guard({ to: { url: new URL('http://x/caches') }, willUnload } as never);
     nav(false);
