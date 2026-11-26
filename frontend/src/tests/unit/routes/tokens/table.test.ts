@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { columns } from '$routes/tokens/table.svelte';
-import type { TokenInfo } from '$lib/client';
-import { renderCell } from '$test_helpers/load';
+import { columns } from '#routes/tokens/table.svelte.ts';
+import type { TokenInfo } from '#lib/client/index.ts';
+import { renderCell } from '#test_helpers/load.ts';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const col = (cols: any[], key: string) =>

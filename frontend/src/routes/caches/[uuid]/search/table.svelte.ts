@@ -6,7 +6,7 @@ import {
 } from '@profidev/pleiades/components/table/helpers.svelte';
 import TableHead from './TableHead.svelte';
 import Actions from './Actions.svelte';
-import type { SearchResult } from '$lib/client';
+import type { SearchResult } from '#lib/client/index.ts';
 
 const createColumn = <C extends RowData>(
   key: string,

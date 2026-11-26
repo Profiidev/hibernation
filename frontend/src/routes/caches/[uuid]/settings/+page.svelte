@@ -20,8 +20,8 @@
   import FormSelect from '@profidev/pleiades/components/form/form-select.svelte';
   import { TagsInput } from '@profidev/pleiades/components/ui-extra/tags-input';
   import { Label } from '@profidev/pleiades/components/ui/label';
-  import { clearCache, deleteCache, editCache } from '$lib/client';
-  import { EvictionPolicy, type CacheDetails } from '$lib/client/types.gen.js';
+  import { clearCache, deleteCache, editCache } from '#lib/client/index.ts';
+  import { EvictionPolicy, type CacheDetails } from '#lib/client/types.gen.js';
   import RotateCCW from '@lucide/svelte/icons/rotate-ccw';
 
   const { data } = $props();

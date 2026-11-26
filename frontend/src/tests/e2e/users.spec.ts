@@ -1,16 +1,25 @@
 import { type Page, expect } from '@playwright/test';
-import * as gen from '$lib/client/msw.gen';
-import { fail, json, test } from '$test_helpers/e2e-fixture';
-import { seedMailInactive, setupSession } from '$test_helpers/session';
-import { expectNoHorizontalOverflow, gotoReady } from '$test_helpers/layout';
-import { simpleCaches, userDetails } from '$mocks/e2e/data';
-import { Permission } from '$lib/permissions.svelte';
+import * as gen from '#lib/client/msw.gen.ts';
+import { fail, json, test } from '#test_helpers/e2e-fixture.ts';
+import { seedMailInactive, setupSession } from '#test_helpers/session.ts';
+import { expectNoHorizontalOverflow, gotoReady } from '#test_helpers/layout.ts';
+import { simpleCaches, simpleGroups, userDetails } from '#mocks/e2e/data.ts';
+import { Permission } from '#lib/permissions.svelte.ts';
 
 const row = (page: Page, text: string) =>
   page.getByRole('row').filter({ hasText: text });
 
 const cacheAccess = (page: Page) =>
   page.locator('h5:has-text("Cache Access") + div');
+
+/**
+ * Overrides the user detail response. `/api/user/management/:uuid` also matches
+ * `/api/user/management/groups`, so the groups list is re-registered ahead of it.
+ */
+const userDetailOverride = (body: typeof userDetails) => [
+  gen.handleListGroupsSimple(() => json(simpleGroups.default)),
+  gen.handleUserInfoDetail(() => json(body))
+];
 
 /** Waits until the detail form is populated from the mocked user. */
 const openDetail = async (page: Page) => {
@@ -341,9 +350,10 @@ test.describe('user detail', () => {
           { name: 'private', uuid: 'cache-private' }
         ])
       ),
-      gen.handleUserInfoDetail(() =>
-        json({ ...userDetails, permissions: [Permission.CACHE_EDIT] })
-      ),
+      ...userDetailOverride({
+        ...userDetails,
+        permissions: [Permission.CACHE_EDIT]
+      }),
       gen.handleEditUser(async ({ request }) => {
         body = await request.json();
         return json({});
@@ -374,9 +384,10 @@ test.describe('user detail', () => {
     let body = undefined as { caches?: unknown[] } | undefined;
     network.use(
       gen.handleListCachesSimple(() => json(simpleCaches.default)),
-      gen.handleUserInfoDetail(() =>
-        json({ ...userDetails, permissions: [Permission.CACHE_EDIT] })
-      ),
+      ...userDetailOverride({
+        ...userDetails,
+        permissions: [Permission.CACHE_EDIT]
+      }),
       gen.handleEditUser(async ({ request }) => {
         body = await request.json();
         return json({});
@@ -521,7 +532,7 @@ test.describe('user detail', () => {
     let body = undefined as Record<string, unknown> | undefined;
     network.use(
       gen.handleListCachesSimple(() => json(simpleCaches.default)),
-      gen.handleUserInfoDetail(() => json({ ...userDetails, oidc_user: true })),
+      ...userDetailOverride({ ...userDetails, oidc_user: true }),
       gen.handleConvertOidcUser(async ({ request }) => {
         body = await request.json();
         return json({});
@@ -555,9 +566,7 @@ test.describe('user detail', () => {
     test(`surfaces a ${status} on convert`, async ({ network, page }) => {
       network.use(
         gen.handleListCachesSimple(() => json(simpleCaches.default)),
-        gen.handleUserInfoDetail(() =>
-          json({ ...userDetails, oidc_user: true })
-        ),
+        ...userDetailOverride({ ...userDetails, oidc_user: true }),
         gen.handleConvertOidcUser(() => fail(status))
       );
       await openDetail(page);

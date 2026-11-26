@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
-import Page from '$routes/+page.svelte';
+import Page from '#routes/+page.svelte';
 
 const path = (name: string, accessed: number) => ({
   accessed,

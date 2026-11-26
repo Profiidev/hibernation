@@ -12,7 +12,7 @@
     deleteExpiredTokens,
     deleteToken,
     type TokenInfo
-  } from '$lib/client';
+  } from '#lib/client/index.ts';
 
   const { data } = $props();
 

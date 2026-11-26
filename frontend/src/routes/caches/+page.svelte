@@ -2,14 +2,14 @@
   import { Button } from '@profidev/pleiades/components/ui/button';
   import Plus from '@lucide/svelte/icons/plus';
   import { toast } from '@profidev/pleiades/components/util/general';
-  import { Permission } from '$lib/permissions.svelte.js';
+  import { Permission } from '#lib/permissions.svelte.js';
   import { ScrollArea } from '@profidev/pleiades/components/ui/scroll-area';
   import Lock from '@lucide/svelte/icons/lock';
   import LockOpen from '@lucide/svelte/icons/lock-open';
   import { Badge } from '@profidev/pleiades/components/ui/badge';
   import { Progress } from '@profidev/pleiades/components/ui/progress';
-  import { size_to_gib } from '$lib/backend/util.svelte.js';
-  import type { CacheInfo, UserInfo } from '$lib/client/types.gen.js';
+  import { size_to_gib } from '#lib/backend/util.svelte.js';
+  import type { CacheInfo, UserInfo } from '#lib/client/types.gen.js';
   import { afterNavigate } from '$app/navigation';
 
   const { data } = $props();

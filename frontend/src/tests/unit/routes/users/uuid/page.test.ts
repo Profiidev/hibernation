@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { goto } from '$app/navigation';
-import { Permission } from '$lib/permissions.svelte';
+import { Permission } from '#lib/permissions.svelte.ts';
 
 const api = {
   changeUserEmail: vi.fn(),
@@ -11,7 +11,7 @@ const api = {
   resetUserAvatar: vi.fn(),
   resetUserPassword: vi.fn()
 };
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   changeUserEmail: (...a: unknown[]) => api.changeUserEmail(...a),
   convertOidcUser: (...a: unknown[]) => api.convertOidcUser(...a),
@@ -35,11 +35,11 @@ vi.mock('svelte-sonner', async (orig) => ({
 }));
 const encrypt = { encrypt: (s: string) => `enc(${s})` };
 const getEncrypt = vi.fn((): typeof encrypt | undefined => encrypt);
-vi.mock('$lib/backend/auth.svelte.js', () => ({
+vi.mock('#lib/backend/auth.svelte.js', () => ({
   getEncrypt: () => getEncrypt()
 }));
 
-const Page = (await import('$routes/users/[uuid]/+page.svelte')).default;
+const Page = (await import('#routes/users/[uuid]/+page.svelte')).default;
 
 const ALL = Object.values(Permission);
 const target = (over: object = {}) => ({

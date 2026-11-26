@@ -1,4 +1,4 @@
-import { EvictionPolicy } from '$lib/client';
+import { EvictionPolicy } from '#lib/client/index.ts';
 import { z } from 'zod';
 import { cacheName } from '../../create/schema.svelte';
 

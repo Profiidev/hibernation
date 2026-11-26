@@ -1,9 +1,9 @@
 import { type Page, expect } from '@playwright/test';
-import * as gen from '$lib/client/msw.gen';
-import { fail, json, test } from '$test_helpers/e2e-fixture';
-import { seedMailInactive, setupSession } from '$test_helpers/session';
-import { expectNoHorizontalOverflow, gotoReady } from '$test_helpers/layout';
-import { adminUser } from '$mocks/e2e/data';
+import * as gen from '#lib/client/msw.gen.ts';
+import { fail, json, test } from '#test_helpers/e2e-fixture.ts';
+import { seedMailInactive, setupSession } from '#test_helpers/session.ts';
+import { expectNoHorizontalOverflow, gotoReady } from '#test_helpers/layout.ts';
+import { adminUser } from '#mocks/e2e/data.ts';
 
 // 1x1 transparent PNG.
 const PNG = Buffer.from(

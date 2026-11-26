@@ -5,7 +5,8 @@ vi.mock('@profidev/pleiades/backend', () => ({
   get: (...args: unknown[]) => get(...args)
 }));
 
-const { sendCliCode, size_to_gib } = await import('$lib/backend/util.svelte');
+const { sendCliCode, size_to_gib } =
+  await import('#lib/backend/util.svelte.ts');
 
 describe('size_to_gib', () => {
   it.each([

@@ -27,7 +27,7 @@
     type CacheInfo,
     type TokenDetails,
     type TokenRule
-  } from '$lib/client';
+  } from '#lib/client/index.ts';
   import { Switch } from '@profidev/pleiades/components/ui/switch';
   import TokenRules from '../TokenRules.svelte';
   import { Skeleton } from '@profidev/pleiades/components/ui/skeleton';

@@ -1,8 +1,8 @@
 <script lang="ts">
   import BaseForm from '@profidev/pleiades/components/form/base-form.svelte';
-  import Permissions from '$routes/groups/[uuid]/Permissions.svelte';
-  import { groupSettings } from '$routes/groups/[uuid]/schema.svelte';
-  import type { UserInfo } from '$lib/client';
+  import Permissions from '#routes/groups/[uuid]/Permissions.svelte';
+  import { groupSettings } from '#routes/groups/[uuid]/schema.svelte.ts';
+  import type { UserInfo } from '#lib/client/index.ts';
 
   interface Props {
     user?: UserInfo;

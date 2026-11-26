@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { goto } from '$app/navigation';
 
 const api = { resetPassword: vi.fn(), sendResetLink: vi.fn() };
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   resetPassword: (...a: unknown[]) => api.resetPassword(...a),
   sendResetLink: (...a: unknown[]) => api.sendResetLink(...a)
@@ -20,10 +20,12 @@ vi.mock('svelte-sonner', async (orig) => ({
 }));
 const encrypt = { encrypt: (s: string) => `enc(${s})` };
 const getEncrypt = vi.fn((): typeof encrypt | undefined => encrypt);
-vi.mock('$lib/backend/auth.svelte', () => ({ getEncrypt: () => getEncrypt() }));
+vi.mock('#lib/backend/auth.svelte.ts', () => ({
+  getEncrypt: () => getEncrypt()
+}));
 
-const Forgot = (await import('$routes/password/forgot/+page.svelte')).default;
-const Reset = (await import('$routes/password/reset/+page.svelte')).default;
+const Forgot = (await import('#routes/password/forgot/+page.svelte')).default;
+const Reset = (await import('#routes/password/reset/+page.svelte')).default;
 
 const type = async (label: string, value: string) =>
   fireEvent.input(screen.getByLabelText(label), { target: { value } });

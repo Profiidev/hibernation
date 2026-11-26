@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { information } from '$routes/caches/create/schema.svelte';
-import { cacheSchema } from '$routes/caches/[uuid]/settings/schema.svelte';
+import { information } from '#routes/caches/create/schema.svelte.ts';
+import { cacheSchema } from '#routes/caches/[uuid]/settings/schema.svelte.ts';
 
 // Both schemas must accept exactly what the backend `CacheRegex` accepts:
 // `^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$`, at most 63 characters and not

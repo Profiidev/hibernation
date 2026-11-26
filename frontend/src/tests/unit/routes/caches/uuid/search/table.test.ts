@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { columns } from '$routes/caches/[uuid]/search/table.svelte';
-import Actions from '$routes/caches/[uuid]/search/Actions.svelte';
-import TableHead from '$routes/caches/[uuid]/search/TableHead.svelte';
-import { renderCell } from '$test_helpers/load';
+import { columns } from '#routes/caches/[uuid]/search/table.svelte.ts';
+import Actions from '#routes/caches/[uuid]/search/Actions.svelte';
+import TableHead from '#routes/caches/[uuid]/search/TableHead.svelte';
+import { renderCell } from '#test_helpers/load.ts';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const col = (cols: any[], key: string) =>

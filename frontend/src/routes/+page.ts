@@ -1,4 +1,4 @@
-import { cacheOverview, listCaches, listTokens } from '$lib/client';
+import { cacheOverview, listCaches, listTokens } from '#lib/client/index.ts';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ fetch }) => {

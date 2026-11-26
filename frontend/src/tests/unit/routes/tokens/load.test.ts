@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { load as listLoad } from '$routes/tokens/+page';
-import { load as detailLoad } from '$routes/tokens/[uuid]/+page';
-import { jsonFetch, runLoad } from '$test_helpers/load';
+import { load as listLoad } from '#routes/tokens/+page.ts';
+import { load as detailLoad } from '#routes/tokens/[uuid]/+page.ts';
+import { jsonFetch, runLoad } from '#test_helpers/load.ts';
 
 describe('tokens list load', () => {
   it('resolves tokens and exposes the error param', async () => {

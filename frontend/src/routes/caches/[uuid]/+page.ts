@@ -1,4 +1,4 @@
-import { getGeneralSettings } from '$lib/client';
+import { getGeneralSettings } from '#lib/client/index.ts';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ fetch }) => {

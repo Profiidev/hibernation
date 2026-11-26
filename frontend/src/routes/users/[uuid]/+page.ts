@@ -3,7 +3,7 @@ import {
   listCachesSimple,
   listGroupsSimple,
   userInfoDetail
-} from '$lib/client';
+} from '#lib/client/index.ts';
 
 export const load: PageLoad = async ({ params, fetch }) => {
   const resPromise = userInfoDetail({

@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { goto } from '$app/navigation';
 
 const createGroup = vi.fn();
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   createGroup: (...a: unknown[]) => createGroup(...a)
 }));
@@ -19,7 +19,7 @@ vi.mock('svelte-sonner', async (orig) => ({
   toast: { error: (m: string) => toastError(m) }
 }));
 
-const Page = (await import('$routes/groups/create/+page.svelte')).default;
+const Page = (await import('#routes/groups/create/+page.svelte')).default;
 
 const submit = async (name: string) => {
   render(Page);

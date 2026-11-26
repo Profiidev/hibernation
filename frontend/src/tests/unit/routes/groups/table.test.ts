@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { columns, searchable } from '$routes/groups/table.svelte';
-import { Permission } from '$lib/permissions.svelte';
-import type { GroupInfo, UserInfo } from '$lib/client';
-import { renderCell } from '$test_helpers/load';
+import { columns, searchable } from '#routes/groups/table.svelte.ts';
+import { Permission } from '#lib/permissions.svelte.ts';
+import type { GroupInfo, UserInfo } from '#lib/client/index.ts';
+import { renderCell } from '#test_helpers/load.ts';
 
 const actionsProps = (
   args: Parameters<typeof columns>[0],

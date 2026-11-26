@@ -8,7 +8,7 @@ const api = {
   testTokenRule: vi.fn(),
   tokenRegenerate: vi.fn()
 };
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   deleteToken: (...a: unknown[]) => api.deleteToken(...a),
   editToken: (...a: unknown[]) => api.editToken(...a),
@@ -26,7 +26,7 @@ vi.mock('svelte-sonner', async (orig) => ({
   toast: { error: (m: string) => sonnerError(m) }
 }));
 
-const Page = (await import('$routes/tokens/[uuid]/+page.svelte')).default;
+const Page = (await import('#routes/tokens/[uuid]/+page.svelte')).default;
 
 const exp = new Date(Date.now() + 5 * 86_400_000).toISOString();
 const token = { exp, name: 'ci', restricted: false, rules: [], uuid: 't1' };

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Progress } from '@profidev/pleiades/components/ui/progress';
-  import * as Code from '$lib/components/code';
+  import * as Code from '#lib/components/code/index.ts';
   import { ScrollArea } from '@profidev/pleiades/components/ui/scroll-area';
-  import { size_to_gib } from '$lib/backend/util.svelte.js';
-  import type { CacheDetails, GeneralSettings } from '$lib/client/types.gen.js';
+  import { size_to_gib } from '#lib/backend/util.svelte.js';
+  import type { CacheDetails, GeneralSettings } from '#lib/client/types.gen.js';
   import { page } from '$app/state';
 
   let { data } = $props();

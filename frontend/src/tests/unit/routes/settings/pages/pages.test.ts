@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRawSnippet } from 'svelte';
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { Permission } from '$lib/permissions.svelte';
+import { Permission } from '#lib/permissions.svelte.ts';
 
 const api = {
   saveMailSettings: vi.fn(),
   saveUserSettings: vi.fn(),
   testMail: vi.fn()
 };
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   saveMailSettings: (...a: unknown[]) => api.saveMailSettings(...a),
   saveUserSettings: (...a: unknown[]) => api.saveUserSettings(...a),
@@ -23,11 +23,11 @@ vi.mock('@profidev/pleiades/components/util/general', async (orig) => ({
   }
 }));
 
-const UserPage = (await import('$routes/settings/user/+page.svelte')).default;
-const MailPage = (await import('$routes/settings/mail/+page.svelte')).default;
-const SettingsLayout = (await import('$routes/settings/+layout.svelte'))
+const UserPage = (await import('#routes/settings/user/+page.svelte')).default;
+const MailPage = (await import('#routes/settings/mail/+page.svelte')).default;
+const SettingsLayout = (await import('#routes/settings/+layout.svelte'))
   .default;
-const AccountLayout = (await import('$routes/account/+layout.svelte')).default;
+const AccountLayout = (await import('#routes/account/+layout.svelte')).default;
 
 const admin = Promise.resolve({ permissions: [Permission.SETTINGS_EDIT] });
 const viewer = Promise.resolve({ permissions: [Permission.SETTINGS_VIEW] });

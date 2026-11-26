@@ -5,7 +5,11 @@
   import { Switch } from '@profidev/pleiades/components/ui/switch';
   import { onMount } from 'svelte';
   import { z } from 'zod';
-  import { listCaches, type CacheInfo, type TokenRule } from '$lib/client';
+  import {
+    listCaches,
+    type CacheInfo,
+    type TokenRule
+  } from '#lib/client/index.ts';
   import TokenRules from '../TokenRules.svelte';
 
   let { initialValue, onsubmit, footer, isLoading }: StageProps = $props();

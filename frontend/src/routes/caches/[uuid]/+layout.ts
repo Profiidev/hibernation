@@ -1,5 +1,5 @@
 import type { LayoutLoad } from './$types';
-import { cacheDetails } from '$lib/client';
+import { cacheDetails } from '#lib/client/index.ts';
 
 export const load: LayoutLoad = ({ params, fetch }) => {
   const cacheRes = cacheDetails({

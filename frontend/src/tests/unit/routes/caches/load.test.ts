@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { load as listLoad } from '$routes/caches/+page';
-import { load as layoutLoad } from '$routes/caches/[uuid]/+layout';
-import { load as detailLoad } from '$routes/caches/[uuid]/+page';
-import { jsonFetch, runLoad } from '$test_helpers/load';
+import { load as listLoad } from '#routes/caches/+page.ts';
+import { load as layoutLoad } from '#routes/caches/[uuid]/+layout.ts';
+import { load as detailLoad } from '#routes/caches/[uuid]/+page.ts';
+import { jsonFetch, runLoad } from '#test_helpers/load.ts';
 
 describe('caches list load', () => {
   it('resolves caches and exposes the error param', async () => {

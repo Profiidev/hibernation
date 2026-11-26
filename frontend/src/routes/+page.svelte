@@ -3,13 +3,13 @@
   import { Button } from '@profidev/pleiades/components/ui/button';
   import { Progress } from '@profidev/pleiades/components/ui/progress';
   import { ScrollArea } from '@profidev/pleiades/components/ui/scroll-area';
-  import { size_to_gib } from '$lib/backend/util.svelte.js';
+  import { size_to_gib } from '#lib/backend/util.svelte.js';
   import type {
     CacheInfo,
     CacheOverview,
     OverviewPath,
     TokenInfo
-  } from '$lib/client/types.gen.js';
+  } from '#lib/client/types.gen.js';
 
   const { data } = $props();
 

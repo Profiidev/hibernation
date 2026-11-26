@@ -8,7 +8,7 @@
     AccessType,
     type CacheMapping,
     type SimpleCacheInfo
-  } from '$lib/client';
+  } from '#lib/client/index.ts';
 
   interface Props {
     caches: SimpleCacheInfo[];

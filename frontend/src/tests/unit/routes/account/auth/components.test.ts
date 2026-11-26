@@ -4,7 +4,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 const updatePassword = vi.fn();
 const startEmailChange = vi.fn();
 const confirmEmailChange = vi.fn();
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   confirmEmailChange: (...a: unknown[]) => confirmEmailChange(...a),
   startEmailChange: (...a: unknown[]) => startEmailChange(...a),
@@ -22,12 +22,12 @@ vi.mock('svelte-sonner', async (orig) => ({
 }));
 const encrypt = { encrypt: (s: string) => `enc(${s})` };
 const getEncrypt = vi.fn((): typeof encrypt | undefined => encrypt);
-vi.mock('$lib/backend/auth.svelte', () => ({
+vi.mock('#lib/backend/auth.svelte.ts', () => ({
   getEncrypt: () => getEncrypt()
 }));
 
-const Password = (await import('$routes/account/auth/Password.svelte')).default;
-const Email = (await import('$routes/account/auth/Email.svelte')).default;
+const Password = (await import('#routes/account/auth/Password.svelte')).default;
+const Email = (await import('#routes/account/auth/Email.svelte')).default;
 
 const trigger = (name: string) => screen.getByRole('button', { name });
 
@@ -241,7 +241,7 @@ describe('account Email', () => {
 
 describe('account auth page', () => {
   it('wires the user and mail state into both dialogs', async () => {
-    const Page = (await import('$routes/account/auth/+page.svelte')).default;
+    const Page = (await import('#routes/account/auth/+page.svelte')).default;
     render(Page, {
       data: {
         mailActive: Promise.resolve(true),
@@ -253,7 +253,7 @@ describe('account auth page', () => {
   });
 
   it('disables both for an OIDC user', async () => {
-    const Page = (await import('$routes/account/auth/+page.svelte')).default;
+    const Page = (await import('#routes/account/auth/+page.svelte')).default;
     render(Page, {
       data: {
         mailActive: Promise.resolve(true),

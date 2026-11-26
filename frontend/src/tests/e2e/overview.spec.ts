@@ -1,14 +1,14 @@
 import { expect } from '@playwright/test';
 import { HttpResponse } from 'msw';
-import * as gen from '$lib/client/msw.gen';
-import { adminUser } from '$mocks/e2e/data';
-import { test } from '$test_helpers/e2e-fixture';
-import { setupSession } from '$test_helpers/session';
+import * as gen from '#lib/client/msw.gen.ts';
+import { adminUser } from '#mocks/e2e/data.ts';
+import { test } from '#test_helpers/e2e-fixture.ts';
+import { setupSession } from '#test_helpers/session.ts';
 import {
   expectNoHorizontalOverflow,
   gotoReady,
   openSidebar
-} from '$test_helpers/layout';
+} from '#test_helpers/layout.ts';
 
 test.beforeEach(async ({ context }) => {
   await setupSession(context);

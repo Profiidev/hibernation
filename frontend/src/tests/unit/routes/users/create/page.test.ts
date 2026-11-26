@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { goto } from '$app/navigation';
 
 const createUser = vi.fn();
-vi.mock('$lib/client', async (orig) => ({
+vi.mock('#lib/client/index.ts', async (orig) => ({
   ...(await orig<object>()),
   createUser: (...a: unknown[]) => createUser(...a)
 }));
@@ -19,11 +19,11 @@ vi.mock('svelte-sonner', async (orig) => ({
 }));
 const encrypt = { encrypt: vi.fn((s: string) => `enc(${s})`) };
 const getEncrypt = vi.fn((): typeof encrypt | undefined => encrypt);
-vi.mock('$lib/backend/auth.svelte', () => ({
+vi.mock('#lib/backend/auth.svelte.ts', () => ({
   getEncrypt: () => getEncrypt()
 }));
 
-const Page = (await import('$routes/users/create/+page.svelte')).default;
+const Page = (await import('#routes/users/create/+page.svelte')).default;
 
 const fill = async (mailActive: boolean, fields: Record<string, string>) => {
   render(Page, { data: { mailActive: Promise.resolve(mailActive) } as never });
